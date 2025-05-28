@@ -91,14 +91,14 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit }: VoiceChatPr
       {/* Header */}
       <header className="flex-shrink-0 p-4 border-b border-gray-800">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <h1 className="text-3xl font-bold text-white">Carlos Freire AI</h1>
-          <div className="flex items-center gap-4">
+          <h1 className="text-2xl md:text-3xl font-bold text-white">Carlos Freire AI</h1>
+          <div className="flex items-center gap-2 md:gap-4">
             {/* Voice Selector */}
-            <div className="flex items-center gap-2">
-              <Volume2 className="w-4 h-4 text-gray-400" />
+            <div className="flex items-center gap-1 md:gap-2">
+              <Volume2 className="w-4 h-4 text-gray-400 hidden sm:block" />
               <Select value={selectedVoice} onValueChange={setSelectedVoice}>
-                <SelectTrigger className="w-40 bg-gray-800 border-gray-700 text-white">
-                  <SelectValue placeholder="Seleccionar voz" />
+                <SelectTrigger className="w-24 sm:w-32 md:w-40 bg-gray-800 border-gray-700 text-white text-xs sm:text-sm">
+                  <SelectValue placeholder="Voz" />
                 </SelectTrigger>
                 <SelectContent className="bg-gray-800 border-gray-700">
                   {voices.map((voice) => (
@@ -113,15 +113,15 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit }: VoiceChatPr
               variant="ghost" 
               size="sm" 
               onClick={clearConversation} 
-              className="text-gray-400 hover:text-white"
+              className="text-gray-400 hover:text-white p-1 sm:p-2"
               title="Limpiar conversación"
             >
-              <Trash2 className="w-4 h-4 mr-2" />
-              Limpiar
+              <Trash2 className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">Limpiar</span>
             </Button>
-            <Button variant="ghost" size="sm" onClick={() => setShowApiKeyModal(true)} className="text-gray-400 hover:text-white">
-              <Settings className="w-4 h-4 mr-2" />
-              Settings
+            <Button variant="ghost" size="sm" onClick={() => setShowApiKeyModal(true)} className="text-gray-400 hover:text-white p-1 sm:p-2">
+              <Settings className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">Settings</span>
             </Button>
           </div>
         </div>
@@ -140,17 +140,17 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit }: VoiceChatPr
         </div>
 
         {/* Voice Input Interface */}
-        <Card className="flex-shrink-0 bg-black/20 border-transparent p-6">
-          <div className="text-center space-y-4">
-            <div className="text-gray-400 text-lg">{isRecording ? "Escuchando..." : ""}</div>
+        <Card className="flex-shrink-0 bg-black/20 border-transparent p-3 sm:p-6">
+          <div className="text-center space-y-2 sm:space-y-4">
+            <div className="text-gray-400 text-sm sm:text-lg">{isRecording ? "Escuchando..." : ""}</div>
 
             {/* Auto-stop Toggle */}
-            <div className="flex items-center justify-center gap-2">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2">
               <Button
                 variant={autoStopEnabled ? "default" : "outline"}
                 size="sm"
                 onClick={toggleAutoStop}
-                className={`text-xs ${
+                className={`text-xs h-8 sm:h-auto ${
                   autoStopEnabled 
                     ? "bg-green-600 hover:bg-green-700 text-white" 
                     : "bg-gray-800 border-gray-600 text-gray-300 hover:bg-gray-700"
@@ -158,7 +158,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit }: VoiceChatPr
               >
                 {autoStopEnabled ? "Auto-envío: ON" : "Auto-envío: OFF"}
               </Button>
-              <span className="text-xs text-gray-500">
+              <span className="text-xs text-gray-500 text-center">
                 {autoStopEnabled ? "Se enviará tras 3s de silencio" : "Presiona para enviar manualmente"}
               </span>
             </div>
@@ -189,15 +189,16 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit }: VoiceChatPr
                   variant="destructive"
                   size="sm"
                   onClick={cancelRecording}
-                  className="bg-red-600 hover:bg-red-700 text-white"
+                  className="bg-red-600 hover:bg-red-700 text-white h-8 sm:h-auto text-xs sm:text-sm"
                 >
-                  Cancelar grabación
+                  <span className="hidden sm:inline">Cancelar grabación</span>
+                  <span className="sm:hidden">Cancelar</span>
                 </Button>
               </div>
             )}
 
             {/* Status */}
-            <div className="text-sm text-gray-500">
+            <div className="text-xs sm:text-sm text-gray-500">
               {isTranscribing && "Transcribiendo..."}
               {isGenerating && "La IA está pensando..."}
               {!isRecording && !isTranscribing && !isGenerating && ""}
