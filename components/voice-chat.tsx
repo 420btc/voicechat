@@ -23,7 +23,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit }: VoiceChatPr
   const [showApiKeyModal, setShowApiKeyModal] = useState(false)
   const audioRef = useRef<HTMLAudioElement>(null)
 
-  const { isRecording, audioLevel, startRecording, stopRecording, audioBlob } = useAudioRecording()
+  const { isRecording, audioLevel, startRecording, stopRecording, cancelRecording, audioBlob, autoStopEnabled, toggleAutoStop, isCancelled } = useAudioRecording()
 
   const {
     transcribeAudio,
@@ -49,10 +49,10 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit }: VoiceChatPr
   ]
 
   useEffect(() => {
-    if (audioBlob) {
+    if (audioBlob && !isCancelled) {
       handleAudioSubmit(audioBlob)
     }
-  }, [audioBlob])
+  }, [audioBlob, isCancelled])
 
   const handleAudioSubmit = async (blob: Blob) => {
     try {
@@ -76,6 +76,8 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit }: VoiceChatPr
             }
           }
         }
+      } else {
+        console.log("Audio discarded: transcription was empty or too short")
       }
     } catch (error) {
       console.error("Error processing audio:", error)
@@ -85,9 +87,9 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit }: VoiceChatPr
 
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="h-screen flex flex-col">
       {/* Header */}
-      <header className="p-4 border-b border-gray-800">
+      <header className="flex-shrink-0 p-4 border-b border-gray-800">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <h1 className="text-3xl font-bold text-white">Carlos Freire AI</h1>
           <div className="flex items-center gap-4">
@@ -126,9 +128,9 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit }: VoiceChatPr
       </header>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col max-w-4xl mx-auto w-full p-4">
+      <div className="flex-1 flex flex-col max-w-4xl mx-auto w-full p-4 min-h-0">
         {/* Conversation History */}
-        <div className="flex-1 mb-6">
+        <div className="flex-1 mb-6 min-h-0">
           <ConversationHistory
             conversation={conversation}
             isTranscribing={isTranscribing}
@@ -138,9 +140,28 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit }: VoiceChatPr
         </div>
 
         {/* Voice Input Interface */}
-        <Card className="bg-black/20 border-transparent p-6">
-          <div className="text-center space-y-6">
+        <Card className="flex-shrink-0 bg-black/20 border-transparent p-6">
+          <div className="text-center space-y-4">
             <div className="text-gray-400 text-lg">{isRecording ? "Escuchando..." : ""}</div>
+
+            {/* Auto-stop Toggle */}
+            <div className="flex items-center justify-center gap-2">
+              <Button
+                variant={autoStopEnabled ? "default" : "outline"}
+                size="sm"
+                onClick={toggleAutoStop}
+                className={`text-xs ${
+                  autoStopEnabled 
+                    ? "bg-green-600 hover:bg-green-700 text-white" 
+                    : "bg-gray-800 border-gray-600 text-gray-300 hover:bg-gray-700"
+                }`}
+              >
+                {autoStopEnabled ? "Auto-envío: ON" : "Auto-envío: OFF"}
+              </Button>
+              <span className="text-xs text-gray-500">
+                {autoStopEnabled ? "Se enviará tras 3s de silencio" : "Presiona para enviar manualmente"}
+              </span>
+            </div>
 
             {/* Voice Input with Visualizer */}
              <AIVoiceInput
@@ -160,6 +181,20 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit }: VoiceChatPr
                isRecording={isRecording}
                isDisabled={isTranscribing || isGenerating}
              />
+
+            {/* Cancel Button - Only show when recording */}
+            {isRecording && (
+              <div className="flex justify-center">
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={cancelRecording}
+                  className="bg-red-600 hover:bg-red-700 text-white"
+                >
+                  Cancelar grabación
+                </Button>
+              </div>
+            )}
 
             {/* Status */}
             <div className="text-sm text-gray-500">

@@ -49,7 +49,15 @@ export function useOpenAI(apiKey: string) {
         }
 
         const data = await response.json()
-        return data.text
+        const transcribedText = data.text?.trim()
+        
+        // Return null if transcription is empty, only whitespace, or too short
+        if (!transcribedText || transcribedText.length < 2) {
+          console.log("Transcription too short or empty, skipping:", transcribedText)
+          return null
+        }
+        
+        return transcribedText
       } catch (error) {
         console.error("Transcription error:", error)
         return null

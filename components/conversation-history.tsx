@@ -63,7 +63,7 @@ export function ConversationHistory({
   }
 
   return (
-    <div ref={scrollRef} className="flex-1 overflow-y-auto space-y-4 pr-2" style={{ maxHeight: "calc(100vh - 300px)" }}>
+    <div ref={scrollRef} className="h-full overflow-y-auto space-y-4 pr-2">
       {conversation.map((message, index) => (
         <div key={index} className={`flex gap-3 ${message.role === "user" ? "justify-end" : "justify-start"}`}>
           {message.role === "assistant" && (
