@@ -1,0 +1,197 @@
+"use client"
+
+import { useState, useCallback } from "react"
+import { useLocalStorage } from "./use-local-storage"
+
+interface Message {
+  role: "user" | "assistant"
+  content: string
+  timestamp: Date
+}
+
+interface AIResponse {
+  text: string
+  audio?: Blob
+}
+
+export function useOpenAI(apiKey: string) {
+  const [isTranscribing, setIsTranscribing] = useState(false)
+  const [isGenerating, setIsGenerating] = useState(false)
+  
+  const {
+    conversation,
+    selectedVoice,
+    setSelectedVoice,
+    addMessage,
+    clearConversation
+  } = useLocalStorage()
+
+  const transcribeAudio = useCallback(
+    async (audioBlob: Blob): Promise<string | null> => {
+      setIsTranscribing(true)
+
+      try {
+        const formData = new FormData()
+        formData.append("file", audioBlob, "audio.webm")
+        formData.append("model", "whisper-1")
+        formData.append("language", "es")
+
+        const response = await fetch("https://api.openai.com/v1/audio/transcriptions", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+          },
+          body: formData,
+        })
+
+        if (!response.ok) {
+          throw new Error("Transcription failed")
+        }
+
+        const data = await response.json()
+        return data.text
+      } catch (error) {
+        console.error("Transcription error:", error)
+        return null
+      } finally {
+        setIsTranscribing(false)
+      }
+    },
+    [apiKey],
+  )
+
+  const generateResponse = useCallback(
+    async (userMessage: string): Promise<AIResponse | null> => {
+      setIsGenerating(true)
+
+      try {
+        // Generate text response
+        const textResponse = await fetch("https://api.openai.com/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "gpt-4o",
+            messages: [
+              {
+                role: "system",
+                content:
+                  "Eres un asistente de IA útil y amigable. Proporciona respuestas concisas y naturales en español, adecuadas para conversación por voz. Sé conversacional y cálido en tu tono. Carlos Freire es quien te hablará siempre, es fotografo, vibe coder, piloto de drones y cocinero en un hotel, en base a sus datos personales actuarás para ayudarle.",
+              },
+              ...conversation.map((msg) => ({
+                role: msg.role,
+                content: msg.content,
+              })),
+              {
+                role: "user",
+                content: userMessage,
+              },
+            ],
+            max_tokens: 150,
+            temperature: 0.7,
+          }),
+        })
+
+        if (!textResponse.ok) {
+          throw new Error("Text generation failed")
+        }
+
+        const textData = await textResponse.json()
+        const responseText =
+          textData.choices[0]?.message?.content || "I apologize, but I could not generate a response."
+
+        // Generate audio response
+        let audioBlob: Blob | undefined
+        try {
+          const audioResponse = await fetch("https://api.openai.com/v1/audio/speech", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${apiKey}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              model: "tts-1",
+              voice: selectedVoice,
+              input: responseText,
+              response_format: "mp3",
+            }),
+          })
+
+          if (audioResponse.ok) {
+            audioBlob = await audioResponse.blob()
+          }
+        } catch (audioError) {
+          console.error("Audio generation error:", audioError)
+        }
+
+        return {
+          text: responseText,
+          audio: audioBlob,
+        }
+      } catch (error) {
+        console.error("Response generation error:", error)
+        return {
+          text: "I apologize, but I encountered an error. Please try again.",
+        }
+      } finally {
+        setIsGenerating(false)
+      }
+    },
+    [apiKey, conversation],
+  )
+
+  const translateMessage = useCallback(
+    async (text: string, targetLanguage: "es" | "en"): Promise<string | null> => {
+      try {
+        const response = await fetch("https://api.openai.com/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "gpt-4o",
+            messages: [
+              {
+                role: "system",
+                content: `Traduce el siguiente texto al ${targetLanguage === "es" ? "español" : "inglés"}. Solo devuelve la traducción, sin explicaciones adicionales.`,
+              },
+              {
+                role: "user",
+                content: text,
+              },
+            ],
+            max_tokens: 200,
+            temperature: 0.3,
+          }),
+        })
+
+        if (!response.ok) {
+          throw new Error("Translation failed")
+        }
+
+        const data = await response.json()
+        return data.choices[0]?.message?.content || null
+      } catch (error) {
+        console.error("Translation error:", error)
+        return null
+      }
+    },
+    [apiKey],
+  )
+
+  return {
+    transcribeAudio,
+    generateResponse,
+    translateMessage,
+    isTranscribing,
+    isGenerating,
+    conversation,
+    addMessage,
+    selectedVoice,
+    setSelectedVoice,
+    clearConversation,
+  }
+}
