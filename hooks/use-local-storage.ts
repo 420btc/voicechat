@@ -139,6 +139,21 @@ export function useLocalStorage() {
     setApiKey("")
   }, [])
 
+  const updateLastUserMessageWithPromptTokens = useCallback((promptTokens: number) => {
+    setConversation(prev => {
+      const updated = [...prev]
+      // Find the last user message and update it with prompt tokens
+      for (let i = updated.length - 1; i >= 0; i--) {
+        if (updated[i].role === "user") {
+          updated[i] = { ...updated[i], promptTokens }
+          break
+        }
+      }
+      localStorage.setItem(STORAGE_KEYS.CONVERSATION, JSON.stringify(updated))
+      return updated
+    })
+  }, [])
+
   const isApiKeyValid = useCallback(() => {
     const storedApiKey = localStorage.getItem(STORAGE_KEYS.API_KEY)
     if (!storedApiKey) return false
@@ -163,6 +178,7 @@ export function useLocalStorage() {
     setSelectedVoice,
     setConversation,
     addMessage,
+    updateLastUserMessageWithPromptTokens,
     saveApiKey,
     removeApiKey,
     clearConversation,

@@ -42,6 +42,7 @@ export function useOpenAI(config: AIConfig) {
     setSelectedVoice,
     setConversation,
     addMessage,
+    updateLastUserMessageWithPromptTokens,
     clearConversation
   } = useLocalStorage()
 
@@ -444,6 +445,7 @@ export function useOpenAI(config: AIConfig) {
     isGenerating,
     conversation,
     addMessage,
+    updateLastUserMessageWithPromptTokens,
     selectedVoice,
     setSelectedVoice,
     clearConversation,

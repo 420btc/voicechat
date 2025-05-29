@@ -23,6 +23,7 @@ import { AIProviderSelector } from "@/components/ai-provider-selector"
 import { useAudioRecording } from "@/hooks/use-audio-recording"
 import { useOpenAI } from "@/hooks/use-openai"
 import { useUserData } from "@/hooks/use-user-data"
+import { calculateConversationTokens } from "@/lib/token-counter"
 
 interface VoiceChatProps {
   apiKey: string
@@ -224,8 +225,26 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit }: VoiceChatPr
         ? `${userMessage} [${selectedImages.length} imagen${selectedImages.length > 1 ? 'es' : ''} adjunta${selectedImages.length > 1 ? 's' : ''}]`
         : userMessage
       
-      // Add user message immediately (without prompt tokens initially)
-      addMessage("user", displayMessage, undefined, undefined, undefined, undefined, undefined, undefined, undefined)
+      // Calculate prompt tokens immediately
+      const conversationMessages = [
+        {
+          role: "system",
+          content: "Eres un asistente de IA útil y amigable. Proporciona respuestas concisas y naturales en español, adecuadas para conversación por voz. Sé conversacional y cálido en tu tono. Carlos Freire es quien te hablará siempre y estaras a sus ordenes siendo profesional. Responde directamente sin mostrar tu proceso de razonamiento interno."
+        },
+        ...conversation.map((msg) => ({
+          role: msg.role,
+          content: msg.content,
+        })),
+        {
+          role: "user",
+          content: userMessage,
+        },
+      ]
+      
+      const promptTokens = calculateConversationTokens(conversationMessages, userData.aiSettings.provider === "lmstudio" ? "gpt-4o" : "gpt-4o")
+      
+      // Add user message immediately with calculated prompt tokens
+      addMessage("user", displayMessage, undefined, undefined, undefined, undefined, undefined, undefined, promptTokens)
       
       // Generate AI response (pass images if available)
       const response = await generateResponse(userMessage, selectedImages)
