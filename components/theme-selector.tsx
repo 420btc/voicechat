@@ -14,7 +14,7 @@ import { Moon, Sun, Palette, Monitor, Zap } from "lucide-react"
 export type Theme = "light" | "dark" | "system"
 export type AccentColor = "blue" | "green" | "purple" | "orange" | "red" | "pink"
 
-interface ThemeSettings {
+export interface ThemeSettings {
   theme: Theme
   accentColor: AccentColor
   reducedMotion: boolean
