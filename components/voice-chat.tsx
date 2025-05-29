@@ -200,7 +200,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit }: VoiceChatPr
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           {/* Left Section - Brand & User */}
           <div className="flex items-center gap-4 lg:gap-8">
-            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground whitespace-nowrap">Carlos Freire AI</h1>
+            <h1 className="hidden sm:block text-xl sm:text-2xl lg:text-3xl font-bold text-foreground whitespace-nowrap">Carlos Freire AI</h1>
             {isLoaded && (
               <div className="hidden sm:block">
                 <UserProfile
@@ -214,14 +214,14 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit }: VoiceChatPr
           </div>
           
           {/* Right Section - Controls */}
-          <div className="flex items-center gap-2 lg:gap-4">
+          <div className="flex items-center gap-1 sm:gap-2 lg:gap-4 flex-1 justify-end">
             {/* Chat Mode Toggle */}
             <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1">
               <Button
                 variant={chatMode === 'voice' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setChatMode('voice')}
-                className="h-8 px-2 lg:px-3"
+                className="h-8 px-1 sm:px-2 lg:px-3"
                 title="Modo de voz"
               >
                 <Mic className="w-4 h-4" />
@@ -231,7 +231,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit }: VoiceChatPr
                 variant={chatMode === 'text' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setChatMode('text')}
-                className="h-8 px-2 lg:px-3"
+                className="h-8 px-1 sm:px-2 lg:px-3"
                 title="Modo de texto"
               >
                 <MessageSquare className="w-4 h-4" />
@@ -241,10 +241,10 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit }: VoiceChatPr
             
             {/* Voice Selector - Only show in voice mode */}
             {chatMode === 'voice' && (
-              <div className="flex items-center gap-2 lg:gap-3">
+              <div className="flex items-center gap-1 sm:gap-2 lg:gap-3">
                 <Volume2 className="w-4 h-4 text-muted-foreground hidden lg:block" />
                 <Select value={selectedVoice} onValueChange={setSelectedVoice}>
-                  <SelectTrigger className="w-24 lg:w-40 bg-card border-border text-foreground text-xs lg:text-sm h-8">
+                  <SelectTrigger className="w-20 sm:w-24 lg:w-40 bg-card border-border text-foreground text-xs lg:text-sm h-8">
                     <SelectValue placeholder="Voz" />
                   </SelectTrigger>
                   <SelectContent className="bg-card border-border">
@@ -272,7 +272,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit }: VoiceChatPr
                   }
                   clearConversation()
                 }} 
-                className="text-muted-foreground hover:text-foreground h-8 px-2 lg:px-3"
+                className="text-muted-foreground hover:text-foreground h-8 px-1 sm:px-2 lg:px-3"
                 title="Nueva conversación"
               >
                 <Plus className="w-4 h-4" />
@@ -300,7 +300,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit }: VoiceChatPr
             </div>
             
             {/* Settings & Theme */}
-            <div className="flex items-center gap-1 lg:gap-2 border-l border-border pl-2 lg:pl-4 ml-2 lg:ml-4">
+            <div className="flex items-center gap-1 lg:gap-2 border-l border-border pl-1 sm:pl-2 lg:pl-4 ml-1 sm:ml-2 lg:ml-4">
               {/* Theme Selector */}
               {isLoaded && (
                 <ThemeSelector
@@ -314,7 +314,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit }: VoiceChatPr
                 variant="ghost" 
                 size="sm" 
                 onClick={() => setShowApiKeyModal(true)} 
-                className="text-muted-foreground hover:text-foreground h-8 px-2 lg:px-3"
+                className="text-muted-foreground hover:text-foreground h-8 px-1 sm:px-2 lg:px-3"
                 title="Configuración API"
               >
                 <Settings className="w-4 h-4" />
