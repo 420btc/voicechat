@@ -19,9 +19,10 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { Settings } from "lucide-react"
+import { Settings, User } from "lucide-react"
 import { AIProvider } from "@/hooks/use-openai"
 import { useLocalStorage } from "@/hooks/use-local-storage"
+import { AI_AGENTS, AIAgent } from "@/hooks/use-user-data"
 
 interface AISettings {
   provider: AIProvider
@@ -29,6 +30,7 @@ interface AISettings {
   lmstudioApiKey: string
   lmstudioBaseUrl: string
   lmstudioModel: string
+  selectedAgent: string
   modelHistory: ModelHistoryEntry[]
 }
 
@@ -215,6 +217,52 @@ export default function AIProviderSelector({ settings, onSettingsChange }: AIPro
                     setTempSettings(prev => ({ ...prev, lmstudioBaseUrl: e.target.value }))
                   }
                 />
+              </div>
+              
+              {/* Agent Selection */}
+              <div className="space-y-2">
+                <Label htmlFor="agent-select">Seleccionar Agente Especializado</Label>
+                <Select
+                  value={tempSettings.selectedAgent}
+                  onValueChange={(value: string) => 
+                    setTempSettings(prev => ({ ...prev, selectedAgent: value }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-80">
+                    {AI_AGENTS.map((agent) => (
+                      <SelectItem key={agent.id} value={agent.id}>
+                        <div className="flex items-center gap-2">
+                          <span className="text-lg">{agent.icon}</span>
+                          <div className="flex flex-col">
+                            <span className="font-medium">{agent.name}</span>
+                            <span className="text-xs text-muted-foreground">{agent.description}</span>
+                          </div>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                
+                {/* Agent Description */}
+                {(() => {
+                  const selectedAgent = AI_AGENTS.find(agent => agent.id === tempSettings.selectedAgent)
+                  return selectedAgent ? (
+                    <div className="rounded-lg border p-3 bg-muted/30">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-lg">{selectedAgent.icon}</span>
+                        <span className="font-medium">{selectedAgent.name}</span>
+                      </div>
+                      <p className="text-sm text-muted-foreground mb-2">{selectedAgent.description}</p>
+                      <details className="text-xs">
+                        <summary className="cursor-pointer text-muted-foreground hover:text-foreground">Ver prompt del sistema</summary>
+                        <p className="mt-2 p-2 bg-muted/50 rounded text-muted-foreground">{selectedAgent.systemPrompt}</p>
+                      </details>
+                    </div>
+                  ) : null
+                })()}
               </div>
               
               <div className="space-y-2">

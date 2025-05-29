@@ -22,7 +22,7 @@ import { ThemeSelector } from "@/components/theme-selector"
 import AIProviderSelector from "@/components/ai-provider-selector"
 import { useAudioRecording } from "@/hooks/use-audio-recording"
 import { useOpenAI } from "@/hooks/use-openai"
-import { useUserData } from "@/hooks/use-user-data"
+import { useUserData, AI_AGENTS } from "@/hooks/use-user-data"
 import { calculateConversationTokens } from "@/lib/token-counter"
 
 interface VoiceChatProps {
@@ -98,6 +98,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit }: VoiceChatPr
     apiKey: currentApiKey,
     baseUrl: userData.aiSettings.lmstudioBaseUrl,
     model: userData.aiSettings.lmstudioModel,
+    selectedAgent: userData.aiSettings.selectedAgent,
     onModelUsed: addModelToHistory
   })
 
@@ -425,6 +426,17 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit }: VoiceChatPr
                 />
               )}
             </div>
+            
+            {/* Agent Indicator */}
+            {isLoaded && userData.aiSettings.provider === 'lmstudio' && (() => {
+              const currentAgent = AI_AGENTS.find(agent => agent.id === userData.aiSettings.selectedAgent) || AI_AGENTS[0]
+              return (
+                <div className="flex items-center gap-1 px-2 py-1 rounded-md bg-muted/50 border border-border/50">
+                  <span className="text-sm">{currentAgent.icon}</span>
+                  <span className="text-xs font-medium hidden sm:inline">{currentAgent.name}</span>
+                </div>
+              )
+            })()}
             
             {/* Settings & Theme */}
             <div className="flex items-center gap-1 lg:gap-2 border-l border-border pl-1 sm:pl-2 lg:pl-4 ml-1 sm:ml-2 lg:ml-4">

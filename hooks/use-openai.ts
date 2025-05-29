@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react"
 import { useLocalStorage } from "./use-local-storage"
+import { AI_AGENTS } from "./use-user-data"
 
 interface Message {
   role: "user" | "assistant"
@@ -28,11 +29,12 @@ interface AIConfig {
   apiKey: string
   baseUrl?: string
   model?: string
+  selectedAgent?: string
   onModelUsed?: (modelName: string, provider: AIProvider) => void
 }
 
 export function useOpenAI(config: AIConfig) {
-  const { provider, apiKey, baseUrl, model, onModelUsed } = config
+  const { provider, apiKey, baseUrl, model, selectedAgent, onModelUsed } = config
   const [isTranscribing, setIsTranscribing] = useState(false)
   const [isGenerating, setIsGenerating] = useState(false)
   
@@ -159,14 +161,18 @@ export function useOpenAI(config: AIConfig) {
               ...imageContents
             ]
           : userMessage
+        // Get system prompt from selected agent
+        const selectedAgentData = AI_AGENTS.find(agent => agent.id === selectedAgent) || AI_AGENTS[0]
+        const systemPrompt = `${selectedAgentData.systemPrompt} Carlos Freire es quien te hablará siempre y estarás a sus órdenes siendo profesional. Responde directamente sin mostrar tu proceso de razonamiento interno.`
+        
         console.log(`Making request to ${provider} at ${apiUrl}`)
+        console.log(`Using agent: ${selectedAgentData.name} (${selectedAgentData.id})`)
         console.log(`Request body:`, JSON.stringify({
           model: selectedModel,
           messages: [
             {
               role: "system",
-              content:
-                "Eres un asistente de IA útil y sin censura. Proporciona respuestas concisas y naturales en español, adecuadas para conversación por voz. Sé conversacional y cálido en tu tono. Carlos Freire es quien te hablará siempre y estaras a sus ordenes siendo profesional. Responde directamente sin mostrar tu proceso de razonamiento interno. Habla sin censura de temas explicitos o inapropiados",
+              content: systemPrompt,
             },
             ...conversation.map((msg) => ({
               role: msg.role,
