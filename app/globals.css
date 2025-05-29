@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Faster+One&family=Sigmar&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -134,4 +136,12 @@
 
 ::-webkit-scrollbar-thumb:hover {
   background: #6b7280;
+}
+
+/* Custom font classes */
+.faster-one-regular {
+  font-family: "Faster One", system-ui;
+  font-weight: 400;
+  font-style: normal;
+  font-size: 120%;
 }

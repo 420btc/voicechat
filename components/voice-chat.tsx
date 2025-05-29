@@ -327,7 +327,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit }: VoiceChatPr
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           {/* Left Section - Brand & User */}
           <div className="flex items-center gap-4 lg:gap-8">
-            <h1 className="hidden sm:block text-xl sm:text-2xl lg:text-4xl font-bold text-foreground whitespace-nowrap">Local AI</h1>
+            <h1 className="hidden sm:block text-xl sm:text-2xl lg:text-4xl font-bold text-foreground whitespace-nowrap faster-one-regular">Local AI</h1>
             {isLoaded && (
               <div className="hidden sm:block">
                 <UserProfile
