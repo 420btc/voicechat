@@ -72,6 +72,57 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit }: VoiceChatPr
     }
   }, [audioBlob, isCancelled])
 
+  // Apply dynamic theme settings
+  useEffect(() => {
+    if (!isLoaded) return
+
+    const root = document.documentElement
+    const { themeSettings } = userData
+
+    // Apply font size
+    root.style.fontSize = `${themeSettings.fontSize}px`
+
+    // Apply high contrast
+    if (themeSettings.highContrast) {
+      root.style.filter = 'contrast(1.2) brightness(1.1)'
+    } else {
+      root.style.filter = 'none'
+    }
+
+    // Apply reduced motion
+    if (themeSettings.reducedMotion) {
+      root.style.setProperty('--animation-duration', '0s')
+      root.style.setProperty('--transition-duration', '0s')
+    } else {
+      root.style.removeProperty('--animation-duration')
+      root.style.removeProperty('--transition-duration')
+    }
+
+    // Apply accent color by updating CSS custom properties
+    const accentColors = {
+      blue: { hue: 217, sat: 91, light: 60 },
+      green: { hue: 142, sat: 76, light: 36 },
+      purple: { hue: 262, sat: 83, light: 58 },
+      orange: { hue: 25, sat: 95, light: 53 },
+      red: { hue: 0, sat: 84, light: 60 },
+      pink: { hue: 330, sat: 81, light: 60 }
+    }
+
+    const color = accentColors[themeSettings.accentColor]
+    if (color) {
+      // Update accent colors for both light and dark themes
+      root.style.setProperty('--accent', `${color.hue} ${color.sat}% ${color.light}%`)
+      root.style.setProperty('--accent-foreground', '0 0% 98%')
+      
+      // Update primary colors to match accent
+      root.style.setProperty('--primary', `${color.hue} ${color.sat}% ${Math.max(color.light - 20, 20)}%`)
+      root.style.setProperty('--primary-foreground', '0 0% 98%')
+      
+      // Update ring color for focus states
+      root.style.setProperty('--ring', `${color.hue} ${color.sat}% ${color.light}%`)
+    }
+  }, [userData.themeSettings, isLoaded])
+
   const handleAudioSubmit = async (blob: Blob) => {
     try {
       // Transcribe user audio

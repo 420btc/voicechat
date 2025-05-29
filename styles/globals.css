@@ -92,3 +92,30 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+/* Dynamic theme support */
+@layer utilities {
+  .theme-transition {
+    transition-duration: var(--transition-duration, 0.2s);
+  }
+  
+  .theme-animation {
+    animation-duration: var(--animation-duration, 0.3s);
+  }
+  
+  /* Apply reduced motion when enabled */
+  * {
+    transition-duration: var(--transition-duration, 0.2s);
+    animation-duration: var(--animation-duration, 0.3s);
+  }
+  
+  /* Ensure buttons and interactive elements respect accent colors */
+  .btn-accent {
+    background-color: hsl(var(--accent));
+    color: hsl(var(--accent-foreground));
+  }
+  
+  .btn-accent:hover {
+    background-color: hsl(var(--accent) / 0.9);
+  }
+}
