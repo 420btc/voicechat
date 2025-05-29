@@ -159,6 +159,13 @@ export function useUserData() {
     }))
   }
 
+  const deleteAllConversations = () => {
+    setUserData(prev => ({
+      ...prev,
+      savedConversations: []
+    }))
+  }
+
   const updateConversation = (
     id: string,
     updates: Partial<Omit<SavedConversation, 'id' | 'createdAt'>>
@@ -267,6 +274,7 @@ export function useUserData() {
     updateAISettings,
     saveConversation,
     deleteConversation,
+    deleteAllConversations,
     updateConversation,
     getConversationById,
     exportUserData,

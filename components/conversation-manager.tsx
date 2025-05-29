@@ -38,6 +38,7 @@ interface ConversationManagerProps {
   onLoadConversation: (conversation: SavedConversation) => void
   onSaveConversation: (title: string) => void
   onDeleteConversation: (id: string) => void
+  onDeleteAllConversations: () => void
   onNewConversation: () => void
 }
 
@@ -47,6 +48,7 @@ export function ConversationManager({
   onLoadConversation,
   onSaveConversation,
   onDeleteConversation,
+  onDeleteAllConversations,
   onNewConversation
 }: ConversationManagerProps) {
   const [isOpen, setIsOpen] = useState(false)
@@ -118,6 +120,40 @@ export function ConversationManager({
                 </Button>
               )}
             </div>
+            
+            {/* Delete All Button */}
+            {savedConversations.length > 0 && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button 
+                    variant="destructive" 
+                    className="w-full bg-red-600 hover:bg-red-700"
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Eliminar Todas las Conversaciones
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent className="bg-gray-900 border-gray-700 text-white">
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>¿Eliminar todas las conversaciones?</AlertDialogTitle>
+                    <AlertDialogDescription className="text-gray-400">
+                      Esta acción no se puede deshacer. Todas las conversaciones guardadas ({savedConversations.length}) serán eliminadas permanentemente.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel className="bg-gray-800 border-gray-600 text-white hover:bg-gray-700">
+                      Cancelar
+                    </AlertDialogCancel>
+                    <AlertDialogAction 
+                      onClick={onDeleteAllConversations}
+                      className="bg-red-600 hover:bg-red-700"
+                    >
+                      Eliminar Todas
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
 
             {/* Conversations List */}
             <ScrollArea className="h-96">

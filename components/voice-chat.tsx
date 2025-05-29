@@ -72,6 +72,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit }: VoiceChatPr
     updateAISettings,
     saveConversation,
     deleteConversation,
+    deleteAllConversations,
     addModelToHistory,
   } = useUserData()
 
@@ -412,6 +413,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit }: VoiceChatPr
                   onLoadConversation={(conv) => loadConversation(conv.messages)}
                   onSaveConversation={(title) => saveConversation(title, conversation)}
                   onDeleteConversation={deleteConversation}
+                  onDeleteAllConversations={deleteAllConversations}
                   onNewConversation={() => {
                     // Auto-save current conversation before clearing if it has messages
                     if (conversation.length > 0) {
