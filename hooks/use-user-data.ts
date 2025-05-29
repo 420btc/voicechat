@@ -27,6 +27,7 @@ interface AISettings {
   lmstudioBaseUrl: string
   lmstudioModel: string
   anthropicApiKey: string
+  anthropicModel: string
   deepseekApiKey: string
   grokApiKey: string
   geminiApiKey: string
@@ -133,6 +134,7 @@ const DEFAULT_USER_DATA: UserData = {
     lmstudioBaseUrl: "http://localhost:1234",
     lmstudioModel: "local-model",
     anthropicApiKey: "",
+    anthropicModel: "claude-sonnet-4-20250514",
     deepseekApiKey: "",
     grokApiKey: "",
     geminiApiKey: "",

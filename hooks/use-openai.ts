@@ -29,12 +29,13 @@ interface AIConfig {
   apiKey: string
   baseUrl?: string
   model?: string
+  anthropicModel?: string
   selectedAgent?: string
   onModelUsed?: (modelName: string, provider: AIProvider) => void
 }
 
 export function useOpenAI(config: AIConfig) {
-  const { provider, apiKey, baseUrl, model, selectedAgent, onModelUsed } = config
+  const { provider, apiKey, baseUrl, model, anthropicModel, selectedAgent, onModelUsed } = config
   const [isTranscribing, setIsTranscribing] = useState(false)
   const [isGenerating, setIsGenerating] = useState(false)
   
@@ -126,7 +127,7 @@ export function useOpenAI(config: AIConfig) {
           break
         case "anthropic":
           apiUrl = "/api/anthropic"
-          selectedModel = "claude-sonnet-4-20250514"
+          selectedModel = anthropicModel || "claude-sonnet-4-20250514"
           timeoutMs = 90000
           break
         case "deepseek":

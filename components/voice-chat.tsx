@@ -113,6 +113,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
     apiKey: currentApiKey,
     baseUrl: userData.aiSettings.lmstudioBaseUrl,
     model: userData.aiSettings.lmstudioModel,
+    anthropicModel: userData.aiSettings.anthropicModel,
     selectedAgent: userData.aiSettings.selectedAgent,
     onModelUsed: addModelToHistory
   })

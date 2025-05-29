@@ -353,6 +353,27 @@ export default function AIProviderSelector({ settings, onSettingsChange }: AIPro
                   }
                 />
               </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="anthropic-model">Modelo de Claude</Label>
+                <Select
+                  value={tempSettings.anthropicModel}
+                  onValueChange={(value) => 
+                    setTempSettings(prev => ({ ...prev, anthropicModel: value }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecciona un modelo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="claude-sonnet-4-20250514">Claude Sonnet 4 (Más reciente)</SelectItem>
+                    <SelectItem value="claude-3-7-sonnet-20250219">Claude 3.7 Sonnet</SelectItem>
+                    <SelectItem value="claude-3-5-sonnet-20240620">Claude 3.5 Sonnet</SelectItem>
+                    <SelectItem value="claude-3-haiku-20240307">Claude 3 Haiku (Rápido)</SelectItem>
+                    <SelectItem value="claude-3-opus-20240229">Claude 3 Opus (Potente)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           )}
 
