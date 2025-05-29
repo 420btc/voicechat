@@ -80,7 +80,12 @@ export function useUserData() {
           ...parsed,
           aiSettings: {
             ...DEFAULT_USER_DATA.aiSettings,
-            ...parsed.aiSettings
+            ...parsed.aiSettings,
+            // Convert lastUsed strings back to Date objects
+            modelHistory: (parsed.aiSettings?.modelHistory || []).map((entry: any) => ({
+              ...entry,
+              lastUsed: new Date(entry.lastUsed)
+            }))
           }
         }
         setUserData(mergedData)
@@ -236,7 +241,11 @@ export function useUserData() {
       
       // Keep only the last 10 models, sorted by last used
       updatedHistory = updatedHistory
-        .sort((a, b) => b.lastUsed.getTime() - a.lastUsed.getTime())
+        .sort((a, b) => {
+          const aTime = a.lastUsed instanceof Date ? a.lastUsed.getTime() : new Date(a.lastUsed).getTime()
+          const bTime = b.lastUsed instanceof Date ? b.lastUsed.getTime() : new Date(b.lastUsed).getTime()
+          return bTime - aTime
+        })
         .slice(0, 10)
       
       return {

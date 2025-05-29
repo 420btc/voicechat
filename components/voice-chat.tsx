@@ -2,10 +2,17 @@
 
 import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Settings, Volume2, Trash2, Plus, Mic, MessageSquare, Send } from "lucide-react"
+import { Settings, Volume2, Trash2, Plus, Mic, MessageSquare, Send, AlertTriangle } from "lucide-react"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
 import { AIVoiceInput } from "@/components/ui/ai-voice-input"
 import { ConversationHistory } from "@/components/conversation-history"
 import { ApiKeySetup } from "@/components/api-key-setup"
@@ -24,11 +31,12 @@ interface VoiceChatProps {
 }
 
 export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit }: VoiceChatProps) {
-  const [isConnected, setIsConnected] = useState(false)
   const [isPlaying, setIsPlaying] = useState(false)
   const [showApiKeyModal, setShowApiKeyModal] = useState(false)
   const [chatMode, setChatMode] = useState<'voice' | 'text'>('voice')
   const [textInput, setTextInput] = useState('')
+  const [showProviderWarning, setShowProviderWarning] = useState(false)
+  const [tempOpenAIKey, setTempOpenAIKey] = useState('')
   const audioRef = useRef<HTMLAudioElement>(null)
 
   const { isRecording, audioLevel, startRecording, stopRecording, cancelRecording, audioBlob, autoStopEnabled, toggleAutoStop, isCancelled } = useAudioRecording()
@@ -69,6 +77,40 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit }: VoiceChatPr
     model: userData.aiSettings.lmstudioModel,
     onModelUsed: addModelToHistory
   })
+
+  // Initialize temp OpenAI key with saved key
+  useEffect(() => {
+    if (userData.aiSettings.openaiApiKey) {
+      setTempOpenAIKey(userData.aiSettings.openaiApiKey)
+    }
+  }, [userData.aiSettings.openaiApiKey])
+
+  // Handle chat mode change with provider validation
+  const handleChatModeChange = (newMode: 'voice' | 'text') => {
+    // If switching to voice mode and currently using LM Studio
+    if (newMode === 'voice' && chatMode === 'text' && userData.aiSettings.provider === 'lmstudio') {
+      setShowProviderWarning(true)
+      return
+    }
+    setChatMode(newMode)
+  }
+
+  // Handle provider warning modal actions
+  const handleContinueWithLMStudio = () => {
+    setShowProviderWarning(false)
+    setChatMode('voice')
+  }
+
+  const handleSwitchToOpenAI = () => {
+    // Update to OpenAI provider and save the temp key
+    updateAISettings({
+      ...userData.aiSettings,
+      provider: 'openai',
+      openaiApiKey: tempOpenAIKey
+    })
+    setShowProviderWarning(false)
+    setChatMode('voice')
+  }
 
   // Available voices from OpenAI TTS
   const voices = [
@@ -234,7 +276,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit }: VoiceChatPr
               <Button
                 variant={chatMode === 'voice' ? 'default' : 'ghost'}
                 size="sm"
-                onClick={() => setChatMode('voice')}
+                onClick={() => handleChatModeChange('voice')}
                 className="h-8 px-1 sm:px-2 lg:px-3"
                 title="Modo de voz"
               >
@@ -244,7 +286,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit }: VoiceChatPr
               <Button
                 variant={chatMode === 'text' ? 'default' : 'ghost'}
                 size="sm"
-                onClick={() => setChatMode('text')}
+                onClick={() => handleChatModeChange('text')}
                 className="h-8 px-1 sm:px-2 lg:px-3"
                 title="Modo de texto"
               >
@@ -482,8 +524,8 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit }: VoiceChatPr
       {showApiKeyModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <ApiKeySetup
-            onApiKeySubmit={(newApiKey) => {
-              onApiKeySubmit(newApiKey)
+            onApiKeySubmit={(key) => {
+              onApiKeySubmit(key)
               setShowApiKeyModal(false)
               // Reload to apply the new API key
               window.location.reload()
@@ -493,6 +535,60 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit }: VoiceChatPr
           />
         </div>
       )}
+
+      {/* Provider Warning Modal */}
+      <Dialog open={showProviderWarning} onOpenChange={setShowProviderWarning}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-amber-500" />
+              Cambio de Modo Detectado
+            </DialogTitle>
+            <DialogDescription>
+              Estás usando LM Studio, pero el modo de voz requiere OpenAI para la síntesis de voz. 
+              ¿Qué te gustaría hacer?
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="openai-key">API Key de OpenAI (se guardará automáticamente)</Label>
+              <Input
+                id="openai-key"
+                type="password"
+                value={tempOpenAIKey}
+                onChange={(e) => setTempOpenAIKey(e.target.value)}
+                placeholder="sk-..."
+                className="font-mono text-sm"
+              />
+            </div>
+            
+            <div className="flex flex-col gap-2">
+              <Button 
+                onClick={handleSwitchToOpenAI}
+                disabled={!tempOpenAIKey.trim()}
+                className="w-full"
+              >
+                Cambiar a OpenAI (Recomendado)
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={handleContinueWithLMStudio}
+                className="w-full"
+              >
+                Continuar con LM Studio (Solo texto)
+              </Button>
+              <Button 
+                variant="ghost" 
+                onClick={() => setShowProviderWarning(false)}
+                className="w-full"
+              >
+                Cancelar
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
