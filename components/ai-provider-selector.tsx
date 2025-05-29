@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/dialog"
 import { Settings } from "lucide-react"
 import { AIProvider } from "@/hooks/use-openai"
+import { useLocalStorage } from "@/hooks/use-local-storage"
 
 interface AISettings {
   provider: AIProvider
@@ -43,26 +44,54 @@ interface ModelHistoryEntry {
   usageCount: number
 }
 
-export function AIProviderSelector({ settings, onSettingsChange }: AIProviderSelectorProps) {
-  const [isOpen, setIsOpen] = useState(false)
+export default function AIProviderSelector({ settings, onSettingsChange }: AIProviderSelectorProps) {
+  const [open, setOpen] = useState(false)
   const [tempSettings, setTempSettings] = useState<AISettings>(settings)
+  const [sortBy, setSortBy] = useState<'usage' | 'date'>('usage')
+  const { conversation } = useLocalStorage()
+
+  // Función para calcular el tiempo total de uso de un modelo
+  const calculateModelTime = (modelName: string): number => {
+    let totalTime = 0
+    conversation.forEach(message => {
+      if (message.model === modelName && message.responseTime) {
+        totalTime += message.responseTime
+      }
+    })
+    return totalTime
+  }
+
+  // Función para formatear el tiempo en formato legible
+  const formatTime = (milliseconds: number): string => {
+    const seconds = Math.floor(milliseconds / 1000)
+    const minutes = Math.floor(seconds / 60)
+    const hours = Math.floor(minutes / 60)
+    
+    if (hours > 0) {
+      return `${hours}h ${minutes % 60}m`
+    } else if (minutes > 0) {
+      return `${minutes}m ${seconds % 60}s`
+    } else {
+      return `${seconds}s`
+    }
+  }
 
   const handleSave = () => {
     onSettingsChange(tempSettings)
-    setIsOpen(false)
+    setOpen(false)
   }
 
   const handleCancel = () => {
     setTempSettings(settings)
-    setIsOpen(false)
+    setOpen(false)
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="px-1 sm:px-2">
-          <Settings className="h-4 w-4" />
-          <span className="hidden sm:inline ml-1">AI</span>
+        <Button variant="outline" size="sm">
+          <Settings className="h-4 w-4 mr-2" />
+          Configurar IA
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[500px]">
@@ -108,6 +137,68 @@ export function AIProviderSelector({ settings, onSettingsChange }: AIProviderSel
                   }
                 />
               </div>
+              
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label>Historial de Modelos Usados</Label>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setSortBy(sortBy === 'usage' ? 'date' : 'usage')}
+                      className="text-xs"
+                    >
+                      {sortBy === 'usage' ? 'Por Fecha' : 'Por Uso'}
+                    </Button>
+                  </div>
+                </div>
+                <div className="rounded-lg border p-3 bg-muted/30 max-h-40 overflow-y-auto">
+                  {settings.modelHistory.length > 0 ? (
+                    <div className="space-y-2">
+                      {settings.modelHistory
+                        .filter(entry => entry.provider === "openai")
+                        .sort((a, b) => {
+                          if (sortBy === 'usage') {
+                            return b.usageCount - a.usageCount
+                          } else {
+                            return new Date(b.lastUsed).getTime() - new Date(a.lastUsed).getTime()
+                          }
+                        })
+                        .map((entry, index) => {
+                          const totalTime = calculateModelTime(entry.name)
+                          return (
+                            <div key={index} className="flex justify-between items-start text-sm border-b border-muted pb-2 last:border-b-0">
+                              <div className="flex-1">
+                                <span className="font-medium block">{entry.name}</span>
+                                <div className="text-xs text-muted-foreground mt-1">
+                                  <span>Usado {entry.usageCount} veces</span>
+                                  {totalTime > 0 && (
+                                    <span className="ml-2">• Tiempo total: {formatTime(totalTime)}</span>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="text-xs text-muted-foreground text-right">
+                                <span className="block">
+                                  {new Date(entry.lastUsed).toLocaleDateString()}
+                                </span>
+                                <span className="block">
+                                  {new Date(entry.lastUsed).toLocaleTimeString()}
+                                </span>
+                              </div>
+                            </div>
+                          )
+                        })}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground text-center py-2">
+                      No hay modelos en el historial aún
+                    </p>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Los modelos se detectan automáticamente cuando se usan
+                </p>
+              </div>
             </div>
           )}
 
@@ -127,23 +218,55 @@ export function AIProviderSelector({ settings, onSettingsChange }: AIProviderSel
               </div>
               
               <div className="space-y-2">
-                <Label>Historial de Modelos Usados</Label>
-                <div className="rounded-lg border p-3 bg-muted/30 max-h-32 overflow-y-auto">
+                <div className="flex items-center justify-between">
+                  <Label>Historial de Modelos Usados</Label>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setSortBy(sortBy === 'usage' ? 'date' : 'usage')}
+                      className="text-xs"
+                    >
+                      {sortBy === 'usage' ? 'Por Fecha' : 'Por Uso'}
+                    </Button>
+                  </div>
+                </div>
+                <div className="rounded-lg border p-3 bg-muted/30 max-h-40 overflow-y-auto">
                   {settings.modelHistory.length > 0 ? (
                     <div className="space-y-2">
                       {settings.modelHistory
                         .filter(entry => entry.provider === "lmstudio")
-                        .map((entry, index) => (
-                        <div key={index} className="flex justify-between items-center text-sm">
-                          <span className="font-medium">{entry.name}</span>
-                          <div className="text-xs text-muted-foreground">
-                            <span>Usado {entry.usageCount} veces</span>
-                            <span className="ml-2">
-                              {new Date(entry.lastUsed).toLocaleDateString()}
-                            </span>
-                          </div>
-                        </div>
-                      ))}
+                        .sort((a, b) => {
+                          if (sortBy === 'usage') {
+                            return b.usageCount - a.usageCount
+                          } else {
+                            return new Date(b.lastUsed).getTime() - new Date(a.lastUsed).getTime()
+                          }
+                        })
+                        .map((entry, index) => {
+                          const totalTime = calculateModelTime(entry.name)
+                          return (
+                            <div key={index} className="flex justify-between items-start text-sm border-b border-muted pb-2 last:border-b-0">
+                              <div className="flex-1">
+                                <span className="font-medium block">{entry.name}</span>
+                                <div className="text-xs text-muted-foreground mt-1">
+                                  <span>Usado {entry.usageCount} veces</span>
+                                  {totalTime > 0 && (
+                                    <span className="ml-2">• Tiempo total: {formatTime(totalTime)}</span>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="text-xs text-muted-foreground text-right">
+                                <span className="block">
+                                  {new Date(entry.lastUsed).toLocaleDateString()}
+                                </span>
+                                <span className="block">
+                                  {new Date(entry.lastUsed).toLocaleTimeString()}
+                                </span>
+                              </div>
+                            </div>
+                          )
+                        })}
                     </div>
                   ) : (
                     <p className="text-sm text-muted-foreground text-center py-2">
@@ -153,21 +276,6 @@ export function AIProviderSelector({ settings, onSettingsChange }: AIProviderSel
                 </div>
                 <p className="text-xs text-muted-foreground">
                   Los modelos se detectan automáticamente cuando se usan
-                </p>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="lmstudio-key">API Key (opcional)</Label>
-                <Input
-                  id="lmstudio-key"
-                  placeholder="lm-studio"
-                  value={tempSettings.lmstudioApiKey}
-                  onChange={(e) => 
-                    setTempSettings(prev => ({ ...prev, lmstudioApiKey: e.target.value }))
-                  }
-                />
-                <p className="text-xs text-muted-foreground">
-                  Por defecto LM Studio no requiere API key, pero puedes configurar una si es necesario
                 </p>
               </div>
             </div>
