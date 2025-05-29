@@ -12,6 +12,7 @@ import { ApiKeySetup } from "@/components/api-key-setup"
 import { UserProfile } from "@/components/user-profile"
 import { ConversationManager } from "@/components/conversation-manager"
 import { ThemeSelector } from "@/components/theme-selector"
+import { AIProviderSelector } from "@/components/ai-provider-selector"
 import { useAudioRecording } from "@/hooks/use-audio-recording"
 import { useOpenAI } from "@/hooks/use-openai"
 import { useUserData } from "@/hooks/use-user-data"
@@ -33,6 +34,22 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit }: VoiceChatPr
   const { isRecording, audioLevel, startRecording, stopRecording, cancelRecording, audioBlob, autoStopEnabled, toggleAutoStop, isCancelled } = useAudioRecording()
 
   const {
+    userData,
+    isLoaded,
+    updateUserName,
+    updateUserAvatar,
+    updateThemeSettings,
+    updateAISettings,
+    saveConversation,
+    deleteConversation,
+  } = useUserData()
+
+  // Determine which API key to use based on provider
+  const currentApiKey = userData.aiSettings.provider === "openai" 
+    ? (userData.aiSettings.openaiApiKey || apiKey)
+    : userData.aiSettings.lmstudioApiKey
+
+  const {
     transcribeAudio,
     generateResponse,
     translateMessage,
@@ -44,17 +61,12 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit }: VoiceChatPr
     setSelectedVoice,
     clearConversation,
     loadConversation,
-  } = useOpenAI(apiKey)
-
-  const {
-    userData,
-    isLoaded,
-    updateUserName,
-    updateUserAvatar,
-    updateThemeSettings,
-    saveConversation,
-    deleteConversation,
-  } = useUserData()
+  } = useOpenAI({
+    provider: userData.aiSettings.provider,
+    apiKey: currentApiKey,
+    baseUrl: userData.aiSettings.lmstudioBaseUrl,
+    model: userData.aiSettings.lmstudioModel
+  })
 
   // Available voices from OpenAI TTS
   const voices = [
@@ -134,7 +146,12 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit }: VoiceChatPr
         // Generate AI response
         const response = await generateResponse(transcription)
         if (response) {
-          addMessage("assistant", response.text, undefined, response.audio)
+          // Determine model name based on provider
+          const modelName = userData.aiSettings.provider === "lmstudio" 
+            ? userData.aiSettings.lmstudioModel 
+            : "gpt-4o"
+          
+          addMessage("assistant", response.text, undefined, response.audio, modelName, userData.aiSettings.provider)
 
           // Play AI audio response if available
           if (response.audio) {
@@ -167,7 +184,12 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit }: VoiceChatPr
       // Generate AI response
       const response = await generateResponse(userMessage)
       if (response) {
-        addMessage("assistant", response.text, undefined, response.audio)
+        // Determine model name based on provider
+        const modelName = userData.aiSettings.provider === "lmstudio" 
+          ? userData.aiSettings.lmstudioModel 
+          : "gpt-4o"
+        
+        addMessage("assistant", response.text, undefined, response.audio, modelName, userData.aiSettings.provider)
 
         // Play AI audio response if available
         if (response.audio) {
@@ -309,16 +331,24 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit }: VoiceChatPr
                 />
               )}
               
-              {/* Settings */}
+              {/* AI Provider Settings */}
+              {isLoaded && (
+                <AIProviderSelector
+                  settings={userData.aiSettings}
+                  onSettingsChange={updateAISettings}
+                />
+              )}
+              
+              {/* Legacy API Settings (for OpenAI key fallback) */}
               <Button 
                 variant="ghost" 
                 size="sm" 
                 onClick={() => setShowApiKeyModal(true)} 
                 className="text-muted-foreground hover:text-foreground h-8 px-1 sm:px-2 lg:px-3"
-                title="Configuración API"
+                title="Configuración API Legacy"
               >
                 <Settings className="w-4 h-4" />
-                <span className="hidden lg:inline ml-2">API</span>
+                <span className="hidden lg:inline ml-2">Legacy</span>
               </Button>
             </div>
             

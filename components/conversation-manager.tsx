@@ -18,6 +18,8 @@ export interface SavedConversation {
     content: string
     timestamp: Date
     audio?: Blob
+    model?: string
+    provider?: "openai" | "lmstudio"
   }>
   createdAt: Date
   updatedAt: Date
@@ -30,6 +32,8 @@ interface ConversationManagerProps {
     content: string
     timestamp: Date
     audio?: Blob
+    model?: string
+    provider?: "openai" | "lmstudio"
   }>
   onLoadConversation: (conversation: SavedConversation) => void
   onSaveConversation: (title: string) => void

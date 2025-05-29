@@ -5,6 +5,8 @@ interface Message {
   content: string
   timestamp: Date
   audio?: Blob
+  model?: string
+  provider?: "openai" | "lmstudio"
 }
 
 interface StoredApiKey {
@@ -105,12 +107,14 @@ export function useLocalStorage() {
     setApiKey("")
   }, [])
 
-  const addMessage = useCallback((role: "user" | "assistant", content: string, timestamp?: Date, audio?: Blob) => {
+  const addMessage = useCallback((role: "user" | "assistant", content: string, timestamp?: Date, audio?: Blob, model?: string, provider?: "openai" | "lmstudio") => {
     const message: Message = {
       role,
       content,
       timestamp: timestamp || new Date(),
       audio,
+      model,
+      provider,
     }
     setConversation((prev) => [...prev, message])
   }, [])

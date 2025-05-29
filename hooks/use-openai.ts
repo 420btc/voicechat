@@ -8,6 +8,8 @@ interface Message {
   content: string
   timestamp: Date
   audio?: Blob
+  model?: string
+  provider?: "openai" | "lmstudio"
 }
 
 interface AIResponse {
@@ -15,7 +17,17 @@ interface AIResponse {
   audio?: Blob
 }
 
-export function useOpenAI(apiKey: string) {
+export type AIProvider = "openai" | "lmstudio"
+
+interface AIConfig {
+  provider: AIProvider
+  apiKey: string
+  baseUrl?: string
+  model?: string
+}
+
+export function useOpenAI(config: AIConfig) {
+  const { provider, apiKey, baseUrl, model } = config
   const [isTranscribing, setIsTranscribing] = useState(false)
   const [isGenerating, setIsGenerating] = useState(false)
   
@@ -33,6 +45,7 @@ export function useOpenAI(apiKey: string) {
       setIsTranscribing(true)
 
       try {
+        // Note: Transcription always uses OpenAI Whisper as LM Studio doesn't have transcription API
         const formData = new FormData()
         formData.append("file", audioBlob, "audio.webm")
         formData.append("model", "whisper-1")
@@ -75,15 +88,24 @@ export function useOpenAI(apiKey: string) {
       setIsGenerating(true)
 
       try {
+        // Determine API endpoint and model based on provider
+        const apiUrl = provider === "lmstudio" 
+          ? `${baseUrl || "http://localhost:1234"}/v1/chat/completions`
+          : "https://api.openai.com/v1/chat/completions"
+        
+        const selectedModel = provider === "lmstudio" 
+          ? (model || "local-model")
+          : "gpt-4o"
+
         // Generate text response
-        const textResponse = await fetch("https://api.openai.com/v1/chat/completions", {
+        const textResponse = await fetch(apiUrl, {
           method: "POST",
           headers: {
             Authorization: `Bearer ${apiKey}`,
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            model: "gpt-4o",
+            model: selectedModel,
             messages: [
               {
                 role: "system",
@@ -112,28 +134,30 @@ export function useOpenAI(apiKey: string) {
         const responseText =
           textData.choices[0]?.message?.content || "I apologize, but I could not generate a response."
 
-        // Generate audio response
+        // Generate audio response (only available with OpenAI)
         let audioBlob: Blob | undefined
-        try {
-          const audioResponse = await fetch("https://api.openai.com/v1/audio/speech", {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${apiKey}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              model: "tts-1",
-              voice: selectedVoice,
-              input: responseText,
-              response_format: "mp3",
-            }),
-          })
+        if (provider === "openai") {
+          try {
+            const audioResponse = await fetch("https://api.openai.com/v1/audio/speech", {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${apiKey}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                model: "tts-1",
+                voice: selectedVoice,
+                input: responseText,
+                response_format: "mp3",
+              }),
+            })
 
-          if (audioResponse.ok) {
-            audioBlob = await audioResponse.blob()
+            if (audioResponse.ok) {
+              audioBlob = await audioResponse.blob()
+            }
+          } catch (audioError) {
+            console.error("Audio generation error:", audioError)
           }
-        } catch (audioError) {
-          console.error("Audio generation error:", audioError)
         }
 
         return {
@@ -155,14 +179,23 @@ export function useOpenAI(apiKey: string) {
   const translateMessage = useCallback(
     async (text: string, targetLanguage: "es" | "en"): Promise<string | null> => {
       try {
-        const response = await fetch("https://api.openai.com/v1/chat/completions", {
+        // Determine API endpoint and model based on provider
+        const apiUrl = provider === "lmstudio" 
+          ? `${baseUrl || "http://localhost:1234"}/v1/chat/completions`
+          : "https://api.openai.com/v1/chat/completions"
+        
+        const selectedModel = provider === "lmstudio" 
+          ? (model || "local-model")
+          : "gpt-4o"
+
+        const response = await fetch(apiUrl, {
           method: "POST",
           headers: {
             Authorization: `Bearer ${apiKey}`,
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            model: "gpt-4o",
+            model: selectedModel,
             messages: [
               {
                 role: "system",
@@ -189,7 +222,7 @@ export function useOpenAI(apiKey: string) {
         return null
       }
     },
-    [apiKey],
+    [apiKey, provider, baseUrl, model],
   )
 
   const loadConversation = useCallback((messages: Message[]) => {

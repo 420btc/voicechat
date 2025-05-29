@@ -3,12 +3,22 @@
 import { useState, useEffect } from "react"
 import { SavedConversation } from "@/components/conversation-manager"
 import { ThemeSettings } from "@/components/theme-selector"
+import { AIProvider } from "./use-openai"
+
+interface AISettings {
+  provider: AIProvider
+  openaiApiKey: string
+  lmstudioApiKey: string
+  lmstudioBaseUrl: string
+  lmstudioModel: string
+}
 
 interface UserData {
   name: string
   avatar?: string
   savedConversations: SavedConversation[]
   themeSettings: ThemeSettings
+  aiSettings: AISettings
 }
 
 const DEFAULT_USER_DATA: UserData = {
@@ -21,6 +31,13 @@ const DEFAULT_USER_DATA: UserData = {
     reducedMotion: false,
     fontSize: 14,
     highContrast: false
+  },
+  aiSettings: {
+    provider: "openai",
+    openaiApiKey: "",
+    lmstudioApiKey: "lm-studio",
+    lmstudioBaseUrl: "http://localhost:1234",
+    lmstudioModel: "local-model"
   }
 }
 
@@ -78,6 +95,13 @@ export function useUserData() {
 
   const updateThemeSettings = (themeSettings: ThemeSettings) => {
     setUserData(prev => ({ ...prev, themeSettings }))
+  }
+
+  const updateAISettings = (newSettings: Partial<AISettings>) => {
+    setUserData(prev => ({
+      ...prev,
+      aiSettings: { ...prev.aiSettings, ...newSettings }
+    }))
   }
 
   const saveConversation = (
@@ -172,6 +196,7 @@ export function useUserData() {
     updateUserName,
     updateUserAvatar,
     updateThemeSettings,
+    updateAISettings,
     saveConversation,
     deleteConversation,
     updateConversation,
