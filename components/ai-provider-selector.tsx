@@ -28,6 +28,7 @@ interface AISettings {
   lmstudioApiKey: string
   lmstudioBaseUrl: string
   lmstudioModel: string
+  modelHistory: ModelHistoryEntry[]
 }
 
 interface AIProviderSelectorProps {
@@ -35,12 +36,12 @@ interface AIProviderSelectorProps {
   onSettingsChange: (settings: AISettings) => void
 }
 
-const LMSTUDIO_MODELS = [
-  "Meta-Llama-3.1-8B-Instruct-GGUF",
-  "Janus-Pro-7B-LM-GGUF", 
-  "Devstral-Small-2505-GGUF",
-  "local-model"
-]
+interface ModelHistoryEntry {
+  name: string
+  provider: "openai" | "lmstudio"
+  lastUsed: Date
+  usageCount: number
+}
 
 export function AIProviderSelector({ settings, onSettingsChange }: AIProviderSelectorProps) {
   const [isOpen, setIsOpen] = useState(false)
@@ -126,24 +127,33 @@ export function AIProviderSelector({ settings, onSettingsChange }: AIProviderSel
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="lmstudio-model">Modelo</Label>
-                <Select
-                  value={tempSettings.lmstudioModel}
-                  onValueChange={(value) => 
-                    setTempSettings(prev => ({ ...prev, lmstudioModel: value }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {LMSTUDIO_MODELS.map((model) => (
-                      <SelectItem key={model} value={model}>
-                        {model}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label>Historial de Modelos Usados</Label>
+                <div className="rounded-lg border p-3 bg-muted/30 max-h-32 overflow-y-auto">
+                  {settings.modelHistory.length > 0 ? (
+                    <div className="space-y-2">
+                      {settings.modelHistory
+                        .filter(entry => entry.provider === "lmstudio")
+                        .map((entry, index) => (
+                        <div key={index} className="flex justify-between items-center text-sm">
+                          <span className="font-medium">{entry.name}</span>
+                          <div className="text-xs text-muted-foreground">
+                            <span>Usado {entry.usageCount} veces</span>
+                            <span className="ml-2">
+                              {new Date(entry.lastUsed).toLocaleDateString()}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground text-center py-2">
+                      No hay modelos en el historial aún
+                    </p>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Los modelos se detectan automáticamente cuando se usan
+                </p>
               </div>
               
               <div className="space-y-2">

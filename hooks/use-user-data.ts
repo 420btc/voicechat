@@ -5,12 +5,20 @@ import { SavedConversation } from "@/components/conversation-manager"
 import { ThemeSettings } from "@/components/theme-selector"
 import { AIProvider } from "./use-openai"
 
+interface ModelHistoryEntry {
+  name: string
+  provider: AIProvider
+  lastUsed: Date
+  usageCount: number
+}
+
 interface AISettings {
   provider: AIProvider
   openaiApiKey: string
   lmstudioApiKey: string
   lmstudioBaseUrl: string
   lmstudioModel: string
+  modelHistory: ModelHistoryEntry[]
 }
 
 interface UserData {
@@ -37,7 +45,8 @@ const DEFAULT_USER_DATA: UserData = {
     openaiApiKey: "",
     lmstudioApiKey: "lm-studio",
     lmstudioBaseUrl: "http://localhost:1234",
-    lmstudioModel: "local-model"
+    lmstudioModel: "local-model",
+    modelHistory: []
   }
 }
 
@@ -65,7 +74,16 @@ export function useUserData() {
             }))
           }))
         }
-        setUserData({ ...DEFAULT_USER_DATA, ...parsed })
+        // Ensure proper merging of nested objects, especially aiSettings
+        const mergedData = {
+          ...DEFAULT_USER_DATA,
+          ...parsed,
+          aiSettings: {
+            ...DEFAULT_USER_DATA.aiSettings,
+            ...parsed.aiSettings
+          }
+        }
+        setUserData(mergedData)
       }
     } catch (error) {
       console.error("Error loading user data:", error)
@@ -190,6 +208,47 @@ export function useUserData() {
     localStorage.removeItem(STORAGE_KEY)
   }
 
+  const addModelToHistory = (modelName: string, provider: AIProvider) => {
+    setUserData(prev => {
+      const existingEntry = prev.aiSettings.modelHistory.find(
+        entry => entry.name === modelName && entry.provider === provider
+      )
+      
+      let updatedHistory: ModelHistoryEntry[]
+      
+      if (existingEntry) {
+        // Update existing entry
+        updatedHistory = prev.aiSettings.modelHistory.map(entry => 
+          entry.name === modelName && entry.provider === provider
+            ? { ...entry, lastUsed: new Date(), usageCount: entry.usageCount + 1 }
+            : entry
+        )
+      } else {
+        // Add new entry
+        const newEntry: ModelHistoryEntry = {
+          name: modelName,
+          provider,
+          lastUsed: new Date(),
+          usageCount: 1
+        }
+        updatedHistory = [...prev.aiSettings.modelHistory, newEntry]
+      }
+      
+      // Keep only the last 10 models, sorted by last used
+      updatedHistory = updatedHistory
+        .sort((a, b) => b.lastUsed.getTime() - a.lastUsed.getTime())
+        .slice(0, 10)
+      
+      return {
+        ...prev,
+        aiSettings: {
+          ...prev.aiSettings,
+          modelHistory: updatedHistory
+        }
+      }
+    })
+  }
+
   return {
     userData,
     isLoaded,
@@ -203,6 +262,7 @@ export function useUserData() {
     getConversationById,
     exportUserData,
     importUserData,
-    clearAllData
+    clearAllData,
+    addModelToHistory
   }
 }

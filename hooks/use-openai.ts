@@ -15,6 +15,7 @@ interface Message {
 interface AIResponse {
   text: string
   audio?: Blob
+  model?: string
 }
 
 export type AIProvider = "openai" | "lmstudio"
@@ -24,10 +25,11 @@ interface AIConfig {
   apiKey: string
   baseUrl?: string
   model?: string
+  onModelUsed?: (modelName: string, provider: AIProvider) => void
 }
 
 export function useOpenAI(config: AIConfig) {
-  const { provider, apiKey, baseUrl, model } = config
+  const { provider, apiKey, baseUrl, model, onModelUsed } = config
   const [isTranscribing, setIsTranscribing] = useState(false)
   const [isGenerating, setIsGenerating] = useState(false)
   
@@ -87,15 +89,16 @@ export function useOpenAI(config: AIConfig) {
     async (userMessage: string): Promise<AIResponse | null> => {
       setIsGenerating(true)
 
+      // Determine API endpoint and model based on provider
+      const apiUrl = provider === "lmstudio" 
+        ? `${baseUrl || "http://localhost:1234"}/v1/chat/completions`
+        : "https://api.openai.com/v1/chat/completions"
+      
+      const selectedModel = provider === "lmstudio" 
+        ? (model || "local-model")
+        : "gpt-4o"
+
       try {
-        // Determine API endpoint and model based on provider
-        const apiUrl = provider === "lmstudio" 
-          ? `${baseUrl || "http://localhost:1234"}/v1/chat/completions`
-          : "https://api.openai.com/v1/chat/completions"
-        
-        const selectedModel = provider === "lmstudio" 
-          ? (model || "local-model")
-          : "gpt-4o"
 
         // Generate text response
         const textResponse = await fetch(apiUrl, {
@@ -133,6 +136,12 @@ export function useOpenAI(config: AIConfig) {
         const textData = await textResponse.json()
         const responseText =
           textData.choices[0]?.message?.content || "I apologize, but I could not generate a response."
+        
+        // Detect and register the model used
+        const detectedModel = textData.model || selectedModel
+        if (onModelUsed) {
+          onModelUsed(detectedModel, provider)
+        }
 
         // Generate audio response (only available with OpenAI)
         let audioBlob: Blob | undefined
@@ -163,11 +172,13 @@ export function useOpenAI(config: AIConfig) {
         return {
           text: responseText,
           audio: audioBlob,
+          model: detectedModel,
         }
       } catch (error) {
         console.error("Response generation error:", error)
         return {
           text: "I apologize, but I encountered an error. Please try again.",
+          model: selectedModel,
         }
       } finally {
         setIsGenerating(false)

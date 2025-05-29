@@ -42,6 +42,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit }: VoiceChatPr
     updateAISettings,
     saveConversation,
     deleteConversation,
+    addModelToHistory,
   } = useUserData()
 
   // Determine which API key to use based on provider
@@ -65,7 +66,8 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit }: VoiceChatPr
     provider: userData.aiSettings.provider,
     apiKey: currentApiKey,
     baseUrl: userData.aiSettings.lmstudioBaseUrl,
-    model: userData.aiSettings.lmstudioModel
+    model: userData.aiSettings.lmstudioModel,
+    onModelUsed: addModelToHistory
   })
 
   // Available voices from OpenAI TTS
@@ -146,12 +148,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit }: VoiceChatPr
         // Generate AI response
         const response = await generateResponse(transcription)
         if (response) {
-          // Determine model name based on provider
-          const modelName = userData.aiSettings.provider === "lmstudio" 
-            ? userData.aiSettings.lmstudioModel 
-            : "gpt-4o"
-          
-          addMessage("assistant", response.text, undefined, response.audio, modelName, userData.aiSettings.provider)
+          addMessage("assistant", response.text, undefined, response.audio, response.model, userData.aiSettings.provider)
 
           // Play AI audio response if available
           if (response.audio) {
@@ -184,12 +181,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit }: VoiceChatPr
       // Generate AI response
       const response = await generateResponse(userMessage)
       if (response) {
-        // Determine model name based on provider
-        const modelName = userData.aiSettings.provider === "lmstudio" 
-          ? userData.aiSettings.lmstudioModel 
-          : "gpt-4o"
-        
-        addMessage("assistant", response.text, undefined, response.audio, modelName, userData.aiSettings.provider)
+        addMessage("assistant", response.text, undefined, response.audio, response.model, userData.aiSettings.provider)
 
         // Play AI audio response if available
         if (response.audio) {
