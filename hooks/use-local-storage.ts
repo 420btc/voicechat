@@ -9,6 +9,7 @@ interface Message {
   provider?: "openai" | "lmstudio"
   responseTime?: number // in milliseconds
   tokensUsed?: number
+  promptTokens?: number
 }
 
 interface StoredApiKey {
@@ -109,7 +110,7 @@ export function useLocalStorage() {
     setApiKey("")
   }, [])
 
-  const addMessage = useCallback((role: "user" | "assistant", content: string, timestamp?: Date, audio?: Blob, model?: string, provider?: "openai" | "lmstudio", responseTime?: number, tokensUsed?: number) => {
+  const addMessage = useCallback((role: "user" | "assistant", content: string, timestamp?: Date, audio?: Blob, model?: string, provider?: "openai" | "lmstudio", responseTime?: number, tokensUsed?: number, promptTokens?: number) => {
     const message: Message = {
       role,
       content,
@@ -119,6 +120,7 @@ export function useLocalStorage() {
       provider,
       responseTime,
       tokensUsed,
+      promptTokens,
     }
     setConversation((prev) => [...prev, message])
   }, [])

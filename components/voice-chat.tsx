@@ -192,7 +192,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit }: VoiceChatPr
         // Generate AI response
         const response = await generateResponse(transcription)
         if (response) {
-          addMessage("assistant", response.text, undefined, response.audio, response.model, userData.aiSettings.provider, response.responseTime, response.tokensUsed)
+          addMessage("assistant", response.text, undefined, response.audio, response.model, userData.aiSettings.provider, response.responseTime, response.tokensUsed, undefined)
 
           // Play AI audio response if available
           if (response.audio) {
@@ -224,12 +224,12 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit }: VoiceChatPr
         ? `${userMessage} [${selectedImages.length} imagen${selectedImages.length > 1 ? 'es' : ''} adjunta${selectedImages.length > 1 ? 's' : ''}]`
         : userMessage
       
-      addMessage("user", displayMessage)
-
       // Generate AI response (pass images if available)
       const response = await generateResponse(userMessage, selectedImages)
       if (response) {
-        addMessage("assistant", response.text, undefined, response.audio, response.model, userData.aiSettings.provider, response.responseTime, response.tokensUsed)
+        // Add user message with prompt tokens from response
+        addMessage("user", displayMessage, undefined, undefined, undefined, undefined, undefined, undefined, response.promptTokens)
+        addMessage("assistant", response.text, undefined, response.audio, response.model, userData.aiSettings.provider, response.responseTime, response.tokensUsed, undefined)
 
         // Play AI audio response if available
         if (response.audio) {

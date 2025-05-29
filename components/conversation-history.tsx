@@ -14,6 +14,7 @@ interface Message {
   provider?: "openai" | "lmstudio"
   responseTime?: number // in milliseconds
   tokensUsed?: number
+  promptTokens?: number
 }
 
 interface ConversationHistoryProps {
@@ -124,10 +125,18 @@ export function ConversationHistory({
                 <div className="flex items-center gap-2">
                   <span>{message.timestamp.toLocaleTimeString()}</span>
                   {message.role === "assistant" && message.responseTime && (
-                    <span className="opacity-75">• {(message.responseTime / 1000).toFixed(1)}s</span>
+                    <span className={`opacity-75 ${
+                      (message.responseTime / 1000) <= 2 ? 'text-purple-500' :
+                      (message.responseTime / 1000) <= 15 ? 'text-green-500' :
+                      (message.responseTime / 1000) <= 20 ? 'text-orange-500' :
+                      'text-red-500'
+                    }`}>• {(message.responseTime / 1000).toFixed(1)}s</span>
                   )}
                   {message.role === "assistant" && message.tokensUsed && (
                     <span className="opacity-75">• {message.tokensUsed} tokens</span>
+                  )}
+                  {message.role === "user" && message.promptTokens && (
+                    <span className="opacity-75">• {message.promptTokens} prompt tokens</span>
                   )}
                 </div>
                 {message.role === "assistant" && (message.model || message.provider) && (

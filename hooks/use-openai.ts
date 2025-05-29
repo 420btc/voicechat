@@ -18,6 +18,7 @@ interface AIResponse {
   model?: string
   responseTime?: number
   tokensUsed?: number
+  promptTokens?: number
 }
 
 export type AIProvider = "openai" | "lmstudio"
@@ -282,6 +283,7 @@ export function useOpenAI(config: AIConfig) {
         
         // Extract tokens used from response
         const tokensUsed = textData.usage?.total_tokens || textData.usage?.completion_tokens || undefined
+        const promptTokens = textData.usage?.prompt_tokens || undefined
         
         let responseText = textData.choices[0]?.message?.content || "I apologize, but I could not generate a response."
         
@@ -340,6 +342,7 @@ export function useOpenAI(config: AIConfig) {
           model: detectedModel,
           responseTime,
           tokensUsed,
+          promptTokens,
         }
       } catch (error) {
         clearTimeout(timeoutId)
