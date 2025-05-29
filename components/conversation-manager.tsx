@@ -17,6 +17,7 @@ export interface SavedConversation {
     role: "user" | "assistant"
     content: string
     timestamp: Date
+    audio?: Blob
   }>
   createdAt: Date
   updatedAt: Date
@@ -28,6 +29,7 @@ interface ConversationManagerProps {
     role: "user" | "assistant"
     content: string
     timestamp: Date
+    audio?: Blob
   }>
   onLoadConversation: (conversation: SavedConversation) => void
   onSaveConversation: (title: string) => void

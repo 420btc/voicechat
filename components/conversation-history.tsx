@@ -156,22 +156,24 @@ export function ConversationHistory({
                 {translatingIndex === index ? "Traduciendo..." : "Traducir"}
               </Button>
               
-              {/* Audio Play/Pause Button - Only for assistant messages with audio */}
-              {message.role === "assistant" && message.audio && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleAudioPlay(index, message.audio!)}
-                  className="h-6 text-xs text-gray-400 hover:text-white"
-                >
-                  {playingIndex === index && isPlaying ? (
-                    <Pause className="w-3 h-3 mr-1" />
-                  ) : (
-                    <Play className="w-3 h-3 mr-1" />
-                  )}
-                  {playingIndex === index && isPlaying ? "Pausar" : "Reproducir"}
-                </Button>
-              )}
+              {/* Audio Play/Pause Button - For any message with audio */}
+               {message.audio && (
+                 <Button
+                   variant="ghost"
+                   size="sm"
+                   onClick={() => handleAudioPlay(index, message.audio!)}
+                   className={`h-6 text-xs ${
+                     message.role === "user" ? "text-gray-600 hover:text-black" : "text-gray-400 hover:text-white"
+                   }`}
+                 >
+                   {playingIndex === index && isPlaying ? (
+                     <Pause className="w-3 h-3 mr-1" />
+                   ) : (
+                     <Play className="w-3 h-3 mr-1" />
+                   )}
+                   {playingIndex === index && isPlaying ? "Pausar" : "Reproducir"}
+                 </Button>
+               )}
             </div>
           </div>
 

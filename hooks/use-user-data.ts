@@ -86,6 +86,7 @@ export function useUserData() {
       role: "user" | "assistant"
       content: string
       timestamp: Date
+      audio?: Blob
     }>
   ) => {
     const newConversation: SavedConversation = {
