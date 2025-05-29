@@ -7,9 +7,8 @@ import "./globals.css"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "AI Voice Chat",
-  description: "Real-time voice conversation with AI",
-    generator: 'v0.dev'
+  title: "Local AI",
+  description: "Real-time voice and chat conversation with AI",
 }
 
 export default function RootLayout({

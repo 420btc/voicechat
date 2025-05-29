@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Settings, Volume2, VolumeX, Trash2, Plus, Mic, MessageSquare, Send, AlertTriangle, ImagePlus, X, Key } from "lucide-react"
+import { Settings, Volume2, VolumeX, Trash2, Plus, Mic, MessageSquare, Send, AlertTriangle, ImagePlus, X, Key, Code } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -34,7 +34,7 @@ interface VoiceChatProps {
 export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit }: VoiceChatProps) {
   const [isPlaying, setIsPlaying] = useState(false)
   const [showApiKeyModal, setShowApiKeyModal] = useState(false)
-  const [chatMode, setChatMode] = useState<'voice' | 'text'>('voice')
+  const [chatMode, setChatMode] = useState<'voice' | 'text' | 'programmer'>('voice')
   const [textInput, setTextInput] = useState('')
   const [showProviderWarning, setShowProviderWarning] = useState(false)
   const [tempOpenAIKey, setTempOpenAIKey] = useState('')
@@ -110,9 +110,9 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit }: VoiceChatPr
   }, [userData.aiSettings.openaiApiKey])
 
   // Handle chat mode change with provider validation
-  const handleChatModeChange = (newMode: 'voice' | 'text') => {
+  const handleChatModeChange = (newMode: 'voice' | 'text' | 'programmer') => {
     // If switching to voice mode and currently using LM Studio
-    if (newMode === 'voice' && chatMode === 'text' && userData.aiSettings.provider === 'lmstudio') {
+    if (newMode === 'voice' && chatMode !== 'voice' && userData.aiSettings.provider === 'lmstudio') {
       setShowProviderWarning(true)
       return
     }
@@ -326,7 +326,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit }: VoiceChatPr
       <header className="flex-shrink-0 p-4 lg:p-6 border-b border-border">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           {/* Left Section - User Profile */}
-          <div className="flex items-center">
+          <div className="flex items-center -ml-10">
             {isLoaded && (
               <div className="hidden sm:block">
                 <UserProfile
@@ -362,6 +362,16 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit }: VoiceChatPr
               >
                 <MessageSquare className="w-4 h-4" />
                 <span className="hidden lg:inline ml-2">Texto</span>
+              </Button>
+              <Button
+                variant={chatMode === 'programmer' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => handleChatModeChange('programmer')}
+                className="h-8 px-1 sm:px-2 lg:px-3"
+                title="Modo programador"
+              >
+                <Code className="w-4 h-4" />
+                <span className="hidden lg:inline ml-2">Código</span>
               </Button>
             </div>
             
@@ -501,6 +511,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit }: VoiceChatPr
             isTranscribing={isTranscribing}
             isGenerating={isGenerating}
             onTranslate={translateMessage}
+            chatMode={chatMode}
           />
         </div>
 
@@ -599,7 +610,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit }: VoiceChatPr
                 {!isRecording && !isTranscribing && !isGenerating && ""}
               </div>
             </div>
-          ) : (
+          ) : chatMode === 'text' ? (
             /* Text Input Interface */
             <div className="space-y-3">
               {/* Image Preview */}
@@ -672,6 +683,80 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit }: VoiceChatPr
                 {isGenerating && "La IA está pensando..."}
                 {!isGenerating && supportsVision() && "Presiona Enter para enviar • Soporta imágenes"}
                 {!isGenerating && !supportsVision() && "Presiona Enter para enviar"}
+              </div>
+            </div>
+          ) : (
+            /* Programmer Input Interface */
+            <div className="space-y-3">
+              {/* Image Preview */}
+              {selectedImages.length > 0 && (
+                <div className="flex flex-wrap gap-2 p-2 bg-muted/30 rounded-lg">
+                  {selectedImages.map((image, index) => (
+                    <div key={index} className="relative group">
+                      <img
+                        src={URL.createObjectURL(image)}
+                        alt={`Imagen ${index + 1}`}
+                        className="w-16 h-16 object-cover rounded border"
+                      />
+                      <button
+                        onClick={() => removeImage(index)}
+                        className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              
+              <div className="flex gap-2">
+                {/* Image Upload Button - Only show for LM Studio with vision models */}
+                {supportsVision() && (
+                  <>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isGenerating || selectedImages.length >= 3}
+                      className="px-3"
+                      title="Agregar imagen (máximo 3)"
+                    >
+                      <ImagePlus className="w-4 h-4" />
+                    </Button>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={handleImageSelect}
+                      className="hidden"
+                    />
+                  </>
+                )}
+                
+                <Input
+                  value={textInput}
+                  onChange={(e) => setTextInput(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  placeholder="Describe tu problema de programación o pide ayuda con código..."
+                  disabled={isGenerating}
+                  className="flex-1"
+                />
+                <Button
+                  onClick={handleTextSubmit}
+                  disabled={!textInput.trim() || isGenerating}
+                  size="sm"
+                  className="px-3"
+                >
+                  <Send className="w-4 h-4" />
+                </Button>
+              </div>
+              
+              {/* Status */}
+              <div className="text-xs sm:text-sm text-muted-foreground text-center">
+                {isGenerating && "La IA está pensando..."}
+                {!isGenerating && "Presiona Enter para enviar • Modo programador activo"}
               </div>
             </div>
           )}

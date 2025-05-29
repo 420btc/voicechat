@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react"
 import { Card } from "@/components/ui/card"
 import { User, Bot, Loader2, Languages, Play, Pause } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { CodeViewer, detectCodeBlocks } from "@/components/code-viewer"
 
 interface Message {
   role: "user" | "assistant"
@@ -22,6 +23,7 @@ interface ConversationHistoryProps {
   isTranscribing: boolean
   isGenerating: boolean
   onTranslate: (text: string, targetLanguage: "es" | "en") => Promise<string | null>
+  chatMode?: 'voice' | 'text' | 'programmer'
 }
 
 export function ConversationHistory({
@@ -29,6 +31,7 @@ export function ConversationHistory({
   isTranscribing,
   isGenerating,
   onTranslate,
+  chatMode = 'voice',
 }: ConversationHistoryProps) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const audioRef = useRef<HTMLAudioElement>(null)
@@ -121,7 +124,24 @@ export function ConversationHistory({
                 message.role === "user" ? "bg-blue-100 text-blue-900 border-blue-200" : "bg-card border-border text-foreground"
               }`}
             >
-              <p className="text-sm leading-relaxed">{message.content}</p>
+              {chatMode === 'programmer' && message.role === 'assistant' ? (
+                <div className="space-y-2">
+                  {detectCodeBlocks(message.content).map((block, blockIndex) => (
+                    block.type === 'code' ? (
+                      <CodeViewer
+                        key={blockIndex}
+                        code={block.content}
+                        language={block.language}
+                        filename={block.filename}
+                      />
+                    ) : (
+                      <p key={blockIndex} className="text-sm leading-relaxed">{block.content}</p>
+                    )
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm leading-relaxed">{message.content}</p>
+              )}
               <div className={`flex justify-between items-center text-xs mt-2 ${message.role === "user" ? "text-blue-600" : "text-muted-foreground"}`}>
                 <div className="flex items-center gap-2">
                   <span>{message.timestamp.toLocaleTimeString()}</span>
