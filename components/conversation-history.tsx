@@ -94,8 +94,9 @@ export function ConversationHistory({
 
   if (conversation.length === 0 && !isTranscribing && !isGenerating) {
     return (
-      <div className="flex-1 flex items-center justify-center">
+      <div className="flex-1 flex items-start justify-center pt-60">
         <div className="text-center text-muted-foreground">
+          <h1 className="text-4xl lg:text-6xl font-bold text-foreground mb-8 faster-one-regular">Local AI</h1>
           <Bot className="w-12 h-12 mx-auto mb-4 opacity-50" />
           <p className="text-lg">Inicia una conversación</p>
           <p className="text-sm">Toca el micrófono para comenzar</p>

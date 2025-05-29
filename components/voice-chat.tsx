@@ -325,9 +325,8 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit }: VoiceChatPr
       {/* Header */}
       <header className="flex-shrink-0 p-4 lg:p-6 border-b border-border">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
-          {/* Left Section - Brand & User */}
-          <div className="flex items-center gap-4 lg:gap-8">
-            <h1 className="hidden sm:block text-xl sm:text-2xl lg:text-4xl font-bold text-foreground whitespace-nowrap faster-one-regular">Local AI</h1>
+          {/* Left Section - User Profile */}
+          <div className="flex items-center">
             {isLoaded && (
               <div className="hidden sm:block">
                 <UserProfile
@@ -341,7 +340,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit }: VoiceChatPr
           </div>
           
           {/* Right Section - Controls */}
-          <div className="flex items-center gap-1 sm:gap-2 lg:gap-4 flex-1 justify-end">
+          <div className="flex items-center gap-1 sm:gap-2 lg:gap-4">
             {/* Chat Mode Toggle */}
             <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1">
               <Button
