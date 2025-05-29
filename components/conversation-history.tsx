@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import { Card } from "@/components/ui/card"
-import { User, Bot, Loader2, Languages, Play, Pause } from "lucide-react"
+import { User, Bot, Loader2, Languages, Play, Pause, Copy, Download } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { CodeViewer, detectCodeBlocks } from "@/components/code-viewer"
 
@@ -35,10 +35,10 @@ export function ConversationHistory({
 }: ConversationHistoryProps) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const audioRef = useRef<HTMLAudioElement>(null)
-  const [translations, setTranslations] = useState<Record<number, { text: string; language: "es" | "en" }>>({})
-  const [translatingIndex, setTranslatingIndex] = useState<number | null>(null)
   const [playingIndex, setPlayingIndex] = useState<number | null>(null)
   const [isPlaying, setIsPlaying] = useState(false)
+  const [translatingIndex, setTranslatingIndex] = useState<number | null>(null)
+  const [translations, setTranslations] = useState<{ [key: number]: { text: string; language: string } }>({})
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -93,6 +93,26 @@ export function ConversationHistory({
 
   const handleAudioPlay2 = () => {
     setIsPlaying(true)
+  }
+
+  const handleCopyMessage = async (content: string) => {
+    try {
+      await navigator.clipboard.writeText(content)
+      // Aquí podrías agregar una notificación de éxito si tienes un sistema de toast
+    } catch (err) {
+      console.error('Error al copiar al portapapeles:', err)
+    }
+  }
+
+  const handleDownloadAudio = (audioBlob: Blob, index: number) => {
+    const url = URL.createObjectURL(audioBlob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `audio-mensaje-${index + 1}.wav`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
   }
 
   if (conversation.length === 0 && !isTranscribing && !isGenerating) {
@@ -209,6 +229,21 @@ export function ConversationHistory({
                 {translatingIndex === index ? "Traduciendo..." : "Traducir"}
               </Button>
               
+              {/* Copy Message Button - For text messages */}
+              {!message.audio && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleCopyMessage(message.content)}
+                  className={`h-6 text-xs ${
+                    message.role === "user" ? "text-blue-600 hover:text-blue-800" : "text-blue-600 hover:text-blue-800"
+                  }`}
+                >
+                  <Copy className="w-3 h-3 mr-1" />
+                  Copiar
+                </Button>
+              )}
+              
               {/* Audio Play/Pause Button - For any message with audio */}
                {message.audio && (
                  <Button
@@ -225,6 +260,21 @@ export function ConversationHistory({
                      <Play className="w-3 h-3 mr-1" />
                    )}
                    {playingIndex === index && isPlaying ? "Pausar" : "Reproducir"}
+                 </Button>
+               )}
+               
+               {/* Download Audio Button - For audio messages */}
+               {message.audio && (
+                 <Button
+                   variant="ghost"
+                   size="sm"
+                   onClick={() => handleDownloadAudio(message.audio!, index)}
+                   className={`h-6 text-xs ${
+                     message.role === "user" ? "text-blue-600 hover:text-blue-800" : "text-blue-600 hover:text-blue-800"
+                   }`}
+                 >
+                   <Download className="w-3 h-3 mr-1" />
+                   Descargar
                  </Button>
                )}
             </div>
