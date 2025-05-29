@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
 import { History, Plus, Trash2, MessageSquare, Calendar } from "lucide-react"
+import { AIProvider } from "@/hooks/use-openai"
 
 export interface SavedConversation {
   id: string
@@ -19,7 +20,7 @@ export interface SavedConversation {
     timestamp: Date
     audio?: Blob
     model?: string
-    provider?: "openai" | "lmstudio"
+    provider?: AIProvider
   }>
   createdAt: Date
   updatedAt: Date
@@ -33,7 +34,7 @@ interface ConversationManagerProps {
     timestamp: Date
     audio?: Blob
     model?: string
-    provider?: "openai" | "lmstudio"
+    provider?: AIProvider
   }>
   onLoadConversation: (conversation: SavedConversation) => void
   onSaveConversation: (title: string) => void

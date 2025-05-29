@@ -30,6 +30,11 @@ interface AISettings {
   lmstudioApiKey: string
   lmstudioBaseUrl: string
   lmstudioModel: string
+  anthropicApiKey: string
+  anthropicModel: string
+  deepseekApiKey: string
+  grokApiKey: string
+  geminiApiKey: string
   selectedAgent: string
   modelHistory: ModelHistoryEntry[]
 }
@@ -41,7 +46,7 @@ interface AIProviderSelectorProps {
 
 interface ModelHistoryEntry {
   name: string
-  provider: "openai" | "lmstudio"
+  provider: AIProvider
   lastUsed: Date
   usageCount: number
 }
@@ -120,6 +125,10 @@ export default function AIProviderSelector({ settings, onSettingsChange }: AIPro
               <SelectContent>
                 <SelectItem value="openai">OpenAI</SelectItem>
                 <SelectItem value="lmstudio">LM Studio (Local)</SelectItem>
+                <SelectItem value="anthropic">Anthropic (Claude)</SelectItem>
+                <SelectItem value="deepseek">DeepSeek</SelectItem>
+                <SelectItem value="grok">Grok (X.AI)</SelectItem>
+                <SelectItem value="gemini">Google Gemini</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -329,18 +338,114 @@ export default function AIProviderSelector({ settings, onSettingsChange }: AIPro
             </div>
           )}
 
+          {/* Anthropic Settings */}
+          {tempSettings.provider === "anthropic" && (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="anthropic-key">API Key de Anthropic</Label>
+                <Input
+                  id="anthropic-key"
+                  type="password"
+                  placeholder="sk-ant-..."
+                  value={tempSettings.anthropicApiKey}
+                  onChange={(e) => 
+                    setTempSettings(prev => ({ ...prev, anthropicApiKey: e.target.value }))
+                  }
+                />
+              </div>
+            </div>
+          )}
+
+          {/* DeepSeek Settings */}
+          {tempSettings.provider === "deepseek" && (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="deepseek-key">API Key de DeepSeek</Label>
+                <Input
+                  id="deepseek-key"
+                  type="password"
+                  placeholder="sk-..."
+                  value={tempSettings.deepseekApiKey}
+                  onChange={(e) => 
+                    setTempSettings(prev => ({ ...prev, deepseekApiKey: e.target.value }))
+                  }
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Grok Settings */}
+          {tempSettings.provider === "grok" && (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="grok-key">API Key de Grok (X.AI)</Label>
+                <Input
+                  id="grok-key"
+                  type="password"
+                  placeholder="xai-..."
+                  value={tempSettings.grokApiKey}
+                  onChange={(e) => 
+                    setTempSettings(prev => ({ ...prev, grokApiKey: e.target.value }))
+                  }
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Gemini Settings */}
+          {tempSettings.provider === "gemini" && (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="gemini-key">API Key de Google Gemini</Label>
+                <Input
+                  id="gemini-key"
+                  type="password"
+                  placeholder="AIza..."
+                  value={tempSettings.geminiApiKey}
+                  onChange={(e) => 
+                    setTempSettings(prev => ({ ...prev, geminiApiKey: e.target.value }))
+                  }
+                />
+              </div>
+            </div>
+          )}
+
           {/* Info Box */}
           <div className="rounded-lg border p-4 bg-muted/50">
             <h4 className="text-sm font-medium mb-2">
-              {tempSettings.provider === "openai" ? "OpenAI" : "LM Studio"}
+              {(() => {
+                switch (tempSettings.provider) {
+                  case "openai": return "OpenAI"
+                  case "lmstudio": return "LM Studio"
+                  case "anthropic": return "Anthropic (Claude)"
+                  case "deepseek": return "DeepSeek"
+                  case "grok": return "Grok (X.AI)"
+                  case "gemini": return "Google Gemini"
+                  default: return "Proveedor de IA"
+                }
+              })()}
             </h4>
             <p className="text-xs text-muted-foreground">
-              {tempSettings.provider === "openai" 
-                ? "Usa los modelos de OpenAI en la nube. Requiere API key válida y conexión a internet."
-                : "Usa modelos locales a través de LM Studio. Asegúrate de que LM Studio esté ejecutándose en el puerto especificado."
-              }
+              {(() => {
+                switch (tempSettings.provider) {
+                  case "openai":
+                    return "Usa los modelos de OpenAI en la nube. Requiere API key válida y conexión a internet."
+                  case "lmstudio":
+                    return "Usa modelos locales a través de LM Studio. Asegúrate de que LM Studio esté ejecutándose en el puerto especificado."
+                  case "anthropic":
+                    return "Usa los modelos Claude de Anthropic. Requiere API key válida y conexión a internet."
+                  case "deepseek":
+                    return "Usa los modelos de DeepSeek. Requiere API key válida y conexión a internet."
+                  case "grok":
+                    return "Usa los modelos Grok de X.AI. Requiere API key válida y conexión a internet."
+                  case "gemini":
+                    return "Usa los modelos Gemini de Google. Requiere API key válida y conexión a internet."
+                  default:
+                    return "Selecciona un proveedor de IA para continuar."
+                }
+              })()}
             </p>
-            {tempSettings.provider === "lmstudio" && (
+            {(tempSettings.provider === "lmstudio" || tempSettings.provider === "anthropic" || tempSettings.provider === "deepseek" || tempSettings.provider === "grok" || tempSettings.provider === "gemini") && (
               <p className="text-xs text-muted-foreground mt-2">
                 <strong>Nota:</strong> La transcripción de audio y text-to-speech seguirán usando OpenAI.
               </p>

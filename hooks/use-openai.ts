@@ -10,7 +10,7 @@ interface Message {
   timestamp: Date
   audio?: Blob
   model?: string
-  provider?: "openai" | "lmstudio"
+  provider?: AIProvider
 }
 
 interface AIResponse {
@@ -22,7 +22,7 @@ interface AIResponse {
   promptTokens?: number
 }
 
-export type AIProvider = "openai" | "lmstudio"
+export type AIProvider = "openai" | "lmstudio" | "anthropic" | "deepseek" | "grok" | "gemini"
 
 interface AIConfig {
   provider: AIProvider
@@ -114,16 +114,42 @@ export function useOpenAI(config: AIConfig) {
       const startTime = Date.now()
 
       // Determine API endpoint and model based on provider
-      const apiUrl = provider === "lmstudio" 
-        ? `${baseUrl || "http://localhost:1234"}/v1/chat/completions`
-        : "https://api.openai.com/v1/chat/completions"
+      let apiUrl: string
+      let selectedModel: string
+      let timeoutMs: number
       
-      const selectedModel = provider === "lmstudio" 
-        ? (model || "local-model")
-        : "gpt-4o"
-
-      // Configure timeout based on provider
-      const timeoutMs = provider === "lmstudio" ? 300000 : 90000 // 300s for LM Studio, 90s for OpenAI
+      switch (provider) {
+        case "lmstudio":
+          apiUrl = `${baseUrl || "http://localhost:1234"}/v1/chat/completions`
+          selectedModel = model || "local-model"
+          timeoutMs = 300000 // 5 minutes
+          break
+        case "anthropic":
+          apiUrl = "/api/anthropic"
+          selectedModel = "claude-sonnet-4-20250514"
+          timeoutMs = 90000
+          break
+        case "deepseek":
+          apiUrl = "/api/deepseek"
+          selectedModel = "deepseek-chat"
+          timeoutMs = 90000
+          break
+        case "grok":
+          apiUrl = "/api/grok"
+          selectedModel = "grok-beta"
+          timeoutMs = 90000
+          break
+        case "gemini":
+          apiUrl = "/api/gemini"
+          selectedModel = "gemini-1.5-pro"
+          timeoutMs = 90000
+          break
+        default: // openai
+          apiUrl = "https://api.openai.com/v1/chat/completions"
+          selectedModel = "gpt-4o"
+          timeoutMs = 90000
+          break
+      }
       
       // Create AbortController for timeout
       const controller = new AbortController()
@@ -193,76 +219,118 @@ export function useOpenAI(config: AIConfig) {
         
         console.log(`Starting fetch request at:`, new Date().toISOString())
         
-        // Generate text response with special handling for LM Studio
-        let textResponse;
+        // Prepare request headers and body based on provider
+        let headers: Record<string, string>
+        let requestBody: any
         
-        if (provider === "lmstudio") {
-          // Special configuration for LM Studio to avoid hanging
-          textResponse = await fetch(apiUrl, {
-            method: "POST",
-            headers: {
+        const baseMessages = [
+          {
+            role: "system",
+            content: systemPrompt,
+          },
+          ...conversation.map((msg) => ({
+            role: msg.role,
+            content: msg.content,
+          })),
+          {
+            role: "user",
+            content: userContent,
+          },
+        ]
+        
+        switch (provider) {
+          case "lmstudio":
+            headers = {
               Authorization: `Bearer ${apiKey}`,
               "Content-Type": "application/json",
               "Accept": "application/json",
               "Connection": "close",
               "Cache-Control": "no-cache"
-            },
-            signal: controller.signal,
-            keepalive: false,
-            body: JSON.stringify({
+            }
+            requestBody = {
               model: selectedModel,
-              messages: [
-                {
-                  role: "system",
-                  content:
-                    "Eres un asistente de IA útil y amigable. Proporciona respuestas concisas y naturales en español, adecuadas para conversación por voz. Sé conversacional y cálido en tu tono. Carlos Freire es quien te hablará siempre y estaras a sus ordenes siendo profesional. Responde directamente sin mostrar tu proceso de razonamiento interno.",
-                },
-                ...conversation.map((msg) => ({
-                  role: msg.role,
-                  content: msg.content,
-                })),
-                {
-                  role: "user",
-                  content: userContent,
-                },
-              ],
+              messages: baseMessages,
               max_tokens: 4096,
               temperature: 0.7,
               stream: false,
               stop: ["<think>", "</think>"]
-            }),
-          })
-        } else {
-          // Standard configuration for OpenAI
-          textResponse = await fetch(apiUrl, {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${apiKey}`,
-              "Content-Type": "application/json",
-            },
-            signal: controller.signal,
-            body: JSON.stringify({
+            }
+            break
+            
+          case "anthropic":
+            headers = {
+              "x-api-key": apiKey,
+              "Content-Type": "application/json"
+            }
+            requestBody = {
               model: selectedModel,
-              messages: [
-                {
-                  role: "system",
-                  content:
-                    "Eres un asistente de IA útil y amigable. Proporciona respuestas concisas y naturales en español, adecuadas para conversación por voz. Sé conversacional y cálido en tu tono. Carlos Freire es quien te hablará siempre y estaras a sus ordenes siendo profesional. Responde directamente sin mostrar tu proceso de razonamiento interno.",
-                },
-                ...conversation.map((msg) => ({
-                  role: msg.role,
-                  content: msg.content,
-                })),
-                {
-                  role: "user",
-                  content: userContent,
-                },
-              ],
               max_tokens: 4096,
               temperature: 0.7,
-            }),
-          })
+              messages: baseMessages
+            }
+            break
+            
+          case "deepseek":
+            headers = {
+              "x-api-key": apiKey,
+              "Content-Type": "application/json"
+            }
+            requestBody = {
+              model: selectedModel,
+              messages: baseMessages,
+              max_tokens: 4096,
+              temperature: 0.7
+            }
+            break
+            
+          case "grok":
+            headers = {
+              "x-api-key": apiKey,
+              "Content-Type": "application/json"
+            }
+            requestBody = {
+              model: selectedModel,
+              messages: baseMessages,
+              max_tokens: 4096,
+              temperature: 0.7
+            }
+            break
+            
+          case "gemini":
+            headers = {
+              "x-api-key": apiKey,
+              "Content-Type": "application/json"
+            }
+            requestBody = {
+              model: selectedModel,
+              messages: baseMessages,
+              max_tokens: 4096,
+              temperature: 0.7
+            }
+            break
+            
+          default: // openai
+            headers = {
+              Authorization: `Bearer ${apiKey}`,
+              "Content-Type": "application/json"
+            }
+            requestBody = {
+              model: selectedModel,
+              messages: baseMessages,
+              max_tokens: 4096,
+              temperature: 0.7
+            }
+            break
         }
+        
+        // Make the API request
+        const textResponse = await fetch(apiUrl, {
+          method: "POST",
+          headers,
+          signal: controller.signal,
+          ...(provider === "lmstudio" && { keepalive: false }),
+          body: JSON.stringify(requestBody),
+        })
         
         console.log(`Fetch completed at:`, new Date().toISOString())
         console.log(`Response received, status:`, textResponse.status)
@@ -288,27 +356,68 @@ export function useOpenAI(config: AIConfig) {
         // Calculate response time
         const responseTime = Date.now() - startTime
         
-        // Extract tokens used from response
-        const tokensUsed = textData.usage?.total_tokens || textData.usage?.completion_tokens || undefined
-        const promptTokens = textData.usage?.prompt_tokens || undefined
+        // Extract tokens used from response based on provider
+        let tokensUsed: number | undefined
+        let promptTokens: number | undefined
         
-        let responseText = textData.choices[0]?.message?.content || "I apologize, but I could not generate a response."
+        switch (provider) {
+          case "anthropic":
+            tokensUsed = textData.usage?.output_tokens || undefined
+            promptTokens = textData.usage?.input_tokens || undefined
+            break
+          case "deepseek":
+          case "grok":
+          case "lmstudio":
+          case "openai":
+          default:
+            tokensUsed = textData.usage?.total_tokens || textData.usage?.completion_tokens || undefined
+            promptTokens = textData.usage?.prompt_tokens || undefined
+            break
+          case "gemini":
+            tokensUsed = textData.usageMetadata?.totalTokenCount || undefined
+            promptTokens = textData.usageMetadata?.promptTokenCount || undefined
+            break
+        }
         
-        // Filter reasoning tags for LM Studio
-        if (provider === "lmstudio" && responseText.includes('<think>')) {
-          const thinkEndIndex = responseText.indexOf('</think>')
-          if (thinkEndIndex !== -1) {
-            responseText = responseText.substring(thinkEndIndex + 8).trim()
-          } else {
-            const thinkStartIndex = responseText.indexOf('<think>')
-            if (thinkStartIndex !== -1) {
-              responseText = responseText.substring(0, thinkStartIndex).trim()
+        let responseText: string
+        
+        // Extract response text based on provider
+        switch (provider) {
+          case "anthropic":
+            responseText = textData.content?.[0]?.text || textData.completion || "I apologize, but I could not generate a response."
+            break
+          case "deepseek":
+            responseText = textData.choices?.[0]?.message?.content || "I apologize, but I could not generate a response."
+            break
+          case "grok":
+            responseText = textData.choices?.[0]?.message?.content || "I apologize, but I could not generate a response."
+            break
+          case "gemini":
+            responseText = textData.candidates?.[0]?.content?.parts?.[0]?.text || "I apologize, but I could not generate a response."
+            break
+          case "lmstudio":
+            responseText = textData.choices?.[0]?.message?.content || "I apologize, but I could not generate a response."
+            // Filter reasoning tags for LM Studio
+            if (responseText.includes('<think>')) {
+              const thinkEndIndex = responseText.indexOf('</think>')
+              if (thinkEndIndex !== -1) {
+                responseText = responseText.substring(thinkEndIndex + 8).trim()
+              } else {
+                const thinkStartIndex = responseText.indexOf('<think>')
+                if (thinkStartIndex !== -1) {
+                  responseText = responseText.substring(0, thinkStartIndex).trim()
+                }
+              }
+              
+              if (!responseText || responseText.length < 10) {
+                responseText = "Lo siento, no pude generar una respuesta adecuada. Por favor, intenta de nuevo."
+              }
             }
-          }
-          
-          if (!responseText || responseText.length < 10) {
-            responseText = "Lo siento, no pude generar una respuesta adecuada. Por favor, intenta de nuevo."
-          }
+            break
+          case "openai":
+          default:
+            responseText = textData.choices?.[0]?.message?.content || "I apologize, but I could not generate a response."
+            break
         }
         
         // Detect and register the model used

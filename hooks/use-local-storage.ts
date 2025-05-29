@@ -1,4 +1,7 @@
+"use client"
+
 import { useState, useEffect, useCallback } from "react"
+import { AIProvider } from "./use-openai"
 
 interface Message {
   role: "user" | "assistant"
@@ -6,7 +9,7 @@ interface Message {
   timestamp: Date
   audio?: Blob
   model?: string
-  provider?: "openai" | "lmstudio"
+  provider?: AIProvider
   responseTime?: number // in milliseconds
   tokensUsed?: number
   promptTokens?: number
@@ -110,7 +113,7 @@ export function useLocalStorage() {
     setApiKey("")
   }, [])
 
-  const addMessage = useCallback((role: "user" | "assistant", content: string, timestamp?: Date, audio?: Blob, model?: string, provider?: "openai" | "lmstudio", responseTime?: number, tokensUsed?: number, promptTokens?: number) => {
+  const addMessage = useCallback((role: "user" | "assistant", content: string, timestamp?: Date, audio?: Blob, model?: string, provider?: AIProvider, responseTime?: number, tokensUsed?: number, promptTokens?: number) => {
     const message: Message = {
       role,
       content,

@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card"
 import { User, Bot, Loader2, Languages, Play, Pause, Copy, Download } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { CodeViewer, detectCodeBlocks } from "@/components/code-viewer"
+import { AIProvider } from "@/hooks/use-openai"
 
 interface Message {
   role: "user" | "assistant"
@@ -12,7 +13,7 @@ interface Message {
   timestamp: Date
   audio?: Blob
   model?: string
-  provider?: "openai" | "lmstudio"
+  provider?: AIProvider
   responseTime?: number // in milliseconds
   tokensUsed?: number
   promptTokens?: number

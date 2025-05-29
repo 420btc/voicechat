@@ -6,7 +6,7 @@ import { ApiKeySetup } from "@/components/api-key-setup"
 import { useLocalStorage } from "@/hooks/use-local-storage"
 
 export default function Home() {
-  const [isApiKeySet, setIsApiKeySet] = useState(false)
+  const [showApiKeySetup, setShowApiKeySetup] = useState(false)
   
   const {
     apiKey,
@@ -16,37 +16,43 @@ export default function Home() {
   } = useLocalStorage()
 
   useEffect(() => {
-    // Check if API key exists and is valid
-    if (apiKey && isApiKeyValid()) {
-      setIsApiKeySet(true)
-    } else {
-      setIsApiKeySet(false)
-      if (apiKey && !isApiKeyValid()) {
-        // API key has expired, remove it
-        removeApiKey()
-      }
+    // Clean up expired API keys but don't force setup
+    if (apiKey && !isApiKeyValid()) {
+      removeApiKey()
     }
   }, [apiKey, isApiKeyValid, removeApiKey])
 
   const handleApiKeySubmit = (key: string) => {
     saveApiKey(key)
-    setIsApiKeySet(true)
+    setShowApiKeySetup(false)
   }
 
   const handleApiKeyReset = () => {
     removeApiKey()
-    setIsApiKeySet(false)
+    setShowApiKeySetup(true)
+  }
+
+  const handleShowApiKeySetup = () => {
+    setShowApiKeySetup(true)
+  }
+
+  const handleCloseApiKeySetup = () => {
+    setShowApiKeySetup(false)
   }
 
   return (
     <div className="h-screen bg-background text-foreground overflow-hidden">
-      {!isApiKeySet ? (
-        <ApiKeySetup onApiKeySubmit={handleApiKeySubmit} />
+      {showApiKeySetup ? (
+        <ApiKeySetup 
+          onApiKeySubmit={handleApiKeySubmit} 
+          onClose={handleCloseApiKeySetup}
+        />
       ) : (
         <VoiceChat 
-          apiKey={apiKey} 
+          apiKey={apiKey || ""} 
           onApiKeyReset={handleApiKeyReset} 
           onApiKeySubmit={handleApiKeySubmit}
+          onShowApiKeySetup={handleShowApiKeySetup}
         />
       )}
     </div>

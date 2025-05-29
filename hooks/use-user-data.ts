@@ -26,6 +26,10 @@ interface AISettings {
   lmstudioApiKey: string
   lmstudioBaseUrl: string
   lmstudioModel: string
+  anthropicApiKey: string
+  deepseekApiKey: string
+  grokApiKey: string
+  geminiApiKey: string
   selectedAgent: string
   modelHistory: ModelHistoryEntry[]
 }
@@ -128,6 +132,10 @@ const DEFAULT_USER_DATA: UserData = {
     lmstudioApiKey: "lm-studio",
     lmstudioBaseUrl: "http://localhost:1234",
     lmstudioModel: "local-model",
+    anthropicApiKey: "",
+    deepseekApiKey: "",
+    grokApiKey: "",
+    geminiApiKey: "",
     selectedAgent: "general",
     modelHistory: []
   }

@@ -29,11 +29,11 @@ interface VoiceChatProps {
   apiKey: string
   onApiKeyReset: () => void
   onApiKeySubmit: (key: string) => void
+  onShowApiKeySetup: () => void
 }
 
-export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit }: VoiceChatProps) {
+export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeySetup }: VoiceChatProps) {
   const [isPlaying, setIsPlaying] = useState(false)
-  const [showApiKeyModal, setShowApiKeyModal] = useState(false)
   const [chatMode, setChatMode] = useState<'voice' | 'text' | 'programmer'>('voice')
   const [textInput, setTextInput] = useState('')
   const [showProviderWarning, setShowProviderWarning] = useState(false)
@@ -77,9 +77,24 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit }: VoiceChatPr
   } = useUserData()
 
   // Determine which API key to use based on provider
-  const currentApiKey = userData.aiSettings.provider === "openai" 
-    ? (userData.aiSettings.openaiApiKey || apiKey)
-    : userData.aiSettings.lmstudioApiKey
+  const currentApiKey = (() => {
+    switch (userData.aiSettings.provider) {
+      case "openai":
+        return userData.aiSettings.openaiApiKey || apiKey
+      case "lmstudio":
+        return userData.aiSettings.lmstudioApiKey
+      case "anthropic":
+        return userData.aiSettings.anthropicApiKey
+      case "deepseek":
+        return userData.aiSettings.deepseekApiKey
+      case "grok":
+        return userData.aiSettings.grokApiKey
+      case "gemini":
+        return userData.aiSettings.geminiApiKey
+      default:
+        return apiKey
+    }
+  })()
 
   const {
     transcribeAudio,
@@ -111,11 +126,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit }: VoiceChatPr
 
   // Handle chat mode change with provider validation
   const handleChatModeChange = (newMode: 'voice' | 'text' | 'programmer') => {
-    // If switching to voice mode and currently using LM Studio
-    if (newMode === 'voice' && chatMode !== 'voice' && userData.aiSettings.provider === 'lmstudio') {
-      setShowProviderWarning(true)
-      return
-    }
+    // Allow switching to voice mode without forcing OpenAI setup
     setChatMode(newMode)
   }
 
@@ -478,12 +489,12 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit }: VoiceChatPr
               <Button 
                 variant="ghost" 
                 size="sm" 
-                onClick={() => setShowApiKeyModal(true)} 
+                onClick={onShowApiKeySetup} 
                 className="text-muted-foreground hover:text-foreground h-8 px-1 sm:px-2 lg:px-3"
-                title="Configuración API Legacy"
+                title="Configuración API"
               >
                 <Key className="w-4 h-4" />
-                <span className="hidden lg:inline ml-2">Legacy</span>
+                <span className="hidden lg:inline ml-2">API Keys</span>
               </Button>
             </div>
             
@@ -771,21 +782,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit }: VoiceChatPr
         onPause={() => setIsPlaying(false)}
       />
 
-      {/* API Key Configuration Modal */}
-      {showApiKeyModal && (
-        <div className="fixed inset-0 bg-background/80 flex items-center justify-center p-4 z-50">
-          <ApiKeySetup
-            onApiKeySubmit={(key) => {
-              onApiKeySubmit(key)
-              setShowApiKeyModal(false)
-              // Reload to apply the new API key
-              window.location.reload()
-            }}
-            onClose={() => setShowApiKeyModal(false)}
-            existingApiKey={apiKey}
-          />
-        </div>
-      )}
+
 
       {/* Provider Warning Modal */}
       <Dialog open={showProviderWarning} onOpenChange={setShowProviderWarning}>

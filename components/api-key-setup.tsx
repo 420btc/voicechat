@@ -50,9 +50,9 @@ export function ApiKeySetup({ onApiKeySubmit, onClose, existingApiKey }: ApiKeyS
           <div className="mx-auto mb-4 w-12 h-12 bg-white rounded-full flex items-center justify-center">
             <Key className="w-6 h-6 text-black" />
           </div>
-          <CardTitle className="text-white text-2xl">Configurar Clave API de OpenAI</CardTitle>
+          <CardTitle className="text-white text-2xl">Configurar Claves API</CardTitle>
           <CardDescription className="text-gray-400">
-            Ingresa tu clave API de OpenAI para habilitar la funcionalidad de chat por voz
+            Configura las claves API de los proveedores de IA. Puedes omitir esto y usar LM Studio por defecto.
           </CardDescription>
         </CardHeader>
         <CardContent>
