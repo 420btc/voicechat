@@ -121,7 +121,7 @@ export function useOpenAI(config: AIConfig) {
         : "gpt-4o"
 
       // Configure timeout based on provider
-      const timeoutMs = provider === "lmstudio" ? 120000 : 90000 // 120s for LM Studio, 90s for OpenAI
+      const timeoutMs = provider === "lmstudio" ? 300000 : 90000 // 300s for LM Studio, 90s for OpenAI
       
       // Create AbortController for timeout
       const controller = new AbortController()

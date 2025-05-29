@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Settings, Volume2, Trash2, Plus, Mic, MessageSquare, Send, AlertTriangle, ImagePlus, X } from "lucide-react"
+import { Settings, Volume2, VolumeX, Trash2, Plus, Mic, MessageSquare, Send, AlertTriangle, ImagePlus, X } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -39,10 +39,29 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit }: VoiceChatPr
   const [showProviderWarning, setShowProviderWarning] = useState(false)
   const [tempOpenAIKey, setTempOpenAIKey] = useState('')
   const [selectedImages, setSelectedImages] = useState<File[]>([])
+  const [volume, setVolume] = useState(0.7) // Volume state (0.0 to 1.0)
+  const [isMuted, setIsMuted] = useState(false)
   const audioRef = useRef<HTMLAudioElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const { isRecording, audioLevel, startRecording, stopRecording, cancelRecording, audioBlob, autoStopEnabled, toggleAutoStop, isCancelled } = useAudioRecording()
+  // Handle audio events
+  useEffect(() => {
+    const audio = audioRef.current
+    if (audio) {
+      const handleEnded = () => setIsPlaying(false)
+      const handlePause = () => setIsPlaying(false)
+      
+      audio.addEventListener('ended', handleEnded)
+      audio.addEventListener('pause', handlePause)
+      
+      return () => {
+        audio.removeEventListener('ended', handleEnded)
+        audio.removeEventListener('pause', handlePause)
+      }
+    }
+  }, [])
+
+  const { isRecording, audioLevel, startRecording, stopRecording, cancelRecording, audioBlob, isCancelled } = useAudioRecording()
 
   const {
     userData,
@@ -200,6 +219,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit }: VoiceChatPr
             const audioUrl = URL.createObjectURL(response.audio)
             if (audioRef.current) {
               audioRef.current.src = audioUrl
+              audioRef.current.volume = isMuted ? 0 : volume
               audioRef.current.play()
               setIsPlaying(true)
             }
@@ -256,6 +276,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit }: VoiceChatPr
           const audioUrl = URL.createObjectURL(response.audio)
           if (audioRef.current) {
             audioRef.current.src = audioUrl
+            audioRef.current.volume = isMuted ? 0 : volume
             audioRef.current.play()
             setIsPlaying(true)
           }
@@ -468,43 +489,71 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit }: VoiceChatPr
             <div className="text-center space-y-2 sm:space-y-4">
               <div className="text-gray-400 text-sm sm:text-lg">{isRecording ? "Escuchando..." : ""}</div>
 
-              {/* Auto-stop Toggle */}
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2">
-                <Button
-                  variant={autoStopEnabled ? "default" : "outline"}
-                  size="sm"
-                  onClick={toggleAutoStop}
-                  className={`text-xs h-8 sm:h-auto ${
-                    autoStopEnabled 
-                      ? "bg-green-600 hover:bg-green-700 text-white" 
-                      : "bg-gray-800 border-gray-600 text-gray-300 hover:bg-gray-700"
-                  }`}
-                >
-                  {autoStopEnabled ? "Auto-envío: ON" : "Auto-envío: OFF"}
-                </Button>
-                <span className="text-xs text-gray-500 text-center">
-                  {autoStopEnabled ? "Se enviará tras 3s de silencio" : "Presiona para enviar manualmente"}
-                </span>
-              </div>
-
-              {/* Voice Input with Visualizer */}
-               <AIVoiceInput
-                 onStart={() => {
-                   if (!isRecording) {
-                     startRecording()
-                   }
-                 }}
-                 onStop={() => {
-                   if (isRecording) {
-                     stopRecording()
-                   }
-                 }}
-                 visualizerBars={48}
-                 demoMode={false}
-                 className="w-full"
-                 isRecording={isRecording}
-                 isDisabled={isTranscribing || isGenerating}
-               />
+              {/* Voice Input with Volume Control */}
+              <div className="flex items-center justify-center gap-3">
+                {/* Vertical Volume Control */}
+                <div className="flex flex-col items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setIsMuted(!isMuted)}
+                    className="text-gray-400 hover:text-gray-300 h-6 w-6 p-0"
+                    title={isMuted ? "Activar sonido" : "Silenciar"}
+                  >
+                    {isMuted ? <VolumeX className="w-3 h-3" /> : <Volume2 className="w-3 h-3" />}
+                  </Button>
+                  <div className="flex flex-col items-center gap-1">
+                    <span className="text-xs text-gray-500 text-center" style={{fontSize: '10px'}}>10</span>
+                    <input
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.1"
+                      value={isMuted ? 0 : volume}
+                      onChange={(e) => {
+                        const newVolume = parseFloat(e.target.value)
+                        setVolume(newVolume)
+                        if (newVolume > 0 && isMuted) {
+                          setIsMuted(false)
+                        }
+                        if (audioRef.current) {
+                          audioRef.current.volume = newVolume
+                        }
+                      }}
+                      className="w-2 h-16 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                      style={{
+                        writingMode: 'vertical-lr' as const,
+                        WebkitAppearance: 'slider-vertical',
+                        background: `linear-gradient(to top, #3b82f6 0%, #3b82f6 ${(isMuted ? 0 : volume) * 100}%, #374151 ${(isMuted ? 0 : volume) * 100}%, #374151 100%)`
+                      }}
+                      disabled={isMuted}
+                    />
+                    <span className="text-xs text-gray-500 text-center" style={{fontSize: '10px'}}>0</span>
+                  </div>
+                  <span className="text-xs text-gray-500 text-center" style={{fontSize: '9px'}}>
+                    {isMuted ? "0%" : `${Math.round(volume * 100)}%`}
+                  </span>
+                </div>
+                
+                {/* Voice Input with Visualizer */}
+                 <AIVoiceInput
+                   onStart={() => {
+                     if (!isRecording) {
+                       startRecording()
+                     }
+                   }}
+                   onStop={() => {
+                     if (isRecording) {
+                       stopRecording()
+                     }
+                   }}
+                   visualizerBars={48}
+                   demoMode={false}
+                   className="flex-1"
+                   isRecording={isRecording}
+                   isDisabled={isTranscribing || isGenerating}
+                 />
+               </div>
 
               {/* Cancel Button - Only show when recording */}
               {isRecording && (
@@ -684,6 +733,9 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit }: VoiceChatPr
           </div>
         </DialogContent>
       </Dialog>
+      
+      {/* Hidden Audio Element for AI Voice Responses */}
+      <audio ref={audioRef} className="hidden" />
     </div>
   )
 }
