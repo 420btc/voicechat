@@ -31,6 +31,31 @@
     --chart-5: 27 87% 67%;
   }
 
+  /* Accent Color Themes */
+  .accent-blue {
+    --accent: 213 94% 68%;
+  }
+
+  .accent-green {
+    --accent: 142 94% 68%;
+  }
+
+  .accent-purple {
+    --accent: 270 94% 68%;
+  }
+
+  .accent-orange {
+    --accent: 25 94% 68%;
+  }
+
+  .accent-red {
+    --accent: 0 94% 68%;
+  }
+
+  .accent-pink {
+    --accent: 330 94% 68%;
+  }
+
   .dark {
     --background: 0 0% 3.9%;
     --foreground: 0 0% 98%;
@@ -56,6 +81,31 @@
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
+  }
+
+  /* Dark theme with accent colors */
+  .dark.accent-blue {
+    --accent: 213 94% 68%;
+  }
+
+  .dark.accent-green {
+    --accent: 142 94% 68%;
+  }
+
+  .dark.accent-purple {
+    --accent: 270 94% 68%;
+  }
+
+  .dark.accent-orange {
+    --accent: 25 94% 68%;
+  }
+
+  .dark.accent-red {
+    --accent: 0 94% 68%;
+  }
+
+  .dark.accent-pink {
+    --accent: 330 94% 68%;
   }
 }
 

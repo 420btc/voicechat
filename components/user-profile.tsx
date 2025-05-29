@@ -57,7 +57,7 @@ export function UserProfile({ userName, userAvatar, onUserNameChange, onAvatarCh
           </div>
         </Button>
       </DialogTrigger>
-      <DialogContent className="bg-gray-900 border-gray-700 text-white">
+      <DialogContent className="bg-card border-border text-foreground">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <User className="w-5 h-5" />

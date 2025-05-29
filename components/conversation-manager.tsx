@@ -90,7 +90,7 @@ export function ConversationManager({
             <span className="hidden sm:inline">Historial</span>
           </Button>
         </DialogTrigger>
-        <DialogContent className="bg-gray-900 border-gray-700 text-white max-w-2xl max-h-[80vh]">
+        <DialogContent className="bg-card border-border text-foreground max-w-2xl max-h-[80vh]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <History className="w-5 h-5" />
@@ -133,7 +133,7 @@ export function ConversationManager({
                     Eliminar Todas las Conversaciones
                   </Button>
                 </AlertDialogTrigger>
-                <AlertDialogContent className="bg-gray-900 border-gray-700 text-white">
+                <AlertDialogContent className="bg-card border-border text-foreground">
                   <AlertDialogHeader>
                     <AlertDialogTitle>¿Eliminar todas las conversaciones?</AlertDialogTitle>
                     <AlertDialogDescription className="text-gray-400">
@@ -189,7 +189,7 @@ export function ConversationManager({
                               <Trash2 className="w-4 h-4" />
                             </Button>
                           </AlertDialogTrigger>
-                          <AlertDialogContent className="bg-gray-900 border-gray-700 text-white">
+                          <AlertDialogContent className="bg-card border-border text-foreground">
                             <AlertDialogHeader>
                               <AlertDialogTitle>¿Eliminar conversación?</AlertDialogTitle>
                               <AlertDialogDescription className="text-gray-400">
@@ -221,7 +221,7 @@ export function ConversationManager({
 
       {/* Save Conversation Dialog */}
       <Dialog open={showSaveDialog} onOpenChange={setShowSaveDialog}>
-        <DialogContent className="bg-gray-900 border-gray-700 text-white">
+        <DialogContent className="bg-card border-border text-foreground">
           <DialogHeader>
             <DialogTitle>Guardar Conversación</DialogTitle>
           </DialogHeader>

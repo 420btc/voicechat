@@ -37,11 +37,11 @@ export function ApiKeySetup({ onApiKeySubmit, onClose, existingApiKey }: ApiKeyS
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
-      <Card className="w-full max-w-md bg-gray-900 border-gray-700 relative">
+      <Card className="w-full max-w-md bg-card border-border relative">
         {onClose && (
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"
+            className="absolute top-4 right-4 text-muted-foreground hover:text-foreground transition-colors"
           >
             <X className="w-5 h-5" />
           </button>

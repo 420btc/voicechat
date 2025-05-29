@@ -95,7 +95,7 @@ export function ConversationHistory({
   if (conversation.length === 0 && !isTranscribing && !isGenerating) {
     return (
       <div className="flex-1 flex items-center justify-center">
-        <div className="text-center text-gray-500">
+        <div className="text-center text-muted-foreground">
           <Bot className="w-12 h-12 mx-auto mb-4 opacity-50" />
           <p className="text-lg">Inicia una conversación</p>
           <p className="text-sm">Toca el micrófono para comenzar</p>
@@ -117,11 +117,11 @@ export function ConversationHistory({
           <div className="max-w-[80%] space-y-2">
             <Card
               className={`p-4 ${
-                message.role === "user" ? "bg-blue-100 text-blue-900 border-blue-200" : "bg-gray-800 border-gray-700 text-white"
+                message.role === "user" ? "bg-blue-100 text-blue-900 border-blue-200" : "bg-card border-border text-foreground"
               }`}
             >
               <p className="text-sm leading-relaxed">{message.content}</p>
-              <div className={`flex justify-between items-center text-xs mt-2 ${message.role === "user" ? "text-blue-600" : "text-gray-400"}`}>
+              <div className={`flex justify-between items-center text-xs mt-2 ${message.role === "user" ? "text-blue-600" : "text-muted-foreground"}`}>
                 <div className="flex items-center gap-2">
                   <span>{message.timestamp.toLocaleTimeString()}</span>
                   {message.role === "assistant" && message.responseTime && (
@@ -159,11 +159,11 @@ export function ConversationHistory({
                 className={`p-3 border-dashed ${
                   message.role === "user"
                     ? "bg-blue-50 text-blue-700 border-blue-300"
-                    : "bg-gray-700 border-gray-500 text-gray-300"
+                    : "bg-muted border-border text-muted-foreground"
                 }`}
               >
                 <p className="text-xs leading-relaxed">{translations[index].text}</p>
-                <div className={`text-xs mt-1 ${message.role === "user" ? "text-blue-500" : "text-gray-400"}`}>
+                <div className={`text-xs mt-1 ${message.role === "user" ? "text-blue-500" : "text-muted-foreground"}`}>
                   Traducido al {translations[index].language === "es" ? "español" : "inglés"}
                 </div>
               </Card>
@@ -237,7 +237,7 @@ export function ConversationHistory({
           <div className="w-8 h-8 bg-slate-600 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
             <Bot className="w-4 h-4 text-white" />
           </div>
-          <Card className="max-w-[80%] p-4 bg-gray-800 border-gray-700">
+          <Card className="max-w-[80%] p-4 bg-card border-border">
             <div className="flex items-center gap-2 text-blue-700">
               <Loader2 className="w-4 h-4 animate-spin" />
               <span className="text-sm">La IA está pensando...</span>

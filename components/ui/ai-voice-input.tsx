@@ -98,8 +98,8 @@ export function AIVoiceInput({
           className={cn(
             "group w-16 h-16 rounded-xl flex items-center justify-center transition-colors",
             submitted
-              ? "bg-transparent border-2 border-gray-300 dark:border-gray-600"
-              : "bg-white hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700",
+              ? "bg-transparent border-2 border-border"
+              : "bg-card hover:bg-muted",
             isDisabled && "opacity-50 cursor-not-allowed"
           )}
           type="button"
@@ -108,11 +108,11 @@ export function AIVoiceInput({
         >
           {submitted ? (
             <div
-              className="w-6 h-6 rounded-sm bg-white dark:bg-gray-200 cursor-pointer pointer-events-auto animate-spin"
+              className="w-6 h-6 rounded-sm bg-foreground cursor-pointer pointer-events-auto animate-spin"
               style={{ animationDuration: "2s" }}
             />
           ) : (
-            <Mic className="w-6 h-6 text-black dark:text-white" />
+            <Mic className="w-6 h-6 text-foreground" />
           )}
         </button>
 
@@ -120,8 +120,8 @@ export function AIVoiceInput({
           className={cn(
             "font-mono text-sm transition-opacity duration-300",
             submitted
-              ? "text-black/70 dark:text-white/70"
-              : "text-black/30 dark:text-white/30"
+              ? "text-foreground/70"
+              : "text-foreground/30"
           )}
         >
           {formatTime(time)}
@@ -134,8 +134,8 @@ export function AIVoiceInput({
               className={cn(
                 "w-0.5 rounded-full transition-all duration-300",
                 submitted
-                  ? "bg-black/50 dark:bg-white/50 animate-pulse"
-                  : "bg-black/10 dark:bg-white/10 h-1"
+                  ? "bg-foreground/50 animate-pulse"
+                  : "bg-foreground/10 h-1"
               )}
               style={
                 submitted && isClient
@@ -149,7 +149,7 @@ export function AIVoiceInput({
           ))}
         </div>
 
-        <p className="h-4 text-xs text-gray-400">
+        <p className="h-4 text-xs text-muted-foreground">
           {submitted ? "Escuchando..." : "Toca para hablar"}
         </p>
       </div>

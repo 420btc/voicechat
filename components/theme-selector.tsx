@@ -76,7 +76,7 @@ export function ThemeSelector({ settings, onSettingsChange }: ThemeSelectorProps
           <span className="hidden sm:inline">Tema</span>
         </Button>
       </DialogTrigger>
-      <DialogContent className="bg-gray-900 border-gray-700 text-white max-w-md">
+      <DialogContent className="bg-card border-border text-foreground max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Palette className="w-5 h-5" />

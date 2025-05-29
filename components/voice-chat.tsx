@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Settings, Volume2, VolumeX, Trash2, Plus, Mic, MessageSquare, Send, AlertTriangle, ImagePlus, X } from "lucide-react"
+import { Settings, Volume2, VolumeX, Trash2, Plus, Mic, MessageSquare, Send, AlertTriangle, ImagePlus, X, Key } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -427,15 +427,24 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit }: VoiceChatPr
               )}
             </div>
             
-            {/* Agent Indicator */}
-            {isLoaded && userData.aiSettings.provider === 'lmstudio' && (() => {
-              const currentAgent = AI_AGENTS.find(agent => agent.id === userData.aiSettings.selectedAgent) || AI_AGENTS[0]
-              return (
-                <div className="flex items-center gap-1 px-2 py-1 rounded-md bg-muted/50 border border-border/50">
-                  <span className="text-sm">{currentAgent.icon}</span>
-                  <span className="text-xs font-medium hidden sm:inline">{currentAgent.name}</span>
-                </div>
-              )
+            {/* Agent Indicator - Always Visible */}
+            {isLoaded && (() => {
+              if (userData.aiSettings.provider === 'lmstudio') {
+                const currentAgent = AI_AGENTS.find(agent => agent.id === userData.aiSettings.selectedAgent) || AI_AGENTS[0]
+                return (
+                  <div className="flex items-center gap-1 px-2 py-1 rounded-md bg-muted/50 border border-border/50">
+                    <span className="text-sm">{currentAgent.icon}</span>
+                    <span className="text-xs font-medium hidden sm:inline">{currentAgent.name}</span>
+                  </div>
+                )
+              } else {
+                return (
+                  <div className="flex items-center gap-1 px-2 py-1 rounded-md bg-muted/50 border border-border/50">
+                    <span className="text-sm">🤖</span>
+                    <span className="text-xs font-medium hidden sm:inline">{userData.aiSettings.provider === 'openai' ? 'OpenAI' : 'AI Assistant'}</span>
+                  </div>
+                )
+              }
             })()}
             
             {/* Settings & Theme */}
@@ -464,7 +473,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit }: VoiceChatPr
                 className="text-muted-foreground hover:text-foreground h-8 px-1 sm:px-2 lg:px-3"
                 title="Configuración API Legacy"
               >
-                <Settings className="w-4 h-4" />
+                <Key className="w-4 h-4" />
                 <span className="hidden lg:inline ml-2">Legacy</span>
               </Button>
             </div>
@@ -501,7 +510,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit }: VoiceChatPr
           {chatMode === 'voice' ? (
             /* Voice Input Interface */
             <div className="text-center space-y-2 sm:space-y-4">
-              <div className="text-gray-400 text-sm sm:text-lg">{isRecording ? "Escuchando..." : ""}</div>
+              <div className="text-muted-foreground text-sm sm:text-lg">{isRecording ? "Escuchando..." : ""}</div>
 
               {/* Voice Input with Volume Control */}
               <div className="flex items-center justify-center gap-3">
@@ -511,13 +520,13 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit }: VoiceChatPr
                     variant="ghost"
                     size="sm"
                     onClick={() => setIsMuted(!isMuted)}
-                    className="text-gray-400 hover:text-gray-300 h-6 w-6 p-0"
+                    className="text-muted-foreground hover:text-foreground h-6 w-6 p-0"
                     title={isMuted ? "Activar sonido" : "Silenciar"}
                   >
                     {isMuted ? <VolumeX className="w-3 h-3" /> : <Volume2 className="w-3 h-3" />}
                   </Button>
                   <div className="flex flex-col items-center gap-1">
-                    <span className="text-xs text-gray-500 text-center" style={{fontSize: '10px'}}>10</span>
+                    <span className="text-xs text-muted-foreground text-center" style={{fontSize: '10px'}}>10</span>
                     <input
                       type="range"
                       min="0"
@@ -534,7 +543,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit }: VoiceChatPr
                           audioRef.current.volume = newVolume
                         }
                       }}
-                      className="w-2 h-16 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                      className="w-2 h-16 bg-muted rounded-lg appearance-none cursor-pointer"
                       style={{
                         writingMode: 'vertical-lr' as const,
                         WebkitAppearance: 'slider-vertical',
@@ -542,9 +551,9 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit }: VoiceChatPr
                       }}
                       disabled={isMuted}
                     />
-                    <span className="text-xs text-gray-500 text-center" style={{fontSize: '10px'}}>0</span>
+                    <span className="text-xs text-muted-foreground text-center" style={{fontSize: '10px'}}>0</span>
                   </div>
-                  <span className="text-xs text-gray-500 text-center" style={{fontSize: '9px'}}>
+                  <span className="text-xs text-muted-foreground text-center" style={{fontSize: '9px'}}>
                     {isMuted ? "0%" : `${Math.round(volume * 100)}%`}
                   </span>
                 </div>
@@ -585,7 +594,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit }: VoiceChatPr
               )}
 
               {/* Status */}
-              <div className="text-xs sm:text-sm text-gray-500">
+              <div className="text-xs sm:text-sm text-muted-foreground">
                 {isTranscribing && "Transcribiendo..."}
                 {isGenerating && "La IA está pensando..."}
                 {!isRecording && !isTranscribing && !isGenerating && ""}
@@ -660,7 +669,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit }: VoiceChatPr
               </div>
               
               {/* Status */}
-              <div className="text-xs sm:text-sm text-gray-500 text-center">
+              <div className="text-xs sm:text-sm text-muted-foreground text-center">
                 {isGenerating && "La IA está pensando..."}
                 {!isGenerating && supportsVision() && "Presiona Enter para enviar • Soporta imágenes"}
                 {!isGenerating && !supportsVision() && "Presiona Enter para enviar"}
@@ -680,7 +689,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit }: VoiceChatPr
 
       {/* API Key Configuration Modal */}
       {showApiKeyModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-background/80 flex items-center justify-center p-4 z-50">
           <ApiKeySetup
             onApiKeySubmit={(key) => {
               onApiKeySubmit(key)
