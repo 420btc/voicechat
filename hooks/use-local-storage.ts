@@ -104,11 +104,11 @@ export function useLocalStorage() {
     setApiKey("")
   }, [])
 
-  const addMessage = useCallback((role: "user" | "assistant", content: string) => {
+  const addMessage = useCallback((role: "user" | "assistant", content: string, timestamp?: Date) => {
     const message: Message = {
       role,
       content,
-      timestamp: new Date(),
+      timestamp: timestamp || new Date(),
     }
     setConversation((prev) => [...prev, message])
   }, [])
@@ -149,6 +149,7 @@ export function useLocalStorage() {
     
     // Actions
     setSelectedVoice,
+    setConversation,
     addMessage,
     saveApiKey,
     removeApiKey,

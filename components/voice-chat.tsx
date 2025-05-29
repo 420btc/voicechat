@@ -4,12 +4,16 @@ import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Settings, Volume2, Trash2 } from "lucide-react"
+import { Settings, Volume2, Trash2, Plus } from "lucide-react"
 import { AIVoiceInput } from "@/components/ui/ai-voice-input"
 import { ConversationHistory } from "@/components/conversation-history"
 import { ApiKeySetup } from "@/components/api-key-setup"
+import { UserProfile } from "@/components/user-profile"
+import { ConversationManager } from "@/components/conversation-manager"
+import { ThemeSelector } from "@/components/theme-selector"
 import { useAudioRecording } from "@/hooks/use-audio-recording"
 import { useOpenAI } from "@/hooks/use-openai"
+import { useUserData } from "@/hooks/use-user-data"
 
 interface VoiceChatProps {
   apiKey: string
@@ -36,7 +40,18 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit }: VoiceChatPr
     selectedVoice,
     setSelectedVoice,
     clearConversation,
+    loadConversation,
   } = useOpenAI(apiKey)
+
+  const {
+    userData,
+    isLoaded,
+    updateUserName,
+    updateUserAvatar,
+    updateThemeSettings,
+    saveConversation,
+    deleteConversation,
+  } = useUserData()
 
   // Available voices from OpenAI TTS
   const voices = [
@@ -87,41 +102,90 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit }: VoiceChatPr
 
 
   return (
-    <div className="h-screen flex flex-col">
+    <div className="min-h-screen bg-background text-foreground flex flex-col h-screen overflow-hidden">
       {/* Header */}
-      <header className="flex-shrink-0 p-4 border-b border-gray-800">
+      <header className="flex-shrink-0 p-4 border-b border-border">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <h1 className="text-2xl md:text-3xl font-bold text-white">Carlos Freire AI</h1>
-          <div className="flex items-center gap-2 md:gap-4">
+          <div className="flex items-center gap-3">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground">Carlos Freire AI</h1>
+            {isLoaded && (
+              <UserProfile
+                userName={userData.name}
+                userAvatar={userData.avatar}
+                onUserNameChange={updateUserName}
+                onAvatarChange={updateUserAvatar}
+              />
+            )}
+          </div>
+          
+          <div className="flex items-center gap-1 sm:gap-2">
             {/* Voice Selector */}
             <div className="flex items-center gap-1 md:gap-2">
-              <Volume2 className="w-4 h-4 text-gray-400 hidden sm:block" />
+              <Volume2 className="w-4 h-4 text-muted-foreground hidden sm:block" />
               <Select value={selectedVoice} onValueChange={setSelectedVoice}>
-                <SelectTrigger className="w-24 sm:w-32 md:w-40 bg-gray-800 border-gray-700 text-white text-xs sm:text-sm">
+                <SelectTrigger className="w-20 sm:w-28 md:w-36 bg-card border-border text-foreground text-xs sm:text-sm">
                   <SelectValue placeholder="Voz" />
                 </SelectTrigger>
-                <SelectContent className="bg-gray-800 border-gray-700">
+                <SelectContent className="bg-card border-border">
                   {voices.map((voice) => (
-                    <SelectItem key={voice.value} value={voice.value} className="text-white hover:bg-gray-700">
+                    <SelectItem key={voice.value} value={voice.value} className="text-foreground hover:bg-accent">
                       {voice.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
+            
+            {/* New Conversation */}
             <Button 
               variant="ghost" 
               size="sm" 
-              onClick={clearConversation} 
-              className="text-gray-400 hover:text-white p-1 sm:p-2"
-              title="Limpiar conversación"
+              onClick={() => {
+                // Auto-save current conversation before clearing if it has messages
+                if (conversation.length > 0) {
+                  const autoTitle = `Conversación ${new Date().toLocaleDateString('es-ES')} ${new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}`
+                  saveConversation(autoTitle, conversation)
+                }
+                clearConversation()
+              }} 
+              className="text-muted-foreground hover:text-foreground p-1 sm:p-2"
+              title="Nueva conversación"
             >
-              <Trash2 className="w-4 h-4 sm:mr-2" />
-              <span className="hidden sm:inline">Limpiar</span>
+              <Plus className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">Nueva</span>
             </Button>
-            <Button variant="ghost" size="sm" onClick={() => setShowApiKeyModal(true)} className="text-gray-400 hover:text-white p-1 sm:p-2">
+            
+            {/* Conversation Manager */}
+            {isLoaded && (
+              <ConversationManager
+                savedConversations={userData.savedConversations}
+                currentConversation={conversation}
+                onLoadConversation={(conv) => loadConversation(conv.messages)}
+                onSaveConversation={(title) => saveConversation(title, conversation)}
+                onDeleteConversation={deleteConversation}
+                onNewConversation={() => {
+                  // Auto-save current conversation before clearing if it has messages
+                  if (conversation.length > 0) {
+                    const autoTitle = `Conversación ${new Date().toLocaleDateString('es-ES')} ${new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}`
+                    saveConversation(autoTitle, conversation)
+                  }
+                  clearConversation()
+                }}
+              />
+            )}
+            
+            {/* Theme Selector */}
+            {isLoaded && (
+              <ThemeSelector
+                settings={userData.themeSettings}
+                onSettingsChange={updateThemeSettings}
+              />
+            )}
+            
+            {/* Settings */}
+            <Button variant="ghost" size="sm" onClick={() => setShowApiKeyModal(true)} className="text-muted-foreground hover:text-foreground p-1 sm:p-2">
               <Settings className="w-4 h-4 sm:mr-2" />
-              <span className="hidden sm:inline">Settings</span>
+              <span className="hidden sm:inline">API</span>
             </Button>
           </div>
         </div>
@@ -140,7 +204,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit }: VoiceChatPr
         </div>
 
         {/* Voice Input Interface */}
-        <Card className="flex-shrink-0 bg-black/20 border-transparent p-3 sm:p-6">
+        <Card className="flex-shrink-0 bg-card border-border p-3 sm:p-6">
           <div className="text-center space-y-2 sm:space-y-4">
             <div className="text-gray-400 text-sm sm:text-lg">{isRecording ? "Escuchando..." : ""}</div>
 

@@ -22,6 +22,7 @@ export function useOpenAI(apiKey: string) {
     conversation,
     selectedVoice,
     setSelectedVoice,
+    setConversation,
     addMessage,
     clearConversation
   } = useLocalStorage()
@@ -190,6 +191,11 @@ export function useOpenAI(apiKey: string) {
     [apiKey],
   )
 
+  const loadConversation = useCallback((messages: Message[]) => {
+    // Replace current conversation with loaded messages
+    setConversation(messages)
+  }, [setConversation])
+
   return {
     transcribeAudio,
     generateResponse,
@@ -201,5 +207,6 @@ export function useOpenAI(apiKey: string) {
     selectedVoice,
     setSelectedVoice,
     clearConversation,
+    loadConversation,
   }
 }
