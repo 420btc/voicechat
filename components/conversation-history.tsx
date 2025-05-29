@@ -12,6 +12,8 @@ interface Message {
   audio?: Blob
   model?: string
   provider?: "openai" | "lmstudio"
+  responseTime?: number // in milliseconds
+  tokensUsed?: number
 }
 
 interface ConversationHistoryProps {
@@ -119,7 +121,15 @@ export function ConversationHistory({
             >
               <p className="text-sm leading-relaxed">{message.content}</p>
               <div className={`flex justify-between items-center text-xs mt-2 ${message.role === "user" ? "text-blue-600" : "text-gray-400"}`}>
-                <span>{message.timestamp.toLocaleTimeString()}</span>
+                <div className="flex items-center gap-2">
+                  <span>{message.timestamp.toLocaleTimeString()}</span>
+                  {message.role === "assistant" && message.responseTime && (
+                    <span className="opacity-75">• {(message.responseTime / 1000).toFixed(1)}s</span>
+                  )}
+                  {message.role === "assistant" && message.tokensUsed && (
+                    <span className="opacity-75">• {message.tokensUsed} tokens</span>
+                  )}
+                </div>
                 {message.role === "assistant" && (message.model || message.provider) && (
                   <div className="flex items-center gap-1">
                     <span className="opacity-75">•</span>

@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Settings, Volume2, Trash2, Plus, Mic, MessageSquare, Send, AlertTriangle } from "lucide-react"
+import { Settings, Volume2, Trash2, Plus, Mic, MessageSquare, Send, AlertTriangle, ImagePlus, X } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -37,7 +37,9 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit }: VoiceChatPr
   const [textInput, setTextInput] = useState('')
   const [showProviderWarning, setShowProviderWarning] = useState(false)
   const [tempOpenAIKey, setTempOpenAIKey] = useState('')
+  const [selectedImages, setSelectedImages] = useState<File[]>([])
   const audioRef = useRef<HTMLAudioElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const { isRecording, audioLevel, startRecording, stopRecording, cancelRecording, audioBlob, autoStopEnabled, toggleAutoStop, isCancelled } = useAudioRecording()
 
@@ -190,7 +192,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit }: VoiceChatPr
         // Generate AI response
         const response = await generateResponse(transcription)
         if (response) {
-          addMessage("assistant", response.text, undefined, response.audio, response.model, userData.aiSettings.provider)
+          addMessage("assistant", response.text, undefined, response.audio, response.model, userData.aiSettings.provider, response.responseTime, response.tokensUsed)
 
           // Play AI audio response if available
           if (response.audio) {
@@ -217,13 +219,17 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit }: VoiceChatPr
       const userMessage = textInput.trim()
       setTextInput('')
       
-      // Store user message (text only)
-      addMessage("user", userMessage)
+      // Create display message for user (include image info if present)
+      const displayMessage = selectedImages.length > 0 
+        ? `${userMessage} [${selectedImages.length} imagen${selectedImages.length > 1 ? 'es' : ''} adjunta${selectedImages.length > 1 ? 's' : ''}]`
+        : userMessage
+      
+      addMessage("user", displayMessage)
 
-      // Generate AI response
-      const response = await generateResponse(userMessage)
+      // Generate AI response (pass images if available)
+      const response = await generateResponse(userMessage, selectedImages)
       if (response) {
-        addMessage("assistant", response.text, undefined, response.audio, response.model, userData.aiSettings.provider)
+        addMessage("assistant", response.text, undefined, response.audio, response.model, userData.aiSettings.provider, response.responseTime, response.tokensUsed)
 
         // Play AI audio response if available
         if (response.audio) {
@@ -235,6 +241,9 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit }: VoiceChatPr
           }
         }
       }
+      
+      // Clear selected images after sending
+      setSelectedImages([])
     } catch (error) {
       console.error("Error processing text:", error)
     }
@@ -247,6 +256,25 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit }: VoiceChatPr
     }
   }
 
+  // Check if current model supports vision
+  const supportsVision = () => {
+    return userData.aiSettings.provider === 'lmstudio' && 
+           userData.aiSettings.lmstudioModel && 
+           (userData.aiSettings.lmstudioModel.toLowerCase().includes('gemma') ||
+            userData.aiSettings.lmstudioModel.toLowerCase().includes('vision') ||
+            userData.aiSettings.lmstudioModel.toLowerCase().includes('llava'))
+  }
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || [])
+    const imageFiles = files.filter(file => file.type.startsWith('image/'))
+    setSelectedImages(prev => [...prev, ...imageFiles].slice(0, 3)) // Max 3 images
+  }
+
+  const removeImage = (index: number) => {
+    setSelectedImages(prev => prev.filter((_, i) => i !== index))
+  }
+
 
 
   return (
@@ -256,7 +284,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit }: VoiceChatPr
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           {/* Left Section - Brand & User */}
           <div className="flex items-center gap-4 lg:gap-8">
-            <h1 className="hidden sm:block text-xl sm:text-2xl lg:text-3xl font-bold text-foreground whitespace-nowrap">Carlos Freire AI</h1>
+            <h1 className="hidden sm:block text-xl sm:text-2xl lg:text-4xl font-bold text-foreground whitespace-nowrap">My Local AI</h1>
             {isLoaded && (
               <div className="hidden sm:block">
                 <UserProfile
@@ -483,12 +511,58 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit }: VoiceChatPr
           ) : (
             /* Text Input Interface */
             <div className="space-y-3">
+              {/* Image Preview */}
+              {selectedImages.length > 0 && (
+                <div className="flex flex-wrap gap-2 p-2 bg-muted/30 rounded-lg">
+                  {selectedImages.map((image, index) => (
+                    <div key={index} className="relative group">
+                      <img
+                        src={URL.createObjectURL(image)}
+                        alt={`Imagen ${index + 1}`}
+                        className="w-16 h-16 object-cover rounded border"
+                      />
+                      <button
+                        onClick={() => removeImage(index)}
+                        className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              
               <div className="flex gap-2">
+                {/* Image Upload Button - Only show for LM Studio with vision models */}
+                {supportsVision() && (
+                  <>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isGenerating || selectedImages.length >= 3}
+                      className="px-3"
+                      title="Agregar imagen (máximo 3)"
+                    >
+                      <ImagePlus className="w-4 h-4" />
+                    </Button>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={handleImageSelect}
+                      className="hidden"
+                    />
+                  </>
+                )}
+                
                 <Input
                   value={textInput}
                   onChange={(e) => setTextInput(e.target.value)}
                   onKeyPress={handleKeyPress}
-                  placeholder="Escribe tu mensaje aquí..."
+                  placeholder={supportsVision() ? "Escribe tu mensaje o sube imágenes..." : "Escribe tu mensaje aquí..."}
                   disabled={isGenerating}
                   className="flex-1"
                 />
@@ -505,7 +579,8 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit }: VoiceChatPr
               {/* Status */}
               <div className="text-xs sm:text-sm text-gray-500 text-center">
                 {isGenerating && "La IA está pensando..."}
-                {!isGenerating && "Presiona Enter para enviar"}
+                {!isGenerating && supportsVision() && "Presiona Enter para enviar • Soporta imágenes"}
+                {!isGenerating && !supportsVision() && "Presiona Enter para enviar"}
               </div>
             </div>
           )}
