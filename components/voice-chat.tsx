@@ -145,51 +145,55 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit }: VoiceChatPr
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col h-screen overflow-hidden">
       {/* Header */}
-      <header className="flex-shrink-0 p-4 border-b border-border">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground">Carlos Freire AI</h1>
+      <header className="flex-shrink-0 p-4 lg:p-6 border-b border-border">
+        <div className="max-w-6xl mx-auto flex items-center justify-between">
+          {/* Left Section - Brand & User */}
+          <div className="flex items-center gap-4 lg:gap-8">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground whitespace-nowrap">Carlos Freire AI</h1>
             {isLoaded && (
-              <UserProfile
-                userName={userData.name}
-                userAvatar={userData.avatar}
-                onUserNameChange={updateUserName}
-                onAvatarChange={updateUserAvatar}
-              />
+              <div className="hidden sm:block">
+                <UserProfile
+                  userName={userData.name}
+                  userAvatar={userData.avatar}
+                  onUserNameChange={updateUserName}
+                  onAvatarChange={updateUserAvatar}
+                />
+              </div>
             )}
           </div>
           
-          <div className="flex items-center gap-1 sm:gap-2">
+          {/* Right Section - Controls */}
+          <div className="flex items-center gap-2 lg:gap-4">
             {/* Chat Mode Toggle */}
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1">
               <Button
                 variant={chatMode === 'voice' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setChatMode('voice')}
-                className="p-1 sm:p-2"
+                className="h-8 px-2 lg:px-3"
                 title="Modo de voz"
               >
                 <Mic className="w-4 h-4" />
-                <span className="hidden md:inline ml-1">Voz</span>
+                <span className="hidden lg:inline ml-2">Voz</span>
               </Button>
               <Button
                 variant={chatMode === 'text' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setChatMode('text')}
-                className="p-1 sm:p-2"
+                className="h-8 px-2 lg:px-3"
                 title="Modo de texto"
               >
                 <MessageSquare className="w-4 h-4" />
-                <span className="hidden md:inline ml-1">Texto</span>
+                <span className="hidden lg:inline ml-2">Texto</span>
               </Button>
             </div>
             
             {/* Voice Selector - Only show in voice mode */}
             {chatMode === 'voice' && (
-              <div className="flex items-center gap-1 md:gap-2">
-                <Volume2 className="w-4 h-4 text-muted-foreground hidden sm:block" />
+              <div className="flex items-center gap-2 lg:gap-3">
+                <Volume2 className="w-4 h-4 text-muted-foreground hidden lg:block" />
                 <Select value={selectedVoice} onValueChange={setSelectedVoice}>
-                  <SelectTrigger className="w-20 sm:w-28 md:w-36 bg-card border-border text-foreground text-xs sm:text-sm">
+                  <SelectTrigger className="w-24 lg:w-40 bg-card border-border text-foreground text-xs lg:text-sm h-8">
                     <SelectValue placeholder="Voz" />
                   </SelectTrigger>
                   <SelectContent className="bg-card border-border">
@@ -203,57 +207,81 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit }: VoiceChatPr
               </div>
             )}
             
-            {/* New Conversation */}
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={() => {
-                // Auto-save current conversation before clearing if it has messages
-                if (conversation.length > 0) {
-                  const autoTitle = `Conversación ${new Date().toLocaleDateString('es-ES')} ${new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}`
-                  saveConversation(autoTitle, conversation)
-                }
-                clearConversation()
-              }} 
-              className="text-muted-foreground hover:text-foreground p-1 sm:p-2"
-              title="Nueva conversación"
-            >
-              <Plus className="w-4 h-4 sm:mr-2" />
-              <span className="hidden sm:inline">Nueva</span>
-            </Button>
-            
-            {/* Conversation Manager */}
-            {isLoaded && (
-              <ConversationManager
-                savedConversations={userData.savedConversations}
-                currentConversation={conversation}
-                onLoadConversation={(conv) => loadConversation(conv.messages)}
-                onSaveConversation={(title) => saveConversation(title, conversation)}
-                onDeleteConversation={deleteConversation}
-                onNewConversation={() => {
+            {/* Conversation Actions */}
+            <div className="flex items-center gap-1 lg:gap-2">
+              {/* New Conversation */}
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => {
                   // Auto-save current conversation before clearing if it has messages
                   if (conversation.length > 0) {
                     const autoTitle = `Conversación ${new Date().toLocaleDateString('es-ES')} ${new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}`
                     saveConversation(autoTitle, conversation)
                   }
                   clearConversation()
-                }}
-              />
-            )}
+                }} 
+                className="text-muted-foreground hover:text-foreground h-8 px-2 lg:px-3"
+                title="Nueva conversación"
+              >
+                <Plus className="w-4 h-4" />
+                <span className="hidden lg:inline ml-2">Nueva</span>
+              </Button>
+              
+              {/* Conversation Manager */}
+              {isLoaded && (
+                <ConversationManager
+                  savedConversations={userData.savedConversations}
+                  currentConversation={conversation}
+                  onLoadConversation={(conv) => loadConversation(conv.messages)}
+                  onSaveConversation={(title) => saveConversation(title, conversation)}
+                  onDeleteConversation={deleteConversation}
+                  onNewConversation={() => {
+                    // Auto-save current conversation before clearing if it has messages
+                    if (conversation.length > 0) {
+                      const autoTitle = `Conversación ${new Date().toLocaleDateString('es-ES')} ${new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}`
+                      saveConversation(autoTitle, conversation)
+                    }
+                    clearConversation()
+                  }}
+                />
+              )}
+            </div>
             
-            {/* Theme Selector */}
+            {/* Settings & Theme */}
+            <div className="flex items-center gap-1 lg:gap-2 border-l border-border pl-2 lg:pl-4 ml-2 lg:ml-4">
+              {/* Theme Selector */}
+              {isLoaded && (
+                <ThemeSelector
+                  settings={userData.themeSettings}
+                  onSettingsChange={updateThemeSettings}
+                />
+              )}
+              
+              {/* Settings */}
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => setShowApiKeyModal(true)} 
+                className="text-muted-foreground hover:text-foreground h-8 px-2 lg:px-3"
+                title="Configuración API"
+              >
+                <Settings className="w-4 h-4" />
+                <span className="hidden lg:inline ml-2">API</span>
+              </Button>
+            </div>
+            
+            {/* Mobile User Profile */}
             {isLoaded && (
-              <ThemeSelector
-                settings={userData.themeSettings}
-                onSettingsChange={updateThemeSettings}
-              />
+              <div className="sm:hidden">
+                <UserProfile
+                  userName={userData.name}
+                  userAvatar={userData.avatar}
+                  onUserNameChange={updateUserName}
+                  onAvatarChange={updateUserAvatar}
+                />
+              </div>
             )}
-            
-            {/* Settings */}
-            <Button variant="ghost" size="sm" onClick={() => setShowApiKeyModal(true)} className="text-muted-foreground hover:text-foreground p-1 sm:p-2">
-              <Settings className="w-4 h-4 sm:mr-2" />
-              <span className="hidden sm:inline">API</span>
-            </Button>
           </div>
         </div>
       </header>
