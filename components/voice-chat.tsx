@@ -74,12 +74,13 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit }: VoiceChatPr
       // Transcribe user audio
       const transcription = await transcribeAudio(blob)
       if (transcription) {
-        addMessage("user", transcription)
+        // Store user message with audio
+        addMessage("user", transcription, undefined, blob)
 
         // Generate AI response
         const response = await generateResponse(transcription)
         if (response) {
-          addMessage("assistant", response.text)
+          addMessage("assistant", response.text, undefined, response.audio)
 
           // Play AI audio response if available
           if (response.audio) {

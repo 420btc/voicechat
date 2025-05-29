@@ -7,6 +7,7 @@ interface Message {
   role: "user" | "assistant"
   content: string
   timestamp: Date
+  audio?: Blob
 }
 
 interface AIResponse {
@@ -87,7 +88,7 @@ export function useOpenAI(apiKey: string) {
               {
                 role: "system",
                 content:
-                  "Eres un asistente de IA útil y amigable. Proporciona respuestas concisas y naturales en español, adecuadas para conversación por voz. Sé conversacional y cálido en tu tono. Carlos Freire es quien te hablará siempre, es fotografo, vibe coder, piloto de drones y cocinero en un hotel, en base a sus datos personales actuarás para ayudarle.",
+                  "Eres un asistente de IA útil y amigable. Proporciona respuestas concisas y naturales en español, adecuadas para conversación por voz. Sé conversacional y cálido en tu tono. Carlos Freire es quien te hablará siempre y estaras a sus ordenes siendo profesional.",
               },
               ...conversation.map((msg) => ({
                 role: msg.role,
@@ -98,7 +99,7 @@ export function useOpenAI(apiKey: string) {
                 content: userMessage,
               },
             ],
-            max_tokens: 150,
+            max_tokens: 4096,
             temperature: 0.7,
           }),
         })
@@ -172,7 +173,7 @@ export function useOpenAI(apiKey: string) {
                 content: text,
               },
             ],
-            max_tokens: 200,
+            max_tokens: 4096,
             temperature: 0.3,
           }),
         })

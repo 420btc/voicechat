@@ -2,13 +2,14 @@
 
 import { useEffect, useRef, useState } from "react"
 import { Card } from "@/components/ui/card"
-import { User, Bot, Loader2, Languages } from "lucide-react"
+import { User, Bot, Loader2, Languages, Play, Pause } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 interface Message {
   role: "user" | "assistant"
   content: string
   timestamp: Date
+  audio?: Blob
 }
 
 interface ConversationHistoryProps {
@@ -25,8 +26,11 @@ export function ConversationHistory({
   onTranslate,
 }: ConversationHistoryProps) {
   const scrollRef = useRef<HTMLDivElement>(null)
+  const audioRef = useRef<HTMLAudioElement>(null)
   const [translations, setTranslations] = useState<Record<number, { text: string; language: "es" | "en" }>>({})
   const [translatingIndex, setTranslatingIndex] = useState<number | null>(null)
+  const [playingIndex, setPlayingIndex] = useState<number | null>(null)
+  const [isPlaying, setIsPlaying] = useState(false)
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -48,6 +52,39 @@ export function ConversationHistory({
     }
 
     setTranslatingIndex(null)
+  }
+
+  const handleAudioPlay = (index: number, audioBlob: Blob) => {
+    if (playingIndex === index && isPlaying) {
+      // Pause current audio
+      if (audioRef.current) {
+        audioRef.current.pause()
+      }
+      setIsPlaying(false)
+      setPlayingIndex(null)
+    } else {
+      // Play new audio
+      if (audioRef.current) {
+        const audioUrl = URL.createObjectURL(audioBlob)
+        audioRef.current.src = audioUrl
+        audioRef.current.play()
+        setIsPlaying(true)
+        setPlayingIndex(index)
+      }
+    }
+  }
+
+  const handleAudioEnded = () => {
+    setIsPlaying(false)
+    setPlayingIndex(null)
+  }
+
+  const handleAudioPause = () => {
+    setIsPlaying(false)
+  }
+
+  const handleAudioPlay2 = () => {
+    setIsPlaying(true)
   }
 
   if (conversation.length === 0 && !isTranscribing && !isGenerating) {
@@ -100,23 +137,42 @@ export function ConversationHistory({
               </Card>
             )}
 
-            {/* Translate Button */}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => handleTranslate(index, message.content, "es")}
-              disabled={translatingIndex === index}
-              className={`h-6 text-xs ${
-                message.role === "user" ? "text-gray-600 hover:text-black" : "text-gray-400 hover:text-white"
-              }`}
-            >
-              {translatingIndex === index ? (
-                <Loader2 className="w-3 h-3 animate-spin mr-1" />
-              ) : (
-                <Languages className="w-3 h-3 mr-1" />
+            {/* Action Buttons */}
+            <div className="flex gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleTranslate(index, message.content, "es")}
+                disabled={translatingIndex === index}
+                className={`h-6 text-xs ${
+                  message.role === "user" ? "text-gray-600 hover:text-black" : "text-gray-400 hover:text-white"
+                }`}
+              >
+                {translatingIndex === index ? (
+                  <Loader2 className="w-3 h-3 animate-spin mr-1" />
+                ) : (
+                  <Languages className="w-3 h-3 mr-1" />
+                )}
+                {translatingIndex === index ? "Traduciendo..." : "Traducir"}
+              </Button>
+              
+              {/* Audio Play/Pause Button - Only for assistant messages with audio */}
+              {message.role === "assistant" && message.audio && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleAudioPlay(index, message.audio!)}
+                  className="h-6 text-xs text-gray-400 hover:text-white"
+                >
+                  {playingIndex === index && isPlaying ? (
+                    <Pause className="w-3 h-3 mr-1" />
+                  ) : (
+                    <Play className="w-3 h-3 mr-1" />
+                  )}
+                  {playingIndex === index && isPlaying ? "Pausar" : "Reproducir"}
+                </Button>
               )}
-              {translatingIndex === index ? "Traduciendo..." : "Traducir"}
-            </Button>
+            </div>
           </div>
 
           {message.role === "user" && (
@@ -155,6 +211,14 @@ export function ConversationHistory({
           </Card>
         </div>
       )}
+      
+      {/* Hidden audio element for message playback */}
+      <audio
+        ref={audioRef}
+        onEnded={handleAudioEnded}
+        onPause={handleAudioPause}
+        onPlay={handleAudioPlay2}
+      />
     </div>
   )
 }

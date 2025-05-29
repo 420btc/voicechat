@@ -4,6 +4,7 @@ interface Message {
   role: "user" | "assistant"
   content: string
   timestamp: Date
+  audio?: Blob
 }
 
 interface StoredApiKey {
@@ -104,11 +105,12 @@ export function useLocalStorage() {
     setApiKey("")
   }, [])
 
-  const addMessage = useCallback((role: "user" | "assistant", content: string, timestamp?: Date) => {
+  const addMessage = useCallback((role: "user" | "assistant", content: string, timestamp?: Date, audio?: Blob) => {
     const message: Message = {
       role,
       content,
       timestamp: timestamp || new Date(),
+      audio,
     }
     setConversation((prev) => [...prev, message])
   }, [])
