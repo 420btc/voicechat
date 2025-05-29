@@ -104,19 +104,19 @@ export function ConversationHistory({
       {conversation.map((message, index) => (
         <div key={index} className={`flex gap-3 ${message.role === "user" ? "justify-end" : "justify-start"}`}>
           {message.role === "assistant" && (
-            <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-              <Bot className="w-4 h-4 text-black" />
+            <div className="w-8 h-8 bg-slate-600 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+              <Bot className="w-4 h-4 text-white" />
             </div>
           )}
 
           <div className="max-w-[80%] space-y-2">
             <Card
               className={`p-4 ${
-                message.role === "user" ? "bg-white text-black" : "bg-gray-800 border-gray-700 text-white"
+                message.role === "user" ? "bg-blue-100 text-blue-900 border-blue-200" : "bg-gray-800 border-gray-700 text-white"
               }`}
             >
               <p className="text-sm leading-relaxed">{message.content}</p>
-              <div className={`text-xs mt-2 ${message.role === "user" ? "text-gray-600" : "text-gray-400"}`}>
+              <div className={`text-xs mt-2 ${message.role === "user" ? "text-blue-600" : "text-gray-400"}`}>
                 {message.timestamp.toLocaleTimeString()}
               </div>
             </Card>
@@ -126,12 +126,12 @@ export function ConversationHistory({
               <Card
                 className={`p-3 border-dashed ${
                   message.role === "user"
-                    ? "bg-gray-50 text-gray-700 border-gray-300"
+                    ? "bg-blue-50 text-blue-700 border-blue-300"
                     : "bg-gray-700 border-gray-500 text-gray-300"
                 }`}
               >
                 <p className="text-xs leading-relaxed">{translations[index].text}</p>
-                <div className={`text-xs mt-1 ${message.role === "user" ? "text-gray-500" : "text-gray-400"}`}>
+                <div className={`text-xs mt-1 ${message.role === "user" ? "text-blue-500" : "text-gray-400"}`}>
                   Traducido al {translations[index].language === "es" ? "español" : "inglés"}
                 </div>
               </Card>
@@ -145,7 +145,7 @@ export function ConversationHistory({
                 onClick={() => handleTranslate(index, message.content, "es")}
                 disabled={translatingIndex === index}
                 className={`h-6 text-xs ${
-                  message.role === "user" ? "text-gray-600 hover:text-black" : "text-gray-400 hover:text-white"
+                  message.role === "user" ? "text-blue-600 hover:text-blue-800" : "text-blue-600 hover:text-blue-800"
                 }`}
               >
                 {translatingIndex === index ? (
@@ -163,7 +163,7 @@ export function ConversationHistory({
                    size="sm"
                    onClick={() => handleAudioPlay(index, message.audio!)}
                    className={`h-6 text-xs ${
-                     message.role === "user" ? "text-gray-600 hover:text-black" : "text-gray-400 hover:text-white"
+                     message.role === "user" ? "text-blue-600 hover:text-blue-800" : "text-blue-600 hover:text-blue-800"
                    }`}
                  >
                    {playingIndex === index && isPlaying ? (
@@ -178,8 +178,8 @@ export function ConversationHistory({
           </div>
 
           {message.role === "user" && (
-            <div className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-              <User className="w-4 h-4 text-white" />
+            <div className="w-8 h-8 bg-blue-200 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+              <User className="w-4 h-4 text-blue-800" />
             </div>
           )}
         </div>
@@ -188,25 +188,25 @@ export function ConversationHistory({
       {/* Loading states */}
       {isTranscribing && (
         <div className="flex gap-3 justify-end">
-          <Card className="max-w-[80%] p-4 bg-gray-700 border-gray-600">
-            <div className="flex items-center gap-2 text-gray-300">
+          <Card className="max-w-[80%] p-4 bg-blue-100 border-blue-200">
+            <div className="flex items-center gap-2 text-blue-700">
               <Loader2 className="w-4 h-4 animate-spin" />
               <span className="text-sm">Transcribiendo...</span>
             </div>
           </Card>
-          <div className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-            <User className="w-4 h-4 text-white" />
+          <div className="w-8 h-8 bg-blue-200 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+            <User className="w-4 h-4 text-blue-800" />
           </div>
         </div>
       )}
 
       {isGenerating && (
         <div className="flex gap-3 justify-start">
-          <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-            <Bot className="w-4 h-4 text-black" />
+          <div className="w-8 h-8 bg-slate-600 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+            <Bot className="w-4 h-4 text-white" />
           </div>
           <Card className="max-w-[80%] p-4 bg-gray-800 border-gray-700">
-            <div className="flex items-center gap-2 text-gray-300">
+            <div className="flex items-center gap-2 text-blue-700">
               <Loader2 className="w-4 h-4 animate-spin" />
               <span className="text-sm">La IA está pensando...</span>
             </div>
