@@ -76,7 +76,7 @@ export function ConversationHistory({
       setPlayingIndex(null)
     } else {
       // Play new audio
-      if (audioRef.current) {
+      if (audioRef.current && audioBlob instanceof Blob) {
         const audioUrl = URL.createObjectURL(audioBlob)
         audioRef.current.src = audioUrl
         audioRef.current.play()
@@ -109,14 +109,16 @@ export function ConversationHistory({
   }
 
   const handleDownloadAudio = (audioBlob: Blob, index: number) => {
-    const url = URL.createObjectURL(audioBlob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `audio-mensaje-${index + 1}.wav`
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
+    if (audioBlob instanceof Blob) {
+      const url = URL.createObjectURL(audioBlob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `audio-mensaje-${index + 1}.wav`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+    }
   }
 
   const handleImageClick = (image: File) => {
@@ -195,12 +197,14 @@ export function ConversationHistory({
                     <div className="flex flex-wrap gap-2 mt-2">
                       {message.images.map((image, imageIndex) => (
                         <div key={imageIndex} className="relative group">
-                          <img
-                             src={URL.createObjectURL(image)}
-                             alt={`Imagen adjunta ${imageIndex + 1}`}
-                             className="max-w-48 max-h-48 object-cover rounded-lg border shadow-sm hover:shadow-md transition-shadow cursor-pointer"
-                             onClick={() => handleImageClick(image)}
-                           />
+                          {image instanceof File && (
+                            <img
+                               src={URL.createObjectURL(image)}
+                               alt={`Imagen adjunta ${imageIndex + 1}`}
+                               className="max-w-48 max-h-48 object-cover rounded-lg border shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                               onClick={() => handleImageClick(image)}
+                             />
+                          )}
                           <div className="absolute bottom-1 right-1 bg-black/50 text-white text-xs px-1 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity">
                             Click para ampliar
                           </div>
@@ -386,12 +390,14 @@ export function ConversationHistory({
             >
               <X className="w-4 h-4 text-gray-600" />
             </button>
-            <img
-              src={URL.createObjectURL(selectedImage)}
-              alt="Imagen ampliada"
-              className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
-              onClick={(e) => e.stopPropagation()}
-            />
+            {selectedImage instanceof File && (
+              <img
+                src={URL.createObjectURL(selectedImage)}
+                alt="Imagen ampliada"
+                className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
+                onClick={(e) => e.stopPropagation()}
+              />
+            )}
           </div>
         </div>
       )}

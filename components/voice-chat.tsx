@@ -239,7 +239,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
           addMessage("assistant", response.text, undefined, response.audio, response.model, userData.aiSettings.provider, response.responseTime, response.tokensUsed, undefined)
 
           // Play AI audio response if available
-          if (response.audio) {
+          if (response.audio && response.audio instanceof Blob) {
             const audioUrl = URL.createObjectURL(response.audio)
             if (audioRef.current) {
               audioRef.current.src = audioUrl
@@ -294,7 +294,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
         addMessage("assistant", response.text, undefined, response.audio, response.model, userData.aiSettings.provider, response.responseTime, response.tokensUsed, undefined)
 
         // Play AI audio response if available
-        if (response.audio) {
+        if (response.audio && response.audio instanceof Blob) {
           const audioUrl = URL.createObjectURL(response.audio)
           if (audioRef.current) {
             audioRef.current.src = audioUrl
@@ -664,11 +664,13 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
                 <div className="flex flex-wrap gap-2 p-2 bg-muted/30 rounded-lg">
                   {selectedImages.map((image, index) => (
                     <div key={index} className="relative group">
-                      <img
-                        src={URL.createObjectURL(image)}
-                        alt={`Imagen ${index + 1}`}
-                        className="w-16 h-16 object-cover rounded border"
-                      />
+                      {image instanceof File && (
+                        <img
+                          src={URL.createObjectURL(image)}
+                          alt={`Imagen ${index + 1}`}
+                          className="w-16 h-16 object-cover rounded border"
+                        />
+                      )}
                       <button
                         onClick={() => removeImage(index)}
                         className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
@@ -739,11 +741,13 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
                 <div className="flex flex-wrap gap-2 p-2 bg-muted/30 rounded-lg">
                   {selectedImages.map((image, index) => (
                     <div key={index} className="relative group">
-                      <img
-                        src={URL.createObjectURL(image)}
-                        alt={`Imagen ${index + 1}`}
-                        className="w-16 h-16 object-cover rounded border"
-                      />
+                      {image instanceof File && (
+                        <img
+                          src={URL.createObjectURL(image)}
+                          alt={`Imagen ${index + 1}`}
+                          className="w-16 h-16 object-cover rounded border"
+                        />
+                      )}
                       <button
                         onClick={() => removeImage(index)}
                         className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"

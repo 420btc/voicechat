@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -19,7 +19,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { Settings, User } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { Settings, User, ExternalLink } from "lucide-react"
 import { AIProvider } from "@/hooks/use-openai"
 import { useLocalStorage } from "@/hooks/use-local-storage"
 import { AI_AGENTS, AIAgent } from "@/hooks/use-user-data"
@@ -61,7 +62,37 @@ export default function AIProviderSelector({ settings, onSettingsChange }: AIPro
   const [open, setOpen] = useState(false)
   const [tempSettings, setTempSettings] = useState<AISettings>(settings)
   const [sortBy, setSortBy] = useState<'usage' | 'date'>('usage')
+  const [isConnected, setIsConnected] = useState(navigator.onLine)
+  const [sessionTime, setSessionTime] = useState(0)
+  const [sessionStartTime] = useState(Date.now())
   const { conversation } = useLocalStorage()
+
+  useEffect(() => {
+    setTempSettings(settings)
+  }, [settings])
+
+  // Monitor connection status
+  useEffect(() => {
+    const handleOnline = () => setIsConnected(true)
+    const handleOffline = () => setIsConnected(false)
+
+    window.addEventListener('online', handleOnline)
+    window.addEventListener('offline', handleOffline)
+
+    return () => {
+      window.removeEventListener('online', handleOnline)
+      window.removeEventListener('offline', handleOffline)
+    }
+  }, [])
+
+  // Update session time
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setSessionTime(Math.floor((Date.now() - sessionStartTime) / 1000))
+    }, 1000)
+
+    return () => clearInterval(interval)
+  }, [sessionStartTime])
 
   // Función para calcular el tiempo total de uso de un modelo
   const calculateModelTime = (modelName: string): number => {
@@ -87,6 +118,55 @@ export default function AIProviderSelector({ settings, onSettingsChange }: AIPro
     } else {
       return `${seconds}s`
     }
+  }
+
+  // Función para formatear tiempo de sesión
+  const formatSessionTime = (seconds: number): string => {
+    const hours = Math.floor(seconds / 3600)
+    const minutes = Math.floor((seconds % 3600) / 60)
+    const secs = seconds % 60
+    
+    if (hours > 0) {
+      return `${hours}h ${minutes}m ${secs}s`
+    } else if (minutes > 0) {
+      return `${minutes}m ${secs}s`
+    } else {
+      return `${secs}s`
+    }
+  }
+
+  // Función para calcular el tiempo promedio de respuesta de un modelo
+  const calculateAverageResponseTime = (modelName: string): number => {
+    const modelMessages = conversation.filter(message => 
+      message.model === modelName && 
+      message.responseTime && 
+      message.role === "assistant"
+    )
+    
+    if (modelMessages.length === 0) return 0
+    
+    const totalTime = modelMessages.reduce((sum, message) => sum + (message.responseTime || 0), 0)
+    return totalTime / modelMessages.length
+  }
+
+  // Función para obtener el ranking de modelos por velocidad
+  const getModelSpeedRanking = () => {
+    const modelStats = new Map<string, { totalTime: number, messageCount: number, avgTime: number }>()
+    
+    conversation.forEach(message => {
+      if (message.model && message.responseTime && message.role === "assistant") {
+        const current = modelStats.get(message.model) || { totalTime: 0, messageCount: 0, avgTime: 0 }
+        current.totalTime += message.responseTime
+        current.messageCount += 1
+        current.avgTime = current.totalTime / current.messageCount
+        modelStats.set(message.model, current)
+      }
+    })
+    
+    return Array.from(modelStats.entries())
+      .map(([model, stats]) => ({ model, ...stats }))
+      .filter(item => item.messageCount >= 1) // Solo modelos con al menos 1 mensaje
+      .sort((a, b) => a.avgTime - b.avgTime) // Ordenar por tiempo promedio (más rápido primero)
   }
 
   const handleSave = () => {
@@ -219,6 +299,49 @@ export default function AIProviderSelector({ settings, onSettingsChange }: AIPro
                           <p className="mt-2 p-2 bg-muted/50 rounded text-muted-foreground">{selectedAgent.systemPrompt}</p>
                         </details>
                       </div>
+                    ) : null
+                  })()}
+                  
+                  {/* Model Speed Ranking */}
+                  {(() => {
+                    const speedRanking = getModelSpeedRanking()
+                    return speedRanking.length > 0 ? (
+                      <div className="rounded-lg border p-4 bg-muted/50 h-[260px] flex flex-col">
+                         <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
+                           <span>⚡</span>
+                           Modelos Más Rápidos
+                         </h4>
+                         <div className="space-y-2 flex-1 overflow-y-auto">
+                           {speedRanking.slice(0, 10).map((item, index) => (
+                             <div key={item.model} className="flex items-center justify-between text-xs">
+                               <div className="flex items-center gap-2">
+                                 <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                                   index === 0 ? 'bg-yellow-400 text-yellow-900' :
+                                   index === 1 ? 'bg-gray-300 text-gray-700' :
+                                   index === 2 ? 'bg-orange-400 text-orange-900' :
+                                   'bg-muted text-muted-foreground'
+                                 }`}>
+                                   {index + 1}
+                                 </span>
+                                 <span className="font-medium">
+                                    {item.model}
+                                  </span>
+                               </div>
+                               <div className="text-right">
+                                 <div className="font-medium">
+                                   {formatTime(item.avgTime)}
+                                 </div>
+                                 <div className="text-muted-foreground">
+                                   {item.messageCount} msg{item.messageCount !== 1 ? 's' : ''}
+                                 </div>
+                               </div>
+                             </div>
+                           ))}
+                         </div>
+                         <p className="text-xs text-muted-foreground mt-2">
+                           Tiempo promedio de respuesta en esta computadora
+                         </p>
+                       </div>
                     ) : null
                   })()}
                 </div>
@@ -487,71 +610,64 @@ export default function AIProviderSelector({ settings, onSettingsChange }: AIPro
               </p>
             </div>
 
-            {/* Provider Info Box */}
-            <div className="rounded-lg border p-4 bg-muted/50">
-              <h4 className="text-sm font-medium mb-2">
-                {(() => {
-                  switch (tempSettings.provider) {
-                    case "openai": return "OpenAI"
-                    case "lmstudio": return "LM Studio"
-                    case "anthropic": return "Anthropic (Claude)"
-                    case "deepseek": return "DeepSeek"
-                    case "grok": return "Grok (X.AI)"
-                    case "gemini": return "Google Gemini"
-                    case "qwen": return "Qwen (Local)"
-                    case "deepseek-lm": return "DeepSeek-LM (Local)"
-                    default: return "Proveedor de IA"
-                  }
-                })()}
-              </h4>
-              <p className="text-xs text-muted-foreground">
-                {(() => {
-                  switch (tempSettings.provider) {
-                    case "openai":
-                      return "Usa los modelos de OpenAI en la nube. Requiere API key válida y conexión a internet."
-                    case "lmstudio":
-                      return "Usa modelos locales a través de LM Studio. Asegúrate de que LM Studio esté ejecutándose en el puerto especificado."
-                    case "anthropic":
-                      return "Usa los modelos Claude de Anthropic. Requiere API key válida y conexión a internet."
-                    case "deepseek":
-                      return "Usa los modelos de DeepSeek. Requiere API key válida y conexión a internet."
-                    case "grok":
-                      return "Usa los modelos Grok de X.AI. Requiere API key válida y conexión a internet."
-                    case "gemini":
-                      return "Usa los modelos Gemini de Google. Requiere API key válida y conexión a internet."
-                    case "qwen":
-                      return "Usa modelos Qwen locales con prompt optimizado. Los agentes especializados se desactivan automáticamente."
-                    case "deepseek-lm":
-                      return "Usa modelos DeepSeek-LM locales con prompt optimizado. Los agentes especializados se desactivan automáticamente."
-                    default:
-                      return "Selecciona un proveedor de IA para continuar."
-                  }
-                })()}
-              </p>
-              {(tempSettings.provider === "lmstudio" || tempSettings.provider === "anthropic" || tempSettings.provider === "deepseek" || tempSettings.provider === "grok" || tempSettings.provider === "gemini" || tempSettings.provider === "qwen" || tempSettings.provider === "deepseek-lm") && (
-                <p className="text-xs text-muted-foreground mt-2">
-                  <strong>Nota:</strong> La transcripción de audio y text-to-speech seguirán usando OpenAI.
-                </p>
-              )}
-            </div>
+
 
             {/* Statistics Card */}
-            <div className="rounded-lg border p-4 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20">
-              <h4 className="text-sm font-medium mb-3 text-blue-900 dark:text-blue-100">Estadísticas de Uso</h4>
+            <div className="rounded-lg border p-4 bg-muted/50">
+              <h4 className="text-sm font-medium mb-3">Estadísticas de Uso</h4>
               <div className="grid grid-cols-2 gap-4">
                 <div className="text-center">
-                  <div className="text-lg font-bold text-blue-700 dark:text-blue-300">
+                  <div className="text-lg font-bold">
                     {settings.modelHistory.filter(entry => entry.provider === tempSettings.provider).length}
                   </div>
-                  <div className="text-xs text-blue-600 dark:text-blue-400">Modelos Usados</div>
+                  <div className="text-xs text-muted-foreground">Modelos Usados</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-lg font-bold text-blue-700 dark:text-blue-300">
+                  <div className="text-lg font-bold">
                     {settings.modelHistory
                       .filter(entry => entry.provider === tempSettings.provider)
                       .reduce((total, entry) => total + entry.usageCount, 0)}
                   </div>
-                  <div className="text-xs text-blue-600 dark:text-blue-400">Total Usos</div>
+                  <div className="text-xs text-muted-foreground">Total Usos</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Connection Status & HuggingFace Access Card */}
+            <div className="rounded-lg border p-4 bg-muted/50">
+              <h4 className="text-sm font-medium mb-3">Estado y Recursos</h4>
+              <div className="space-y-3">
+                {/* Connection Status */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <Badge 
+                      variant={isConnected ? "default" : "destructive"}
+                      className={isConnected ? "bg-green-500 hover:bg-green-600" : "bg-red-500 hover:bg-red-600"}
+                    >
+                      <div className={`w-2 h-2 rounded-full mr-1 ${isConnected ? 'bg-white' : 'bg-white'}`} />
+                      {isConnected ? 'Conectado' : 'Desconectado'}
+                    </Badge>
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    Sesión: {formatSessionTime(sessionTime)}
+                  </div>
+                </div>
+                
+                {/* HuggingFace Access */}
+                <div className="flex items-center justify-between p-2 rounded border bg-background/50">
+                  <div className="flex items-center space-x-2">
+                    <div className="text-sm font-medium">HuggingFace Models</div>
+                    <div className="text-xs text-muted-foreground">Descargar últimos modelos</div>
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => window.open('https://huggingface.co/models', '_blank')}
+                    className="h-8 px-3"
+                  >
+                    <ExternalLink className="w-3 h-3 mr-1" />
+                    Acceder
+                  </Button>
                 </div>
               </div>
             </div>
