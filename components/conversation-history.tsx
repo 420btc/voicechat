@@ -118,12 +118,12 @@ export function ConversationHistory({
 
   if (conversation.length === 0 && !isTranscribing && !isGenerating) {
     return (
-      <div className="flex-1 flex items-start justify-center pt-60">
-        <div className="text-center text-muted-foreground">
-          <h1 className="text-4xl lg:text-6xl font-bold text-foreground mb-8 faster-one-regular">Local AI</h1>
-          <Bot className="w-12 h-12 mx-auto mb-4 opacity-50" />
-          <p className="text-lg">Inicia una conversación</p>
-          <p className="text-sm">Toca el micrófono para comenzar</p>
+      <div className="flex-1 flex items-center justify-center px-4 py-8 sm:pt-60">
+        <div className="text-center text-muted-foreground max-w-md">
+          <h1 className="text-3xl sm:text-4xl lg:text-6xl font-bold text-foreground mb-6 sm:mb-8 faster-one-regular">Local AI</h1>
+          <Bot className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-3 sm:mb-4 opacity-50" />
+          <p className="text-base sm:text-lg mb-2">Inicia una conversación</p>
+          <p className="text-sm text-muted-foreground/80">Toca el micrófono para comenzar</p>
         </div>
       </div>
     )

@@ -339,24 +339,50 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col h-screen overflow-hidden">
       {/* Header */}
-      <header className="flex-shrink-0 p-4 lg:p-6 border-b border-border">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
-          {/* Left Section - User Profile */}
-          <div className="flex items-center -ml-10">
+      <header className="flex-shrink-0 p-2 sm:p-4 lg:p-6 border-b border-border">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4 lg:gap-8">
+          {/* Mobile: Top Row - User Profile and Settings */}
+          <div className="flex sm:hidden items-center justify-between w-full">
             {isLoaded && (
-              <div className="hidden sm:block">
-                <UserProfile
-                  userName={userData.name}
-                  userAvatar={userData.avatar}
-                  onUserNameChange={updateUserName}
-                  onAvatarChange={updateUserAvatar}
+              <UserProfile
+                userName={userData.name}
+                userAvatar={userData.avatar}
+                onUserNameChange={updateUserName}
+                onAvatarChange={updateUserAvatar}
+              />
+            )}
+            <div className="flex items-center gap-1">
+              {/* Theme Selector */}
+              {isLoaded && (
+                <ThemeSelector
+                  settings={userData.themeSettings}
+                  onSettingsChange={updateThemeSettings}
                 />
-              </div>
+              )}
+              {/* AI Provider Settings */}
+              {isLoaded && (
+                <AIProviderSelector
+                  settings={userData.aiSettings}
+                  onSettingsChange={updateAISettings}
+                />
+              )}
+            </div>
+          </div>
+          
+          {/* Desktop: Left Section - User Profile */}
+          <div className="hidden sm:flex items-center">
+            {isLoaded && (
+              <UserProfile
+                userName={userData.name}
+                userAvatar={userData.avatar}
+                onUserNameChange={updateUserName}
+                onAvatarChange={updateUserAvatar}
+              />
             )}
           </div>
           
-          {/* Right Section - Controls */}
-          <div className="flex items-center gap-1 sm:gap-2 lg:gap-4">
+          {/* Main Controls - Full width on mobile, centered on desktop */}
+          <div className="flex items-center gap-1 sm:gap-2 lg:gap-4 w-full sm:flex-1 justify-center">
             {/* Chat Mode Toggle */}
             <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1">
               <Button
@@ -472,48 +498,51 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
               }
             })()}
             
-            {/* Settings & Theme */}
-            <div className="flex items-center gap-1 lg:gap-2 border-l border-border pl-1 sm:pl-2 lg:pl-4 ml-1 sm:ml-2 lg:ml-4">
-              {/* Theme Selector */}
-              {isLoaded && (
-                <ThemeSelector
-                  settings={userData.themeSettings}
-                  onSettingsChange={updateThemeSettings}
-                />
-              )}
-              
-              {/* AI Provider Settings */}
-              {isLoaded && (
-                <AIProviderSelector
-                  settings={userData.aiSettings}
-                  onSettingsChange={updateAISettings}
-                />
-              )}
-              
-              {/* Legacy API Settings (for OpenAI key fallback) */}
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={onShowApiKeySetup} 
-                className="text-muted-foreground hover:text-foreground h-8 px-1 sm:px-2 lg:px-3"
-                title="Configuración API"
-              >
-                <Key className="w-4 h-4" />
-                <span className="hidden lg:inline ml-2">API Keys</span>
-              </Button>
-            </div>
-            
-            {/* Mobile User Profile */}
+          </div>
+          
+          {/* Desktop: Right Section - Settings & Theme */}
+          <div className="hidden sm:flex items-center gap-1 lg:gap-2">
+            {/* Theme Selector */}
             {isLoaded && (
-              <div className="sm:hidden">
-                <UserProfile
-                  userName={userData.name}
-                  userAvatar={userData.avatar}
-                  onUserNameChange={updateUserName}
-                  onAvatarChange={updateUserAvatar}
-                />
-              </div>
+              <ThemeSelector
+                settings={userData.themeSettings}
+                onSettingsChange={updateThemeSettings}
+              />
             )}
+            
+            {/* AI Provider Settings */}
+            {isLoaded && (
+              <AIProviderSelector
+                settings={userData.aiSettings}
+                onSettingsChange={updateAISettings}
+              />
+            )}
+            
+            {/* Legacy API Settings (for OpenAI key fallback) */}
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={onShowApiKeySetup} 
+              className="text-muted-foreground hover:text-foreground h-8 px-1 sm:px-2 lg:px-3"
+              title="Configuración API"
+            >
+              <Key className="w-4 h-4" />
+              <span className="hidden lg:inline ml-2">API Keys</span>
+            </Button>
+          </div>
+          
+          {/* Mobile: Bottom Row - API Settings */}
+          <div className="flex sm:hidden items-center justify-center w-full">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={onShowApiKeySetup} 
+              className="text-muted-foreground hover:text-foreground h-8 px-2"
+              title="Configuración API"
+            >
+              <Key className="w-4 h-4" />
+              <span className="ml-2">API Keys</span>
+            </Button>
           </div>
         </div>
       </header>
