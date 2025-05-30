@@ -127,7 +127,11 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
 
   // Handle chat mode change with provider validation
   const handleChatModeChange = (newMode: 'voice' | 'text' | 'programmer') => {
-    // Allow switching to voice mode without forcing OpenAI setup
+    // Check if switching to voice mode with non-OpenAI provider
+    if (newMode === 'voice' && userData.aiSettings.provider !== 'openai') {
+      setShowProviderWarning(true)
+      return
+    }
     setChatMode(newMode)
   }
 
@@ -794,7 +798,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
               Cambio de Modo Detectado
             </DialogTitle>
             <DialogDescription>
-              Estás usando LM Studio, pero el modo de voz requiere OpenAI para la síntesis de voz. 
+              Estás usando {userData.aiSettings.provider === 'lmstudio' ? 'LM Studio' : userData.aiSettings.provider.charAt(0).toUpperCase() + userData.aiSettings.provider.slice(1)}, pero el modo de voz requiere OpenAI para la síntesis de voz. 
               ¿Qué te gustaría hacer?
             </DialogDescription>
           </DialogHeader>
@@ -825,7 +829,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
                 onClick={handleContinueWithLMStudio}
                 className="w-full"
               >
-                Continuar con LM Studio (Solo texto)
+                Continuar con {userData.aiSettings.provider === 'lmstudio' ? 'LM Studio' : userData.aiSettings.provider.charAt(0).toUpperCase() + userData.aiSettings.provider.slice(1)} (Solo texto)
               </Button>
               <Button 
                 variant="ghost" 
