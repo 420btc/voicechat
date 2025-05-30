@@ -11,6 +11,7 @@ interface Message {
   audio?: Blob
   model?: string
   provider?: AIProvider
+  images?: File[]
 }
 
 interface AIResponse {

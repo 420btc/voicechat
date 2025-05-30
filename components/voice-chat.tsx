@@ -264,10 +264,8 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
       const userMessage = textInput.trim()
       setTextInput('')
       
-      // Create display message for user (include image info if present)
-      const displayMessage = selectedImages.length > 0 
-        ? `${userMessage} [${selectedImages.length} imagen${selectedImages.length > 1 ? 'es' : ''} adjunta${selectedImages.length > 1 ? 's' : ''}]`
-        : userMessage
+      // Create display message for user (no need to include image info as images will be shown visually)
+      const displayMessage = userMessage
       
       // Calculate prompt tokens immediately
       const conversationMessages = [
@@ -288,7 +286,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
       const promptTokens = calculateConversationTokens(conversationMessages, userData.aiSettings.provider === "lmstudio" ? "gpt-4o" : "gpt-4o")
       
       // Add user message immediately with calculated prompt tokens
-      addMessage("user", displayMessage, undefined, undefined, undefined, undefined, undefined, undefined, promptTokens)
+      addMessage("user", displayMessage, undefined, undefined, undefined, undefined, undefined, undefined, promptTokens, selectedImages.length > 0 ? selectedImages : undefined)
       
       // Generate AI response (pass images if available)
       const response = await generateResponse(userMessage, selectedImages)

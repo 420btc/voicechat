@@ -17,6 +17,7 @@ interface Message {
   responseTime?: number // in milliseconds
   tokensUsed?: number
   promptTokens?: number
+  images?: File[]
 }
 
 interface ConversationHistoryProps {
@@ -174,7 +175,32 @@ export function ConversationHistory({
                   ))}
                 </div>
               ) : (
-                <p className="text-sm leading-relaxed">{message.content}</p>
+                <div className="space-y-2">
+                  <p className="text-sm leading-relaxed">{message.content}</p>
+                  
+                  {/* Mostrar imágenes adjuntas */}
+                  {message.images && message.images.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {message.images.map((image, imageIndex) => (
+                        <div key={imageIndex} className="relative group">
+                          <img
+                            src={URL.createObjectURL(image)}
+                            alt={`Imagen adjunta ${imageIndex + 1}`}
+                            className="max-w-48 max-h-48 object-cover rounded-lg border shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                            onClick={() => {
+                              // Abrir imagen en nueva ventana para vista completa
+                              const imageUrl = URL.createObjectURL(image)
+                              window.open(imageUrl, '_blank')
+                            }}
+                          />
+                          <div className="absolute bottom-1 right-1 bg-black/50 text-white text-xs px-1 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity">
+                            Click para ampliar
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               )}
               <div className={`flex justify-between items-center text-xs mt-2 ${message.role === "user" ? "text-blue-600" : "text-muted-foreground"}`}>
                 <div className="flex items-center gap-2">
