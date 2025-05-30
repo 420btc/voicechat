@@ -116,7 +116,12 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
     anthropicModel: userData.aiSettings.anthropicModel,
     geminiModel: userData.aiSettings.geminiModel,
     selectedAgent: userData.aiSettings.selectedAgent,
-    onModelUsed: addModelToHistory
+    onModelUsed: addModelToHistory,
+    qwenBaseUrl: userData.aiSettings.qwenBaseUrl,
+    qwenModel: userData.aiSettings.qwenModel,
+    deepseekLmBaseUrl: userData.aiSettings.deepseekLmBaseUrl,
+    deepseekLmModel: userData.aiSettings.deepseekLmModel,
+    useSpecialPrompt: userData.aiSettings.useSpecialPrompt
   })
 
   // Initialize temp OpenAI key with saved key

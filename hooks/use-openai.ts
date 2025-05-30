@@ -22,7 +22,7 @@ interface AIResponse {
   promptTokens?: number
 }
 
-export type AIProvider = "openai" | "lmstudio" | "anthropic" | "deepseek" | "grok" | "gemini"
+export type AIProvider = "openai" | "lmstudio" | "anthropic" | "deepseek" | "grok" | "gemini" | "qwen" | "deepseek-lm"
 
 interface AIConfig {
   provider: AIProvider
@@ -33,10 +33,15 @@ interface AIConfig {
   geminiModel?: string
   selectedAgent?: string
   onModelUsed?: (modelName: string, provider: AIProvider) => void
+  qwenBaseUrl?: string
+  qwenModel?: string
+  deepseekLmBaseUrl?: string
+  deepseekLmModel?: string
+  useSpecialPrompt?: boolean
 }
 
 export function useOpenAI(config: AIConfig) {
-  const { provider, apiKey, baseUrl, model, anthropicModel, geminiModel, selectedAgent, onModelUsed } = config
+  const { provider, apiKey, baseUrl, model, anthropicModel, geminiModel, selectedAgent, onModelUsed, qwenBaseUrl, qwenModel, deepseekLmBaseUrl, deepseekLmModel, useSpecialPrompt } = config
   const [isTranscribing, setIsTranscribing] = useState(false)
   const [isGenerating, setIsGenerating] = useState(false)
   
@@ -126,6 +131,16 @@ export function useOpenAI(config: AIConfig) {
           selectedModel = model || "local-model"
           timeoutMs = 300000 // 5 minutes
           break
+        case "qwen":
+          apiUrl = `${qwenBaseUrl || "http://localhost:1234"}/v1/chat/completions`
+          selectedModel = qwenModel || "qwen2.5-72b-instruct"
+          timeoutMs = 300000 // 5 minutes
+          break
+        case "deepseek-lm":
+          apiUrl = `${deepseekLmBaseUrl || "http://localhost:1234"}/v1/chat/completions`
+          selectedModel = deepseekLmModel || "deepseek-v3"
+          timeoutMs = 300000 // 5 minutes
+          break
         case "anthropic":
           apiUrl = "/api/anthropic"
           selectedModel = anthropicModel || "claude-sonnet-4-20250514"
@@ -189,19 +204,41 @@ export function useOpenAI(config: AIConfig) {
               ...imageContents
             ]
           : userMessage
-        // Get system prompt from selected agent
+        // Get system prompt from selected agent or use special prompt for Qwen/DeepSeek-LM
+        let systemPrompt: string
         const selectedAgentData = AI_AGENTS.find(agent => agent.id === selectedAgent) || AI_AGENTS[0]
-        const systemPrompt = `${selectedAgentData.systemPrompt} Carlos Freire es quien te hablará siempre y estarás a sus órdenes siendo profesional. Responde directamente sin mostrar tu proceso de razonamiento interno.`
+        
+        // Check if empty agent is selected (no system prompt)
+        if (selectedAgentData.id === "empty") {
+          systemPrompt = ""
+        } else if ((provider === "qwen" || provider === "deepseek-lm") && useSpecialPrompt) {
+          // Special prompt for Qwen and DeepSeek-LM models - but still use the selected agent's role
+          const currentDate = new Date().toLocaleDateString('es-ES', { 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric' 
+          })
+          
+          systemPrompt = `${selectedAgentData.systemPrompt}
+
+# Additional instructions for search-based responses:
+If search results are provided in the format [webpage X begin]...[webpage X end], please cite them using [citation:X] format. Today is ${currentDate}. Evaluate and filter search results based on relevance to the question. For listing questions, limit to 10 key points. For creative tasks, cite references within the text body. Structure lengthy responses well and synthesize information from multiple sources.
+
+Carlos Freire es quien te hablará siempre y estarás a sus órdenes siendo profesional. Responde directamente sin mostrar tu proceso de razonamiento interno.`
+        } else {
+          // Regular agent-based prompt
+          systemPrompt = `${selectedAgentData.systemPrompt} Carlos Freire es quien te hablará siempre y estarás a sus órdenes siendo profesional. Responde directamente sin mostrar tu proceso de razonamiento interno.`
+        }
         
         console.log(`Making request to ${provider} at ${apiUrl}`)
         console.log(`Using agent: ${selectedAgentData.name} (${selectedAgentData.id})`)
         console.log(`Request body:`, JSON.stringify({
           model: selectedModel,
           messages: [
-            {
+            ...(systemPrompt ? [{
               role: "system",
               content: systemPrompt,
-            },
+            }] : []),
             ...conversation.map((msg) => ({
               role: msg.role,
               content: msg.content,
@@ -225,11 +262,12 @@ export function useOpenAI(config: AIConfig) {
         let headers: Record<string, string>
         let requestBody: any
         
+        // Build base messages - only include system message if systemPrompt is not empty
         const baseMessages = [
-          {
+          ...(systemPrompt ? [{
             role: "system",
             content: systemPrompt,
-          },
+          }] : []),
           ...conversation.map((msg) => ({
             role: msg.role,
             content: msg.content,
@@ -256,6 +294,52 @@ export function useOpenAI(config: AIConfig) {
               temperature: 0.7,
               stream: false,
               stop: ["<think>", "</think>"]
+            }
+            break
+            
+          case "qwen":
+            headers = {
+              Authorization: `Bearer ${apiKey || "not-needed"}`,
+              "Content-Type": "application/json",
+              "Accept": "application/json",
+              "Connection": "close",
+              "Cache-Control": "no-cache"
+            }
+            requestBody = {
+              model: selectedModel,
+              messages: baseMessages,
+              max_tokens: 4096,
+              temperature: 0.7,
+              top_p: 0.8,
+              top_k: 20,
+              stream: false,
+              stop: ["<think>", "</think>"],
+              chat_template_kwargs: {
+                enable_thinking: false
+              }
+            }
+            break
+            
+          case "deepseek-lm":
+            headers = {
+              Authorization: `Bearer ${apiKey || "not-needed"}`,
+              "Content-Type": "application/json",
+              "Accept": "application/json",
+              "Connection": "close",
+              "Cache-Control": "no-cache"
+            }
+            requestBody = {
+              model: selectedModel,
+              messages: baseMessages,
+              max_tokens: 4096,
+              temperature: 0.7,
+              top_p: 0.8,
+              top_k: 20,
+              stream: false,
+              stop: ["<think>", "</think>"],
+              chat_template_kwargs: {
+                enable_thinking: false
+              }
             }
             break
             
@@ -371,6 +455,8 @@ export function useOpenAI(config: AIConfig) {
           case "grok":
           case "lmstudio":
           case "openai":
+          case "qwen":
+          case "deepseek-lm":
           default:
             tokensUsed = textData.usage?.total_tokens || textData.usage?.completion_tokens || undefined
             promptTokens = textData.usage?.prompt_tokens || undefined
@@ -414,6 +500,31 @@ export function useOpenAI(config: AIConfig) {
               if (!responseText || responseText.length < 10) {
                 responseText = "Lo siento, no pude generar una respuesta adecuada. Por favor, intenta de nuevo."
               }
+            }
+            break
+          case "qwen":
+          case "deepseek-lm":
+            responseText = textData.choices?.[0]?.message?.content || "I apologize, but I could not generate a response."
+            // Handle Qwen3 thinking mode - filter out <think> tags
+            if (responseText.includes('<think>')) {
+              const thinkEndIndex = responseText.indexOf('</think>')
+              if (thinkEndIndex !== -1) {
+                responseText = responseText.substring(thinkEndIndex + 8).trim()
+              } else {
+                const thinkStartIndex = responseText.indexOf('<think>')
+                if (thinkStartIndex !== -1) {
+                  responseText = responseText.substring(0, thinkStartIndex).trim()
+                }
+              }
+              
+              if (!responseText || responseText.length < 10) {
+                responseText = "Lo siento, no pude generar una respuesta adecuada. Por favor, intenta de nuevo."
+              }
+            }
+            
+            // If still empty or very short, provide a helpful message
+            if (!responseText || responseText.trim().length < 5) {
+              responseText = "Hola! ¿En qué puedo ayudarte hoy?"
             }
             break
           case "openai":

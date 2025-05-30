@@ -38,6 +38,11 @@ interface AISettings {
   geminiModel: string
   selectedAgent: string
   modelHistory: ModelHistoryEntry[]
+  qwenBaseUrl: string
+  qwenModel: string
+  deepseekLmBaseUrl: string
+  deepseekLmModel: string
+  useSpecialPrompt: boolean
 }
 
 interface AIProviderSelectorProps {
@@ -132,6 +137,8 @@ export default function AIProviderSelector({ settings, onSettingsChange }: AIPro
                   <SelectItem value="deepseek">DeepSeek</SelectItem>
                   <SelectItem value="grok">Grok (X.AI)</SelectItem>
                   <SelectItem value="gemini">Google Gemini</SelectItem>
+                  <SelectItem value="qwen">Qwen (Local)</SelectItem>
+                  <SelectItem value="deepseek-lm">DeepSeek-LM (Local)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -341,6 +348,78 @@ export default function AIProviderSelector({ settings, onSettingsChange }: AIPro
                 )}
               </div>
             )}
+
+            {/* Qwen Settings */}
+            {tempSettings.provider === "qwen" && (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="qwen-url">URL Base de Qwen</Label>
+                  <Input
+                    id="qwen-url"
+                    placeholder="http://localhost:1234"
+                    value={tempSettings.qwenBaseUrl}
+                    onChange={(e) => 
+                      setTempSettings(prev => ({ ...prev, qwenBaseUrl: e.target.value, useSpecialPrompt: true }))
+                    }
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="qwen-model">Modelo de Qwen</Label>
+                  <Input
+                    id="qwen-model"
+                    placeholder="qwen2.5-72b-instruct"
+                    value={tempSettings.qwenModel}
+                    onChange={(e) => 
+                      setTempSettings(prev => ({ ...prev, qwenModel: e.target.value }))
+                    }
+                  />
+                </div>
+                
+                <div className="rounded-lg border p-3 bg-orange-50 dark:bg-orange-950/20">
+                  <p className="text-sm text-orange-700 dark:text-orange-300">
+                    <strong>Prompt Especial Activado:</strong> Los modelos Qwen utilizan un prompt de sistema optimizado automáticamente. 
+                    Los agentes especializados se desactivarán mientras uses este proveedor.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* DeepSeek-LM Settings */}
+            {tempSettings.provider === "deepseek-lm" && (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="deepseek-lm-url">URL Base de DeepSeek-LM</Label>
+                  <Input
+                    id="deepseek-lm-url"
+                    placeholder="http://localhost:1234"
+                    value={tempSettings.deepseekLmBaseUrl}
+                    onChange={(e) => 
+                      setTempSettings(prev => ({ ...prev, deepseekLmBaseUrl: e.target.value, useSpecialPrompt: true }))
+                    }
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="deepseek-lm-model">Modelo de DeepSeek-LM</Label>
+                  <Input
+                    id="deepseek-lm-model"
+                    placeholder="deepseek-v3"
+                    value={tempSettings.deepseekLmModel}
+                    onChange={(e) => 
+                      setTempSettings(prev => ({ ...prev, deepseekLmModel: e.target.value }))
+                    }
+                  />
+                </div>
+                
+                <div className="rounded-lg border p-3 bg-orange-50 dark:bg-orange-950/20">
+                  <p className="text-sm text-orange-700 dark:text-orange-300">
+                    <strong>Prompt Especial Activado:</strong> Los modelos DeepSeek-LM utilizan un prompt de sistema optimizado automáticamente. 
+                    Los agentes especializados se desactivarán mientras uses este proveedor.
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Right Column - Model History and Info */}
@@ -419,6 +498,8 @@ export default function AIProviderSelector({ settings, onSettingsChange }: AIPro
                     case "deepseek": return "DeepSeek"
                     case "grok": return "Grok (X.AI)"
                     case "gemini": return "Google Gemini"
+                    case "qwen": return "Qwen (Local)"
+                    case "deepseek-lm": return "DeepSeek-LM (Local)"
                     default: return "Proveedor de IA"
                   }
                 })()}
@@ -438,12 +519,16 @@ export default function AIProviderSelector({ settings, onSettingsChange }: AIPro
                       return "Usa los modelos Grok de X.AI. Requiere API key válida y conexión a internet."
                     case "gemini":
                       return "Usa los modelos Gemini de Google. Requiere API key válida y conexión a internet."
+                    case "qwen":
+                      return "Usa modelos Qwen locales con prompt optimizado. Los agentes especializados se desactivan automáticamente."
+                    case "deepseek-lm":
+                      return "Usa modelos DeepSeek-LM locales con prompt optimizado. Los agentes especializados se desactivan automáticamente."
                     default:
                       return "Selecciona un proveedor de IA para continuar."
                   }
                 })()}
               </p>
-              {(tempSettings.provider === "lmstudio" || tempSettings.provider === "anthropic" || tempSettings.provider === "deepseek" || tempSettings.provider === "grok" || tempSettings.provider === "gemini") && (
+              {(tempSettings.provider === "lmstudio" || tempSettings.provider === "anthropic" || tempSettings.provider === "deepseek" || tempSettings.provider === "grok" || tempSettings.provider === "gemini" || tempSettings.provider === "qwen" || tempSettings.provider === "deepseek-lm") && (
                 <p className="text-xs text-muted-foreground mt-2">
                   <strong>Nota:</strong> La transcripción de audio y text-to-speech seguirán usando OpenAI.
                 </p>

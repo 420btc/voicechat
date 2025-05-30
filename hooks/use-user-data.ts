@@ -34,6 +34,11 @@ interface AISettings {
   geminiModel: string
   selectedAgent: string
   modelHistory: ModelHistoryEntry[]
+  qwenBaseUrl: string
+  qwenModel: string
+  deepseekLmBaseUrl: string
+  deepseekLmModel: string
+  useSpecialPrompt: boolean
 }
 
 interface UserData {
@@ -45,6 +50,13 @@ interface UserData {
 }
 
 const AI_AGENTS: AIAgent[] = [
+  {
+    id: "empty",
+    name: "Sin Prompt del Sistema",
+    description: "Modo sin instrucciones del sistema - respuestas completamente libres",
+    systemPrompt: "",
+    icon: "⚪"
+  },
   {
     id: "general",
     name: "Agente General",
@@ -141,7 +153,12 @@ const DEFAULT_USER_DATA: UserData = {
     geminiApiKey: "",
     geminiModel: "google/gemma-3-4b",
     selectedAgent: "general",
-    modelHistory: []
+    modelHistory: [],
+    qwenBaseUrl: "http://localhost:1234",
+    qwenModel: "qwen2.5-72b-instruct",
+    deepseekLmBaseUrl: "http://localhost:1234",
+    deepseekLmModel: "deepseek-v3",
+    useSpecialPrompt: false
   }
 }
 
