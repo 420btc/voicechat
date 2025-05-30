@@ -683,11 +683,11 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
                   <>
                     <Button
                       type="button"
-                      variant="outline"
+                      variant="default"
                       size="sm"
                       onClick={() => fileInputRef.current?.click()}
                       disabled={isGenerating || selectedImages.length >= 3}
-                      className="px-3"
+                      className="px-2 mt-1"
                       title="Agregar imagen (máximo 3)"
                     >
                       <ImagePlus className="w-4 h-4" />
@@ -758,11 +758,11 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
                   <>
                     <Button
                       type="button"
-                      variant="outline"
+                      variant="default"
                       size="sm"
                       onClick={() => fileInputRef.current?.click()}
                       disabled={isGenerating || selectedImages.length >= 3}
-                      className="px-3"
+                      className="px-3 mt-1"
                       title="Agregar imagen (máximo 3)"
                     >
                       <ImagePlus className="w-4 h-4" />
