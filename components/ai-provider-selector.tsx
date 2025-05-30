@@ -35,6 +35,7 @@ interface AISettings {
   deepseekApiKey: string
   grokApiKey: string
   geminiApiKey: string
+  geminiModel: string
   selectedAgent: string
   modelHistory: ModelHistoryEntry[]
 }
@@ -428,6 +429,36 @@ export default function AIProviderSelector({ settings, onSettingsChange }: AIPro
                   }
                 />
               </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="gemini-model">Modelo de Gemini</Label>
+                <Select
+                  value={tempSettings.geminiModel}
+                  onValueChange={(value) => 
+                    setTempSettings(prev => ({ ...prev, geminiModel: value }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecciona un modelo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="google/gemma-3-4b">Gemma 3 4B (Con procesamiento de imágenes)</SelectItem>
+                    <SelectItem value="gemini-1.5-pro">Gemini 1.5 Pro</SelectItem>
+                    <SelectItem value="gemini-1.5-flash">Gemini 1.5 Flash</SelectItem>
+                    <SelectItem value="gemini-pro">Gemini Pro</SelectItem>
+                    <SelectItem value="gemini-pro-vision">Gemini Pro Vision</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              {tempSettings.geminiModel === "google/gemma-3-4b" && (
+                <div className="rounded-lg border p-3 bg-blue-50 dark:bg-blue-950/20">
+                  <p className="text-sm text-blue-700 dark:text-blue-300">
+                    <strong>Gemma 3 4B:</strong> Modelo especializado con capacidades de procesamiento de imágenes. 
+                    Podrás subir imágenes junto con tus mensajes para análisis visual.
+                  </p>
+                </div>
+              )}
             </div>
           )}
 

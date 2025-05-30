@@ -31,6 +31,7 @@ interface AISettings {
   deepseekApiKey: string
   grokApiKey: string
   geminiApiKey: string
+  geminiModel: string
   selectedAgent: string
   modelHistory: ModelHistoryEntry[]
 }
@@ -138,6 +139,7 @@ const DEFAULT_USER_DATA: UserData = {
     deepseekApiKey: "",
     grokApiKey: "",
     geminiApiKey: "",
+    geminiModel: "google/gemma-3-4b",
     selectedAgent: "general",
     modelHistory: []
   }

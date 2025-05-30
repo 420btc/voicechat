@@ -30,12 +30,13 @@ interface AIConfig {
   baseUrl?: string
   model?: string
   anthropicModel?: string
+  geminiModel?: string
   selectedAgent?: string
   onModelUsed?: (modelName: string, provider: AIProvider) => void
 }
 
 export function useOpenAI(config: AIConfig) {
-  const { provider, apiKey, baseUrl, model, anthropicModel, selectedAgent, onModelUsed } = config
+  const { provider, apiKey, baseUrl, model, anthropicModel, geminiModel, selectedAgent, onModelUsed } = config
   const [isTranscribing, setIsTranscribing] = useState(false)
   const [isGenerating, setIsGenerating] = useState(false)
   
@@ -142,7 +143,7 @@ export function useOpenAI(config: AIConfig) {
           break
         case "gemini":
           apiUrl = "/api/gemini"
-          selectedModel = "gemini-1.5-pro"
+          selectedModel = geminiModel || "gemini-1.5-pro"
           timeoutMs = 90000
           break
         default: // openai

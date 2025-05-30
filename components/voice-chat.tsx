@@ -114,6 +114,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
     baseUrl: userData.aiSettings.lmstudioBaseUrl,
     model: userData.aiSettings.lmstudioModel,
     anthropicModel: userData.aiSettings.anthropicModel,
+    geminiModel: userData.aiSettings.geminiModel,
     selectedAgent: userData.aiSettings.selectedAgent,
     onModelUsed: addModelToHistory
   })
@@ -317,11 +318,8 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
 
   // Check if current model supports vision
   const supportsVision = () => {
-    return userData.aiSettings.provider === 'lmstudio' && 
-           userData.aiSettings.lmstudioModel && 
-           (userData.aiSettings.lmstudioModel.toLowerCase().includes('gemma') ||
-            userData.aiSettings.lmstudioModel.toLowerCase().includes('vision') ||
-            userData.aiSettings.lmstudioModel.toLowerCase().includes('llava'))
+    // Always show image button for all providers and models
+    return true
   }
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
