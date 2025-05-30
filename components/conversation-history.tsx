@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import { Card } from "@/components/ui/card"
-import { User, Bot, Loader2, Languages, Play, Pause, Copy, Download } from "lucide-react"
+import { User, Bot, Loader2, Languages, Play, Pause, Copy, Download, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { CodeViewer, detectCodeBlocks } from "@/components/code-viewer"
 import { AIProvider } from "@/hooks/use-openai"
@@ -40,7 +40,9 @@ export function ConversationHistory({
   const [playingIndex, setPlayingIndex] = useState<number | null>(null)
   const [isPlaying, setIsPlaying] = useState(false)
   const [translatingIndex, setTranslatingIndex] = useState<number | null>(null)
-  const [translations, setTranslations] = useState<{ [key: number]: { text: string; language: string } }>({})
+  const [translations, setTranslations] = useState<{ [key: number]: { text: string; language: string } }>({})  
+  const [selectedImage, setSelectedImage] = useState<File | null>(null)
+  const [isImageModalOpen, setIsImageModalOpen] = useState(false)
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -117,6 +119,16 @@ export function ConversationHistory({
     URL.revokeObjectURL(url)
   }
 
+  const handleImageClick = (image: File) => {
+    setSelectedImage(image)
+    setIsImageModalOpen(true)
+  }
+
+  const closeImageModal = () => {
+    setIsImageModalOpen(false)
+    setSelectedImage(null)
+  }
+
   if (conversation.length === 0 && !isTranscribing && !isGenerating) {
     const getInstructionText = () => {
       switch (chatMode) {
@@ -184,15 +196,11 @@ export function ConversationHistory({
                       {message.images.map((image, imageIndex) => (
                         <div key={imageIndex} className="relative group">
                           <img
-                            src={URL.createObjectURL(image)}
-                            alt={`Imagen adjunta ${imageIndex + 1}`}
-                            className="max-w-48 max-h-48 object-cover rounded-lg border shadow-sm hover:shadow-md transition-shadow cursor-pointer"
-                            onClick={() => {
-                              // Abrir imagen en nueva ventana para vista completa
-                              const imageUrl = URL.createObjectURL(image)
-                              window.open(imageUrl, '_blank')
-                            }}
-                          />
+                             src={URL.createObjectURL(image)}
+                             alt={`Imagen adjunta ${imageIndex + 1}`}
+                             className="max-w-48 max-h-48 object-cover rounded-lg border shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                             onClick={() => handleImageClick(image)}
+                           />
                           <div className="absolute bottom-1 right-1 bg-black/50 text-white text-xs px-1 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity">
                             Click para ampliar
                           </div>
@@ -364,6 +372,29 @@ export function ConversationHistory({
         onPause={handleAudioPause}
         onPlay={handleAudioPlay2}
       />
+
+      {/* Modal de imagen */}
+      {isImageModalOpen && selectedImage && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
+          onClick={closeImageModal}
+        >
+          <div className="relative max-w-[90vw] max-h-[90vh] p-4">
+            <button
+              onClick={closeImageModal}
+              className="absolute -top-2 -right-2 bg-white rounded-full p-2 shadow-lg hover:bg-gray-100 transition-colors z-10"
+            >
+              <X className="w-4 h-4 text-gray-600" />
+            </button>
+            <img
+              src={URL.createObjectURL(selectedImage)}
+              alt="Imagen ampliada"
+              className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+        </div>
+      )}
     </div>
   )
 }
