@@ -9,6 +9,11 @@ const inter = Inter({ subsets: ["latin"] })
 export const metadata: Metadata = {
   title: "Local AI",
   description: "Real-time voice and chat conversation with AI",
+  icons: {
+    icon: "/fondo.png",
+    shortcut: "/fondo.png",
+    apple: "/fondo.png",
+  },
 }
 
 export default function RootLayout({

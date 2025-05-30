@@ -47,12 +47,9 @@ export function UserProfile({ userName, userAvatar, onUserNameChange, onAvatarCh
       <DialogTrigger asChild>
         <Button variant="ghost" className="p-2 h-auto">
           <div className="flex items-center gap-2">
-            <Avatar className="w-8 h-8">
-              <AvatarImage src={userAvatar} alt={userName} />
-              <AvatarFallback className="bg-blue-600 text-white text-xs">
-                {getInitials(userName)}
-              </AvatarFallback>
-            </Avatar>
+            <div className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center">
+               <img src="/fondo.png" alt="Logo" className="w-full h-full object-cover" />
+             </div>
             <span className="hidden sm:inline text-sm text-gray-300">{userName}</span>
           </div>
         </Button>
