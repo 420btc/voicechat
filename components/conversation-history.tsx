@@ -117,13 +117,26 @@ export function ConversationHistory({
   }
 
   if (conversation.length === 0 && !isTranscribing && !isGenerating) {
+    const getInstructionText = () => {
+      switch (chatMode) {
+        case 'voice':
+          return 'Toca el micrófono para comenzar'
+        case 'text':
+          return 'Escribe tu mensaje para comenzar'
+        case 'programmer':
+          return 'Describe tu código o problema para comenzar'
+        default:
+          return 'Toca el micrófono para comenzar'
+      }
+    }
+
     return (
       <div className="flex-1 flex items-center justify-center px-4 py-8 sm:pt-60">
         <div className="text-center text-muted-foreground max-w-md">
           <h1 className="text-3xl sm:text-4xl lg:text-6xl font-bold text-foreground mb-6 sm:mb-8 faster-one-regular">Local AI</h1>
           <Bot className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-3 sm:mb-4 opacity-50" />
           <p className="text-base sm:text-lg mb-2">Inicia una conversación</p>
-          <p className="text-sm text-muted-foreground/80">Toca el micrófono para comenzar</p>
+          <p className="text-sm text-muted-foreground/80">{getInstructionText()}</p>
         </div>
       </div>
     )
