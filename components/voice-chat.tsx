@@ -687,7 +687,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
                       size="sm"
                       onClick={() => fileInputRef.current?.click()}
                       disabled={isGenerating || selectedImages.length >= 3}
-                      className="px-2 mt-1"
+                      className="px-4 h-10"
                       title="Agregar imagen (máximo 3)"
                     >
                       <ImagePlus className="w-4 h-4" />
@@ -715,7 +715,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
                   onClick={handleTextSubmit}
                   disabled={!textInput.trim() || isGenerating}
                   size="sm"
-                  className="px-3"
+                  className="px-4 h-10"
                 >
                   <Send className="w-4 h-4" />
                 </Button>
@@ -762,7 +762,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
                       size="sm"
                       onClick={() => fileInputRef.current?.click()}
                       disabled={isGenerating || selectedImages.length >= 3}
-                      className="px-3 mt-1"
+                      className="px-4 h-10"
                       title="Agregar imagen (máximo 3)"
                     >
                       <ImagePlus className="w-4 h-4" />
@@ -790,7 +790,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
                   onClick={handleTextSubmit}
                   disabled={!textInput.trim() || isGenerating}
                   size="sm"
-                  className="px-3"
+                  className="px-4 h-10"
                 >
                   <Send className="w-4 h-4" />
                 </Button>

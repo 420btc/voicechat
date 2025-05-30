@@ -120,22 +120,38 @@
   }
 }
 
-/* Custom scrollbar for dark theme */
+/* Custom scrollbar for dark theme - Hidden */
 ::-webkit-scrollbar {
-  width: 6px;
+  width: 0px;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-track {
-  background: #1f2937;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #4b5563;
+  background: transparent;
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #6b7280;
+  background: transparent;
+}
+
+/* Alternative: Make scrollbar match background */
+.dark ::-webkit-scrollbar {
+  width: 0px;
+}
+
+.light ::-webkit-scrollbar {
+  width: 0px;
+}
+
+/* For Firefox */
+* {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
 /* Custom font classes */
