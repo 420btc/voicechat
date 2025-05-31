@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
+import { Card as AnimatedCard, CardCanvas } from "@/components/animated-glow-card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
@@ -160,12 +160,15 @@ export function ConversationManager({
             <ScrollArea className="h-96">
               <div className="space-y-2">
                 {savedConversations.length === 0 ? (
-                  <Card className="p-4 bg-gray-800 border-gray-700 text-center">
-                    <p className="text-gray-400">No hay conversaciones guardadas</p>
-                  </Card>
+                  <CardCanvas className="empty-conversations">
+                    <AnimatedCard className="p-4 bg-gray-800 border-gray-700 text-center">
+                      <p className="text-gray-400">No hay conversaciones guardadas</p>
+                    </AnimatedCard>
+                  </CardCanvas>
                 ) : (
                   savedConversations.map((conversation) => (
-                    <Card key={conversation.id} className="p-3 bg-gray-800 border-gray-700 hover:bg-gray-750 transition-colors">
+                    <CardCanvas key={conversation.id} className="conversation-item">
+                      <AnimatedCard className="p-3 bg-gray-800 border-gray-700 hover:bg-gray-750 transition-colors">
                       <div className="flex items-start justify-between">
                         <div className="flex-1 cursor-pointer" onClick={() => {
                           onLoadConversation(conversation)
@@ -211,7 +214,8 @@ export function ConversationManager({
                           </AlertDialogContent>
                         </AlertDialog>
                       </div>
-                    </Card>
+                      </AnimatedCard>
+                    </CardCanvas>
                   ))
                 )}
               </div>

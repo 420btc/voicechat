@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useTheme } from "next-themes"
 import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
+import { Card as AnimatedCard, CardCanvas } from "@/components/animated-glow-card"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
@@ -177,7 +177,8 @@ export function ThemeSelector({ settings, onSettingsChange }: ThemeSelectorProps
           </div>
 
           {/* Preview */}
-          <Card className="p-4 bg-gray-800 border-gray-700">
+          <CardCanvas className="theme-preview">
+            <AnimatedCard className="p-4 bg-gray-800 border-gray-700">
             <div className="space-y-2">
               <Label className="text-sm font-medium">Vista previa</Label>
               <div 
@@ -194,7 +195,8 @@ export function ThemeSelector({ settings, onSettingsChange }: ThemeSelectorProps
                 }`} />
               </div>
             </div>
-          </Card>
+            </AnimatedCard>
+          </CardCanvas>
         </div>
       </DialogContent>
     </Dialog>

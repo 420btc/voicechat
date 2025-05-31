@@ -1,10 +1,10 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import { Card } from "@/components/ui/card"
+import { XCard } from "@/components/ui/x-gradient-card"
+import { detectCodeBlocks } from "@/components/code-viewer"
 import { User, Bot, Loader2, Languages, Play, Pause, Copy, Download, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { CodeViewer, detectCodeBlocks } from "@/components/code-viewer"
 import { AIProvider } from "@/hooks/use-openai"
 
 interface Message {
@@ -168,98 +168,37 @@ export function ConversationHistory({
           )}
 
           <div className="max-w-[80%] space-y-2">
-            <Card
-              className={`p-4 ${
-                message.role === "user" ? "bg-blue-100 text-blue-900 border-blue-200" : "bg-card border-border text-foreground"
-              }`}
-            >
-              {chatMode === 'programmer' && message.role === 'assistant' ? (
-                <div className="space-y-2">
-                  {detectCodeBlocks(message.content).map((block, blockIndex) => (
-                    block.type === 'code' ? (
-                      <CodeViewer
-                        key={blockIndex}
-                        code={block.content}
-                        language={block.language}
-                        filename={block.filename}
-                      />
-                    ) : (
-                      <p key={blockIndex} className="text-sm leading-relaxed">{block.content}</p>
-                    )
-                  ))}
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  <p className="text-sm leading-relaxed">{message.content}</p>
-                  
-                  {/* Mostrar imágenes adjuntas */}
-                  {message.images && message.images.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {message.images.map((image, imageIndex) => (
-                        <div key={imageIndex} className="relative group">
-                          {image instanceof File && (
-                            <img
-                               src={URL.createObjectURL(image)}
-                               alt={`Imagen adjunta ${imageIndex + 1}`}
-                               className="max-w-48 max-h-48 object-cover rounded-lg border shadow-sm hover:shadow-md transition-shadow cursor-pointer"
-                               onClick={() => handleImageClick(image)}
-                             />
-                          )}
-                          <div className="absolute bottom-1 right-1 bg-black/50 text-white text-xs px-1 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity">
-                            Click para ampliar
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-              <div className={`flex justify-between items-center text-xs mt-2 ${message.role === "user" ? "text-blue-600" : "text-muted-foreground"}`}>
-                <div className="flex items-center gap-2">
-                  <span>{message.timestamp.toLocaleTimeString()}</span>
-                  {message.role === "assistant" && message.responseTime && (
-                    <span className={`opacity-75 ${
-                      (message.responseTime / 1000) <= 2 ? 'text-purple-500' :
-                      (message.responseTime / 1000) <= 15 ? 'text-green-500' :
-                      (message.responseTime / 1000) <= 20 ? 'text-orange-500' :
-                      'text-red-500'
-                    }`}>• {(message.responseTime / 1000).toFixed(1)}s</span>
-                  )}
-                  {message.role === "assistant" && message.tokensUsed && (
-                    <span className="opacity-75">• {message.tokensUsed} tokens</span>
-                  )}
-                  {message.role === "user" && message.promptTokens && (
-                    <span className="opacity-75">• {message.promptTokens} prompt tokens</span>
-                  )}
-                </div>
-                {message.role === "assistant" && (message.model || message.provider) && (
-                  <div className="flex items-center gap-1">
-                    <span className="opacity-75">•</span>
-                    <span className="font-medium">
-                      {message.provider === "openai" ? "OpenAI" : message.provider === "lmstudio" ? "LM Studio" : "AI"}
-                      {message.model && (
-                        <span className="opacity-75 ml-1">({message.model})</span>
-                      )}
-                    </span>
-                  </div>
-                )}
-              </div>
-            </Card>
+            <XCard
+              link="#"
+              authorName={message.role === "user" ? "Usuario" : "Asistente IA"}
+              authorHandle={message.role === "user" ? "user" : "ai"}
+              authorImage={message.role === "user" ? "/placeholder-user.jpg" : "/fondo.png"}
+              content={chatMode === 'programmer' && message.role === 'assistant' ? 
+                detectCodeBlocks(message.content) : 
+                [message.content]
+              }
+              isVerified={message.role === "assistant"}
+              isProgrammerMode={chatMode === 'programmer' && message.role === 'assistant'}
+              timestamp={message.timestamp.toLocaleTimeString()}
+              model={message.model}
+              provider={message.provider}
+              responseTime={message.responseTime}
+              tokensUsed={message.role === "user" ? message.promptTokens : message.tokensUsed}
+            />
+
 
             {/* Translation */}
             {translations[index] && (
-              <Card
-                className={`p-3 border-dashed ${
-                  message.role === "user"
-                    ? "bg-blue-50 text-blue-700 border-blue-300"
-                    : "bg-muted border-border text-muted-foreground"
-                }`}
-              >
-                <p className="text-xs leading-relaxed">{translations[index].text}</p>
-                <div className={`text-xs mt-1 ${message.role === "user" ? "text-blue-500" : "text-muted-foreground"}`}>
-                  Traducido al {translations[index].language === "es" ? "español" : "inglés"}
-                </div>
-              </Card>
+              <XCard
+                link="#"
+                authorName="Traductor"
+                authorHandle="translator"
+                authorImage="/placeholder-logo.png"
+                content={[translations[index].text]}
+                isVerified={true}
+                timestamp={`Traducido al ${translations[index].language === "es" ? "español" : "inglés"}`}
+                className="translation-card"
+              />
             )}
 
             {/* Action Buttons */}
@@ -343,12 +282,18 @@ export function ConversationHistory({
       {/* Loading states */}
       {isTranscribing && (
         <div className="flex gap-3 justify-end">
-          <Card className="max-w-[80%] p-4 bg-blue-100 border-blue-200">
-            <div className="flex items-center gap-2 text-blue-700">
-              <Loader2 className="w-4 h-4 animate-spin" />
-              <span className="text-sm">Transcribiendo...</span>
-            </div>
-          </Card>
+          <div className="max-w-[80%]">
+            <XCard
+              link="#"
+              authorName="Sistema"
+              authorHandle="system"
+              authorImage="/placeholder-user.jpg"
+              content={["Transcribiendo..."]}
+              isVerified={false}
+              timestamp="Procesando"
+              className="loading-card"
+            />
+          </div>
           <div className="w-8 h-8 bg-blue-200 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
             <User className="w-4 h-4 text-blue-800" />
           </div>
@@ -360,12 +305,18 @@ export function ConversationHistory({
           <div className="w-8 h-8 bg-slate-600 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
             <Bot className="w-4 h-4 text-white" />
           </div>
-          <Card className="max-w-[80%] p-4 bg-card border-border">
-            <div className="flex items-center gap-2 text-blue-700">
-              <Loader2 className="w-4 h-4 animate-spin" />
-              <span className="text-sm">La IA está pensando...</span>
-            </div>
-          </Card>
+          <div className="max-w-[80%]">
+            <XCard
+              link="#"
+              authorName="Asistente IA"
+              authorHandle="ai"
+              authorImage="/placeholder-logo.png"
+              content={["La IA está pensando..."]}
+              isVerified={true}
+              timestamp="Generando"
+              className="generating-card"
+            />
+          </div>
         </div>
       )}
       

@@ -5,7 +5,8 @@ import type React from "react"
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card as AnimatedCard, CardCanvas } from "@/components/animated-glow-card"
+import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Key, Shield, X } from "lucide-react"
 
 interface ApiKeySetupProps {
@@ -37,7 +38,8 @@ export function ApiKeySetup({ onApiKeySubmit, onClose, existingApiKey }: ApiKeyS
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
-      <Card className="w-full max-w-md bg-card border-border relative">
+      <CardCanvas className="api-key-setup">
+        <AnimatedCard className="w-full max-w-md bg-card border-border relative">
         {onClose && (
           <button
             onClick={onClose}
@@ -80,7 +82,8 @@ export function ApiKeySetup({ onApiKeySubmit, onClose, existingApiKey }: ApiKeyS
             <span>Tu clave API se almacena de forma segura en tu navegador</span>
           </div>
         </CardContent>
-      </Card>
+        </AnimatedCard>
+      </CardCanvas>
     </div>
   )
 }

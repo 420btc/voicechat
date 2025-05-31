@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from "react"
-import { Card } from "@/components/ui/card"
+import { Card as AnimatedCard, CardCanvas } from "@/components/animated-glow-card"
 import { Button } from "@/components/ui/button"
 import { Copy, Check, Maximize2, Minimize2 } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -73,9 +73,11 @@ export function CodeViewer({ code, language = "javascript", filename }: CodeView
 
   return (
     <>
-      <Card className="my-4 overflow-hidden border-2 border-blue-200 dark:border-blue-800">
-        <CodeContent />
-      </Card>
+      <CardCanvas className="code-viewer-card">
+        <AnimatedCard className="my-4 overflow-hidden border-2 border-blue-200 dark:border-blue-800">
+          <CodeContent />
+        </AnimatedCard>
+      </CardCanvas>
       
       <Dialog open={isExpanded} onOpenChange={setIsExpanded}>
         <DialogContent className="max-w-6xl max-h-[90vh] p-0">
