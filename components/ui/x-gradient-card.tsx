@@ -2,9 +2,9 @@ import { cn } from "@/lib/utils"
 import { VerifiedIcon } from "lucide-react"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Copy, Check, Maximize2, Minimize2 } from "lucide-react"
+import { Copy, Check, Maximize2, Minimize2, Clock, Zap, Brain, User } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import Link from "next/link";
+import { Badge } from "@/components/ui/badge"
 
 export interface XCardProps {
     link: string
@@ -44,6 +44,7 @@ function XCard({
 }: XCardProps) {
     const [copiedStates, setCopiedStates] = useState<{[key: number]: boolean}>({})
     const [expandedCode, setExpandedCode] = useState<{content: string, language: string, filename?: string} | null>(null)
+    const [isDetailModalOpen, setIsDetailModalOpen] = useState(false)
 
     const copyToClipboard = async (code: string, index: number) => {
         try {
@@ -57,19 +58,17 @@ function XCard({
         }
     }
     return (
-        <Link
-            href={link}
-            target="_blank"
-        >
+        <>
             <div
+                onClick={() => setIsDetailModalOpen(true)}
                 className={cn(
-                    "w-full min-w-[400px] md:min-w-[500px] max-w-xl p-1.5 rounded-2xl relative isolate overflow-hidden",
+                    "w-full min-w-[400px] md:min-w-[500px] max-w-xl p-1.5 rounded-2xl relative isolate overflow-hidden cursor-pointer",
                     "bg-white/5 dark:bg-black/90",
                     "bg-gradient-to-br from-black/5 to-black/[0.02] dark:from-white/5 dark:to-white/[0.02]",
                     "backdrop-blur-xl backdrop-saturate-[180%]",
                     "border border-black/10 dark:border-white/10",
                     "shadow-[0_8px_16px_rgb(0_0_0_/_0.15)] dark:shadow-[0_8px_16px_rgb(0_0_0_/_0.25)]",
-                    "will-change-transform translate-z-0",
+                    "will-change-transform translate-z-0 transition-transform hover:scale-[1.02]",
                     className
                 )}
             >
@@ -298,7 +297,133 @@ function XCard({
                     </div>
                 </DialogContent>
             </Dialog>
-        </Link>
+
+            {/* Modal de detalles */}
+            <Dialog open={isDetailModalOpen} onOpenChange={setIsDetailModalOpen}>
+                <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden">
+                    <DialogHeader className="pb-4">
+                        <DialogTitle className="flex items-center gap-3">
+                            <div className="h-10 w-10 rounded-full overflow-hidden">
+                                <img
+                                    src={authorImage}
+                                    alt={authorName}
+                                    className="h-full w-full object-cover"
+                                />
+                            </div>
+                            <div>
+                                <div className="flex items-center gap-2">
+                                    <span className="font-semibold">{authorName}</span>
+                                    {isVerified && <VerifiedIcon className="h-4 w-4 text-blue-400" />}
+                                </div>
+                                <span className="text-sm text-muted-foreground">@{authorHandle}</span>
+                            </div>
+                        </DialogTitle>
+                    </DialogHeader>
+                    
+                    <div className="overflow-auto max-h-[calc(90vh-200px)] space-y-6">
+                        {/* Estadísticas */}
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            {timestamp && (
+                                <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
+                                    <Clock className="h-4 w-4 text-blue-500" />
+                                    <div>
+                                        <p className="text-xs text-muted-foreground">Fecha</p>
+                                        <p className="text-sm font-medium">{timestamp}</p>
+                                    </div>
+                                </div>
+                            )}
+                            {responseTime && (
+                                <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
+                                    <Zap className="h-4 w-4 text-yellow-500" />
+                                    <div>
+                                        <p className="text-xs text-muted-foreground">Tiempo</p>
+                                        <p className="text-sm font-medium">{responseTime}ms</p>
+                                    </div>
+                                </div>
+                            )}
+                            {tokensUsed && (
+                                <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
+                                    <Brain className="h-4 w-4 text-purple-500" />
+                                    <div>
+                                        <p className="text-xs text-muted-foreground">Tokens</p>
+                                        <p className="text-sm font-medium">{tokensUsed.toLocaleString()}</p>
+                                    </div>
+                                </div>
+                            )}
+                            {(model || provider) && (
+                                <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
+                                    <User className="h-4 w-4 text-green-500" />
+                                    <div>
+                                        <p className="text-xs text-muted-foreground">Modelo</p>
+                                        <p className="text-sm font-medium">{model || provider}</p>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Badges de información */}
+                        <div className="flex flex-wrap gap-2">
+                            {provider && <Badge variant="secondary">{provider}</Badge>}
+                            {model && <Badge variant="outline">{model}</Badge>}
+                            {isProgrammerMode && <Badge variant="default">Modo Programador</Badge>}
+                        </div>
+
+                        {/* Contenido completo */}
+                        <div className="space-y-4">
+                            <h3 className="text-lg font-semibold">Contenido Completo</h3>
+                            <div className="p-4 bg-muted/30 rounded-lg">
+                                {isProgrammerMode && Array.isArray(content) && content.length > 0 && typeof content[0] === 'object' && 'type' in content[0] ? (
+                                    // Renderizado para modo programador
+                                    (content as Array<{type: 'text' | 'code', content: string, language?: string, filename?: string}>).map((block, index) => (
+                                        <div key={index} className="mb-4 last:mb-0">
+                                            {block.type === 'code' ? (
+                                                <div className="border rounded-lg overflow-hidden">
+                                                    <div className="bg-muted/50 px-3 py-2 border-b flex items-center gap-2">
+                                                        <span className="text-xs font-mono">{block.filename || 'código'}</span>
+                                                        <Badge variant="outline" className="text-xs">{block.language || 'text'}</Badge>
+                                                    </div>
+                                                    <pre className="p-3 text-sm overflow-x-auto bg-slate-950 text-slate-100">
+                                                        <code>{block.content}</code>
+                                                    </pre>
+                                                </div>
+                                            ) : (
+                                                <p className="text-sm leading-relaxed">{block.content}</p>
+                                            )}
+                                        </div>
+                                    ))
+                                ) : (
+                                    // Renderizado para contenido normal
+                                    Array.isArray(content) ? (
+                                        content.map((line, index) => (
+                                            <p key={index} className="text-sm leading-relaxed mb-2 last:mb-0">
+                                                {typeof line === 'string' ? line : line.content}
+                                            </p>
+                                        ))
+                                    ) : (
+                                        <p className="text-sm leading-relaxed">{content}</p>
+                                    )
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Enlace original */}
+                        {link && (
+                            <div className="pt-4 border-t">
+                                <p className="text-sm text-muted-foreground mb-2">Enlace original:</p>
+                                <a 
+                                    href={link} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="text-blue-500 hover:text-blue-600 text-sm break-all"
+                                >
+                                    {link}
+                                </a>
+                            </div>
+                        )}
+                    </div>
+                </DialogContent>
+            </Dialog>
+        </>
     )
 }
 
