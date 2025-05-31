@@ -88,7 +88,7 @@ function XCard({
                 >
                     <div className="flex gap-3">
                         <div className="flex-shrink-0">
-                            <div className="h-10 w-10 rounded-full overflow-hidden">
+                            <div className="h-8 w-8 rounded-full overflow-hidden">
                                 <img
                                     src={authorImage}
                                     alt={authorName}
