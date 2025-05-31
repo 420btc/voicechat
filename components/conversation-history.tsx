@@ -164,8 +164,8 @@ export function ConversationHistory({
       {conversation.map((message, index) => (
         <div key={index} className={`flex gap-3 ${message.role === "user" ? "justify-end" : "justify-start"}`}>
           {message.role === "assistant" && (
-            <div className="w-8 h-8 bg-slate-600 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-              <Bot className="w-4 h-4 text-white" />
+            <div className="w-8 h-8 bg-gradient-to-br from-gray-700 to-gray-900 rounded-full flex items-center justify-center flex-shrink-0 mt-1 shadow-lg border border-gray-600">
+              <Bot className="w-4 h-4 text-gray-200" />
             </div>
           )}
 
@@ -274,8 +274,8 @@ export function ConversationHistory({
           </div>
 
           {message.role === "user" && (
-            <div className="w-8 h-8 bg-blue-200 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-              <User className="w-4 h-4 text-blue-800" />
+            <div className="w-8 h-8 bg-gradient-to-br from-gray-700 to-gray-900 rounded-full flex items-center justify-center flex-shrink-0 mt-1 shadow-lg border border-gray-600">
+              <User className="w-4 h-4 text-gray-200" />
             </div>
           )}
         </div>
@@ -296,16 +296,16 @@ export function ConversationHistory({
               className="loading-card"
             />
           </div>
-          <div className="w-8 h-8 bg-blue-200 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-            <User className="w-4 h-4 text-blue-800" />
+          <div className="w-8 h-8 bg-gradient-to-br from-gray-700 to-gray-900 rounded-full flex items-center justify-center flex-shrink-0 mt-1 shadow-lg border border-gray-600">
+            <User className="w-4 h-4 text-gray-200" />
           </div>
         </div>
       )}
 
       {isGenerating && (
         <div className="flex gap-3 justify-start">
-          <div className="w-8 h-8 bg-slate-600 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-            <Bot className="w-4 h-4 text-white" />
+          <div className="w-8 h-8 bg-gradient-to-br from-gray-700 to-gray-900 rounded-full flex items-center justify-center flex-shrink-0 mt-1 shadow-lg border border-gray-600">
+            <Bot className="w-4 h-4 text-gray-200" />
           </div>
           <div className="max-w-[80%]">
             <XCard
