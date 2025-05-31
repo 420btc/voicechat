@@ -558,6 +558,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
             isGenerating={isGenerating}
             onTranslate={translateMessage}
             chatMode={chatMode}
+            userName={userData.name}
           />
         </div>
 

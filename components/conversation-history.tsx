@@ -26,6 +26,7 @@ interface ConversationHistoryProps {
   isGenerating: boolean
   onTranslate: (text: string, targetLanguage: "es" | "en") => Promise<string | null>
   chatMode?: 'voice' | 'text' | 'programmer'
+  userName?: string
 }
 
 export function ConversationHistory({
@@ -33,6 +34,7 @@ export function ConversationHistory({
   isTranscribing,
   isGenerating,
   onTranslate,
+  userName = "Usuario",
   chatMode = 'voice',
 }: ConversationHistoryProps) {
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -170,9 +172,9 @@ export function ConversationHistory({
           <div className="max-w-[80%] space-y-2">
             <XCard
               link="#"
-              authorName={message.role === "user" ? "Usuario" : "Asistente IA"}
-              authorHandle={message.role === "user" ? "user" : "ai"}
-              authorImage={message.role === "user" ? "/placeholder-user.jpg" : "/fondo.png"}
+              authorName={message.role === "user" ? userName : "Asistente IA"}
+              authorHandle={message.role === "user" ? userName.toLowerCase().replace(/\s+/g, '') : "ai"}
+              authorImage={message.role === "user" ? "/userr.png" : "/fondo.png"}
               content={chatMode === 'programmer' && message.role === 'assistant' ? 
                 detectCodeBlocks(message.content) : 
                 [message.content]
