@@ -188,11 +188,16 @@ export default function AIProviderSelector({ settings, onSettingsChange }: AIPro
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[900px] max-h-[90vh] flex flex-col">
-        <DialogHeader>
+        <DialogHeader className="relative">
           <DialogTitle>Configuración de IA</DialogTitle>
           <DialogDescription>
             Configura el proveedor de IA y sus parámetros
           </DialogDescription>
+          <img 
+            src="/iaconfig.png" 
+            alt="IA Config" 
+            className="absolute -top-4 right-4 w-18 h-16 opacity-100 object-contain"
+          />
         </DialogHeader>
         
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 overflow-y-auto flex-1 min-h-0">
