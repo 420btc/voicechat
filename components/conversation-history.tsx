@@ -29,6 +29,7 @@ interface ConversationHistoryProps {
   onTranslate: (text: string, targetLanguage: "es" | "en") => Promise<string | null>
   chatMode?: 'voice' | 'text' | 'programmer'
   userName?: string
+  userAvatar?: string
   savedConversations?: SavedConversation[]
   onLoadConversation?: (conv: SavedConversation) => void
 }
@@ -39,6 +40,7 @@ export function ConversationHistory({
   isGenerating,
   onTranslate,
   userName = "Usuario",
+  userAvatar,
   chatMode = 'voice',
   savedConversations = [],
   onLoadConversation,
@@ -183,7 +185,7 @@ export function ConversationHistory({
               link="#"
               authorName={message.role === "user" ? userName : "Asistente IA"}
               authorHandle={message.role === "user" ? userName.toLowerCase().replace(/\s+/g, '') : "ai"}
-              authorImage={message.role === "user" ? "/userr.png" : "/fondo.png"}
+              authorImage={message.role === "user" ? (userAvatar || "/userr.png") : "/fondo.png"}
               content={chatMode === 'programmer' && message.role === 'assistant' ? 
                 detectCodeBlocks(message.content) : 
                 [message.content]

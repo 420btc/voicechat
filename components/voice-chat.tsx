@@ -725,6 +725,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
             onTranslate={translateMessage}
             chatMode={chatMode}
             userName={userData.name}
+            userAvatar={userData.avatar}
             savedConversations={userData.savedConversations}
             onLoadConversation={(conv) => loadConversation(conv.messages)}
           />

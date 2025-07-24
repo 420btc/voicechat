@@ -1,13 +1,13 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { User, Edit3, Save, X } from "lucide-react"
+import { User, Edit3, Save, X, Upload, Camera } from "lucide-react"
 
 interface UserProfileProps {
   userName: string
@@ -20,6 +20,7 @@ export function UserProfile({ userName, userAvatar, onUserNameChange, onAvatarCh
   const [isEditing, setIsEditing] = useState(false)
   const [tempName, setTempName] = useState(userName)
   const [tempAvatar, setTempAvatar] = useState(userAvatar || "")
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleSave = () => {
     onUserNameChange(tempName)
@@ -31,6 +32,22 @@ export function UserProfile({ userName, userAvatar, onUserNameChange, onAvatarCh
     setTempName(userName)
     setTempAvatar(userAvatar || "")
     setIsEditing(false)
+  }
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file && (file.type === 'image/png' || file.type === 'image/jpeg' || file.type === 'image/jpg')) {
+      const reader = new FileReader()
+      reader.onload = (event) => {
+        const result = event.target?.result as string
+        setTempAvatar(result)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  const handleUploadClick = () => {
+    fileInputRef.current?.click()
   }
 
   const getInitials = (name: string) => {
@@ -47,9 +64,12 @@ export function UserProfile({ userName, userAvatar, onUserNameChange, onAvatarCh
       <DialogTrigger asChild>
         <Button variant="ghost" className="p-2 h-auto">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center">
-               <img src="/fondo.png" alt="Logo" className="w-full h-full object-cover" />
-             </div>
+            <Avatar className="w-8 h-8">
+              <AvatarImage src={userAvatar} alt={userName} className="object-cover" />
+              <AvatarFallback className="bg-blue-600 text-white text-xs">
+                {getInitials(userName)}
+              </AvatarFallback>
+            </Avatar>
             <span className="hidden sm:inline text-sm text-gray-300">{userName}</span>
           </div>
         </Button>
@@ -70,17 +90,40 @@ export function UserProfile({ userName, userAvatar, onUserNameChange, onAvatarCh
               </AvatarFallback>
             </Avatar>
             {isEditing && (
-              <div className="w-full">
-                <Label htmlFor="avatar" className="text-sm text-gray-300">
-                  URL del Avatar
-                </Label>
-                <Input
-                  id="avatar"
-                  value={tempAvatar}
-                  onChange={(e) => setTempAvatar(e.target.value)}
-                  placeholder="https://ejemplo.com/avatar.jpg"
-                  className="bg-gray-800 border-gray-600 text-white"
+              <div className="w-full space-y-4">
+                <div className="flex gap-2 justify-center">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleUploadClick}
+                    className="flex items-center gap-2"
+                  >
+                    <Upload className="w-4 h-4" />
+                    Subir Imagen
+                  </Button>
+                </div>
+                
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".png,.jpg,.jpeg,image/png,image/jpeg"
+                  onChange={handleImageUpload}
+                  className="hidden"
                 />
+                
+                <div>
+                  <Label htmlFor="avatar" className="text-sm text-gray-300">
+                    O ingresa URL del Avatar
+                  </Label>
+                  <Input
+                    id="avatar"
+                    value={tempAvatar}
+                    onChange={(e) => setTempAvatar(e.target.value)}
+                    placeholder="https://ejemplo.com/avatar.jpg"
+                    className="bg-gray-800 border-gray-600 text-white"
+                  />
+                </div>
               </div>
             )}
           </div>
