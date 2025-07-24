@@ -615,46 +615,10 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
         </div>
       )}
       {/* Header */}
-      <header className="flex-shrink-0 p-2 sm:p-4 lg:p-6 border-b border-border">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4 lg:gap-8">
-          {/* Mobile: Top Row - User Profile and Settings */}
-          <div className="flex sm:hidden items-center justify-between w-full">
-            {isLoaded && (
-              <UserProfile
-                userName={userData.name}
-                userAvatar={userData.avatar}
-                onUserNameChange={updateUserName}
-                onAvatarChange={updateUserAvatar}
-              />
-            )}
-            <div className="flex items-center gap-1">
-              {/* Auto-save Indicator */}
-              {isLoaded && (
-                <AutoSaveIndicator
-                  conversations={userData.savedConversations}
-                  onSave={() => {
-                    if (conversation.length > 0) {
-                      const autoTitle = `Auto-guardado ${new Date().toLocaleDateString('es-ES')} ${new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}`
-                      saveConversation(autoTitle, conversation)
-                    }
-                  }}
-                />
-              )}
-
-              {/* AI Provider Settings */}
-              {isLoaded && (
-                <AIProviderSelector
-                  settings={userData.aiSettings}
-                  onSettingsChange={updateAISettings}
-                  themeSettings={userData.themeSettings}
-                  onThemeSettingsChange={updateThemeSettings}
-                />
-              )}
-            </div>
-          </div>
-          
-          {/* Desktop: Left Section - User Profile */}
-          <div className="hidden sm:flex items-center">
+      <header className="flex-shrink-0 p-1 sm:p-2 lg:p-4 border-b border-border">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-1 sm:gap-4 lg:gap-8">
+          {/* Left Section - User Profile */}
+          <div className="flex items-center">
             {isLoaded && (
               <UserProfile
                 userName={userData.name}
@@ -665,8 +629,8 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
             )}
           </div>
           
-          {/* Main Controls - Full width on mobile, centered on desktop */}
-          <div className="flex items-center gap-1 sm:gap-2 lg:gap-4 w-full sm:flex-1 justify-center">
+          {/* Main Controls - Compact on mobile, centered on desktop */}
+          <div className="flex items-center gap-1 sm:gap-2 lg:gap-4 flex-1 justify-center">
             {/* Chat Mode Toggle */}
             <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1">
               <Button
@@ -779,21 +743,21 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
               )}
             </div>
             
-            {/* Agent Indicator - Always Visible */}
+            {/* Agent Indicator - Hidden on Mobile */}
             {isLoaded && (() => {
               if (userData.aiSettings.provider === 'lmstudio') {
                 const currentAgent = AI_AGENTS.find(agent => agent.id === userData.aiSettings.selectedAgent) || AI_AGENTS[0]
                 return (
-                  <div className="flex items-center gap-1 px-2 py-1 rounded-md bg-muted/50 border border-border/50">
+                  <div className="hidden sm:flex items-center gap-1 px-2 py-1 rounded-md bg-muted/50 border border-border/50">
                     <span className="text-sm">{currentAgent.icon}</span>
-                    <span className="text-xs font-medium hidden sm:inline">{currentAgent.name}</span>
+                    <span className="text-xs font-medium">{currentAgent.name}</span>
                   </div>
                 )
               } else {
                 return (
-                  <div className="flex items-center gap-1 px-2 py-1 rounded-md bg-muted/50 border border-border/50">
+                  <div className="hidden sm:flex items-center gap-1 px-2 py-1 rounded-md bg-muted/50 border border-border/50">
                     <span className="text-sm">🤖</span>
-                    <span className="text-xs font-medium hidden sm:inline">{userData.aiSettings.provider === 'openai' ? 'OpenAI' : 'AI Assistant'}</span>
+                    <span className="text-xs font-medium">{userData.aiSettings.provider === 'openai' ? 'OpenAI' : 'AI Assistant'}</span>
                   </div>
                 )
               }
@@ -801,8 +765,8 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
             
           </div>
           
-          {/* Desktop: Right Section - Settings & Theme */}
-          <div className="hidden sm:flex items-center gap-1 lg:gap-2">
+          {/* Right Section - Settings & Theme */}
+          <div className="flex items-center gap-0.5 sm:gap-1 lg:gap-2">
             {/* Auto-save Indicator */}
             {isLoaded && (
               <AutoSaveIndicator
