@@ -832,7 +832,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
       </header>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col max-w-4xl mx-auto w-full p-4 min-h-0">
+      <div className="flex-1 flex flex-col max-w-4xl mx-auto w-full px-2 sm:px-4 py-4 min-h-0">
         {/* Conversation History */}
         <div className="flex-1 mb-6 min-h-0">
           <ConversationHistory
@@ -851,7 +851,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
         </div>
 
         {/* Input Interface */}
-        <div className="flex-shrink-0 bg-card p-3 sm:p-6">
+        <div className="flex-shrink-0 bg-card p-2 sm:p-3 md:p-6">
           {chatMode === 'voice' ? (
             /* Voice Input Interface */
             <div className="text-center space-y-2 sm:space-y-4">
@@ -992,7 +992,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
                 </div>
               )}
               
-              <div className="flex gap-2">
+              <div className="flex gap-1 sm:gap-2">
                 {/* Image Upload Button - Only show for LM Studio with vision models */}
                 {supportsVision() && (
                   <>

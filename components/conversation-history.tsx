@@ -228,7 +228,7 @@ export function ConversationHistory({
     <div className="h-full flex flex-col">
       
       {/* Conversation Messages */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto space-y-4 pr-2">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto space-y-3 sm:space-y-4 pr-1 sm:pr-2">
         {conversation.map((message, index) => (
         <div key={index} className={`flex gap-3 ${message.role === "user" ? "justify-end" : "justify-start"}`}>
           {message.role === "assistant" && (
@@ -237,7 +237,7 @@ export function ConversationHistory({
             </div>
           )}
 
-          <div className="max-w-[80%] space-y-2">
+          <div className="max-w-[95%] sm:max-w-[85%] md:max-w-[80%] space-y-2">
             <XCard
               link="#"
               authorName={message.role === "user" ? userName : "Asistente IA"}
