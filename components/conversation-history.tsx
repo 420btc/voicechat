@@ -6,6 +6,8 @@ import { detectCodeBlocks } from "@/components/code-viewer"
 import { User, Bot, Loader2, Languages, Play, Pause, Copy, Download, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { AIProvider } from "@/hooks/use-openai"
+import { ConversationSearch } from "@/components/conversation-search"
+import { SavedConversation } from "@/components/conversation-manager"
 
 interface Message {
   role: "user" | "assistant"
@@ -27,6 +29,8 @@ interface ConversationHistoryProps {
   onTranslate: (text: string, targetLanguage: "es" | "en") => Promise<string | null>
   chatMode?: 'voice' | 'text' | 'programmer'
   userName?: string
+  savedConversations?: SavedConversation[]
+  onLoadConversation?: (conv: SavedConversation) => void
 }
 
 export function ConversationHistory({
@@ -36,6 +40,8 @@ export function ConversationHistory({
   onTranslate,
   userName = "Usuario",
   chatMode = 'voice',
+  savedConversations = [],
+  onLoadConversation,
 }: ConversationHistoryProps) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const audioRef = useRef<HTMLAudioElement>(null)
@@ -160,8 +166,20 @@ export function ConversationHistory({
   }
 
   return (
-    <div ref={scrollRef} className="h-full overflow-y-auto space-y-4 pr-2">
-      {conversation.map((message, index) => (
+    <div className="h-full flex flex-col">
+      {/* Conversation Search */}
+      {savedConversations.length > 0 && onLoadConversation && (
+        <div className="mb-4 flex-shrink-0">
+          <ConversationSearch
+            savedConversations={savedConversations}
+            onLoadConversation={onLoadConversation}
+          />
+        </div>
+      )}
+      
+      {/* Conversation Messages */}
+      <div ref={scrollRef} className="flex-1 overflow-y-auto space-y-4 pr-2">
+        {conversation.map((message, index) => (
         <div key={index} className={`flex gap-3 ${message.role === "user" ? "justify-end" : "justify-start"}`}>
           {message.role === "assistant" && (
             <div className="w-8 h-8 bg-gradient-to-br from-gray-700 to-gray-900 rounded-full flex items-center justify-center flex-shrink-0 mt-1 shadow-lg border border-gray-600">
@@ -354,6 +372,7 @@ export function ConversationHistory({
           </div>
         </div>
       )}
+      </div>
     </div>
   )
 }
