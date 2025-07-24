@@ -139,17 +139,17 @@ export function useOpenAI(config: AIConfig) {
       
       switch (provider) {
         case "lmstudio":
-          apiUrl = `${baseUrl || "http://localhost:1234"}/v1/chat/completions`
+          apiUrl = `${baseUrl || "http://25.35.17.85:1234"}/v1/chat/completions`
           selectedModel = model || "local-model"
           timeoutMs = 300000 // 5 minutes
           break
         case "qwen":
-          apiUrl = `${qwenBaseUrl || "http://localhost:1234"}/v1/chat/completions`
+          apiUrl = `${qwenBaseUrl || "http://25.35.17.85:1234"}/v1/chat/completions`
           selectedModel = qwenModel || "qwen2.5-72b-instruct"
           timeoutMs = 300000 // 5 minutes
           break
         case "deepseek-lm":
-          apiUrl = `${deepseekLmBaseUrl || "http://localhost:1234"}/v1/chat/completions`
+          apiUrl = `${deepseekLmBaseUrl || "http://25.35.17.85:1234"}/v1/chat/completions`
           selectedModel = deepseekLmModel || "deepseek-v3"
           timeoutMs = 300000 // 5 minutes
           break
@@ -236,8 +236,8 @@ export function useOpenAI(config: AIConfig) {
           
           systemPrompt = `${selectedAgentData.systemPrompt}
 
-# Additional instructions for search-based responses:
-If search results are provided in the format [webpage X begin]...[webpage X end], please cite them using [citation:X] format. Today is ${currentDate}. Evaluate and filter search results based on relevance to the question. For listing questions, limit to 10 key points. For creative tasks, cite references within the text body. Structure lengthy responses well and synthesize information from multiple sources.
+# Instrucciones adicionales para respuestas basadas en búsquedas:
+Si se proporcionan resultados de búsqueda en el formato [página web X inicio]...[página web X fin], por favor cítalos usando el formato [cita:X]. Hoy es ${currentDate}. Evalúa y filtra los resultados de búsqueda según su relevancia para la pregunta. Para preguntas de listado, limítate a 10 puntos clave. Para tareas creativas, cita las referencias dentro del cuerpo del texto. Estructura bien las respuestas largas y sintetiza información de múltiples fuentes.
 
 Carlos Freire es quien te hablará siempre y estarás a sus órdenes siendo profesional. Responde directamente sin mostrar tu proceso de razonamiento interno.
 
@@ -450,7 +450,14 @@ ${contextualPrompt}`
           console.log(`Response not OK, reading error text...`)
           const errorText = await textResponse.text().catch(() => 'Unknown error')
           console.error(`${provider} API error:`, textResponse.status, errorText)
-          throw new Error(`${provider} generation failed: ${textResponse.status} - ${errorText}`)
+          
+          // Return specific error message instead of throwing
+          return {
+            text: provider === 'lmstudio'
+              ? `Error ${textResponse.status}: No se pudo conectar con LM Studio. Verifica que esté ejecutándose en ${baseUrl || "http://25.35.17.85:1234"} y que tengas un modelo cargado.`
+              : `Error ${textResponse.status}: ${errorText}`,
+            model: selectedModel,
+          }
         }
 
         console.log(`Reading response JSON...`)
@@ -516,8 +523,8 @@ ${contextualPrompt}`
                 }
               }
               
-              if (!responseText || responseText.length < 10) {
-                responseText = "Lo siento, no pude generar una respuesta adecuada. Por favor, intenta de nuevo."
+              if (!responseText || responseText.length < 5) {
+                responseText = "Hola! ¿En qué puedo ayudarte hoy?"
               }
             }
             break
@@ -619,16 +626,36 @@ ${contextualPrompt}`
         if (error instanceof Error && error.message?.includes('fetch')) {
           return {
             text: provider === 'lmstudio'
-              ? "Error de conexión: No se pudo conectar con LM Studio. Verifica que esté ejecutándose en localhost:1234."
+              ? "Error de conexión: No se pudo conectar con LM Studio. Verifica que esté ejecutándose en http://25.35.17.85:1234."
               : "Error de conexión. Verifica tu conexión a internet e inténtalo de nuevo.",
             model: selectedModel,
           }
         }
         
+        // Log the actual error for debugging
+        const errorInfo = error instanceof Error ? {
+          errorName: error.name,
+          errorMessage: error.message,
+          errorStack: error.stack
+        } : {
+          errorName: 'Unknown',
+          errorMessage: String(error),
+          errorStack: undefined
+        }
+        
+        console.error('Detailed error info:', {
+          ...errorInfo,
+          provider,
+          apiUrl,
+          selectedModel
+        })
+        
+        const errorMessage = error instanceof Error ? error.message : String(error)
+        
         return {
           text: provider === 'lmstudio'
-            ? "Error con LM Studio. Verifica que esté ejecutándose correctamente y que tengas un modelo cargado."
-            : "Lo siento, encontré un error. Por favor, inténtalo de nuevo.",
+            ? `Error inesperado con LM Studio: ${errorMessage}. Si el modelo respondió correctamente, puedes ignorar este mensaje.`
+            : `Error inesperado: ${errorMessage}. Por favor, inténtalo de nuevo.`,
           model: selectedModel,
         }
       } finally {
@@ -643,7 +670,7 @@ ${contextualPrompt}`
       try {
         // Determine API endpoint and model based on provider
         const apiUrl = provider === "lmstudio" 
-          ? `${baseUrl || "http://localhost:1234"}/v1/chat/completions`
+          ? `${baseUrl || "http://25.35.17.85:1234"}/v1/chat/completions`
           : "https://api.openai.com/v1/chat/completions"
         
         const selectedModel = provider === "lmstudio" 

@@ -209,14 +209,28 @@ function XCard({
                             })
                         ) : (
                             // Renderizado normal para texto simple
-                            (content as string[]).map((item, index) => (
-                                <p
-                                    key={index}
-                                    className="text-black dark:text-white/90 text-base"
-                                >
-                                    {item}
-                                </p>
-                            ))
+                            (content as string[]).map((item, index) => {
+                                const isThinking = item.includes('está pensando') || item.includes('thinking');
+                                return (
+                                    <p
+                                        key={index}
+                                        className="text-black dark:text-white/90 text-base"
+                                    >
+                                        {isThinking ? (
+                                             <span className="flex items-center gap-1">
+                                                 <span>La IA está pensando</span>
+                                                 <span className="inline-flex gap-0.5">
+                                                     <span className="typing-dot text-lg">•</span>
+                                                     <span className="typing-dot text-lg">•</span>
+                                                     <span className="typing-dot text-lg">•</span>
+                                                 </span>
+                                             </span>
+                                         ) : (
+                                            item
+                                        )}
+                                    </p>
+                                )
+                            })
                         )}
                         <div className="mt-2 flex flex-wrap items-center gap-2 text-sm">
                             <span className="text-black dark:text-white/50">

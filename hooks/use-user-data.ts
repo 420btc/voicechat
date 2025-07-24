@@ -146,7 +146,7 @@ const DEFAULT_USER_DATA: UserData = {
     openaiApiKey: "",
     openaiModel: "gpt-4o",
     lmstudioApiKey: "lm-studio",
-    lmstudioBaseUrl: "http://localhost:1234",
+    lmstudioBaseUrl: "http://25.35.17.85:1234",
     lmstudioModel: "local-model",
     anthropicApiKey: "",
     anthropicModel: "claude-sonnet-4-20250514",
@@ -156,9 +156,9 @@ const DEFAULT_USER_DATA: UserData = {
     geminiModel: "google/gemma-3-4b",
     selectedAgent: "general",
     modelHistory: [],
-    qwenBaseUrl: "http://localhost:1234",
+    qwenBaseUrl: "http://25.35.17.85:1234",
     qwenModel: "qwen2.5-72b-instruct",
-    deepseekLmBaseUrl: "http://localhost:1234",
+    deepseekLmBaseUrl: "http://25.35.17.85:1234",
     deepseekLmModel: "deepseek-v3",
     useSpecialPrompt: false
   }

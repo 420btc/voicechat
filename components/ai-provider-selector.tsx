@@ -561,7 +561,7 @@ export default function AIProviderSelector({ settings, onSettingsChange, themeSe
                   <Label htmlFor="lmstudio-url">URL Base de LM Studio</Label>
                   <Input
                     id="lmstudio-url"
-                    placeholder="http://localhost:1234"
+                    placeholder="http://25.35.17.85:1234"
                     value={tempSettings.lmstudioBaseUrl}
                     onChange={(e) => 
                       setTempSettings(prev => ({ ...prev, lmstudioBaseUrl: e.target.value }))
@@ -791,7 +791,7 @@ export default function AIProviderSelector({ settings, onSettingsChange, themeSe
                   <Label htmlFor="qwen-url">URL Base de Qwen</Label>
                   <Input
                     id="qwen-url"
-                    placeholder="http://localhost:1234"
+                    placeholder="http://25.35.17.85:1234"
                     value={tempSettings.qwenBaseUrl}
                     onChange={(e) => 
                       setTempSettings(prev => ({ ...prev, qwenBaseUrl: e.target.value, useSpecialPrompt: true }))
@@ -827,7 +827,7 @@ export default function AIProviderSelector({ settings, onSettingsChange, themeSe
                   <Label htmlFor="deepseek-lm-url">URL Base de DeepSeek-LM</Label>
                   <Input
                     id="deepseek-lm-url"
-                    placeholder="http://localhost:1234"
+                    placeholder="http://25.35.17.85:1234"
                     value={tempSettings.deepseekLmBaseUrl}
                     onChange={(e) => 
                       setTempSettings(prev => ({ ...prev, deepseekLmBaseUrl: e.target.value, useSpecialPrompt: true }))
