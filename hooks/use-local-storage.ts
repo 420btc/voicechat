@@ -14,6 +14,7 @@ interface Message {
   tokensUsed?: number
   promptTokens?: number
   images?: File[]
+  files?: File[]
 }
 
 interface StoredApiKey {
@@ -114,7 +115,7 @@ export function useLocalStorage() {
     setApiKey("")
   }, [])
 
-  const addMessage = useCallback((role: "user" | "assistant", content: string, timestamp?: Date, audio?: Blob, model?: string, provider?: AIProvider, responseTime?: number, tokensUsed?: number, promptTokens?: number, images?: File[]) => {
+  const addMessage = useCallback((role: "user" | "assistant", content: string, timestamp?: Date, audio?: Blob, model?: string, provider?: AIProvider, responseTime?: number, tokensUsed?: number, promptTokens?: number, images?: File[], files?: File[]) => {
     const message: Message = {
       role,
       content,
@@ -126,6 +127,7 @@ export function useLocalStorage() {
       tokensUsed,
       promptTokens,
       images,
+      files,
     }
     setConversation((prev) => [...prev, message])
   }, [])

@@ -26,8 +26,8 @@ interface AutoSaveOptions {
 export function useAutoSave({
   conversation,
   onSave,
-  intervalMs = 5 * 60 * 1000, // 5 minutes
-  minMessages = 2,
+  intervalMs = 60 * 1000, // 1 minute
+  minMessages = 1,
   enabled = true
 }: AutoSaveOptions) {
   const lastSaveRef = useRef<number>(0)
@@ -37,7 +37,6 @@ export function useAutoSave({
   const shouldAutoSave = useCallback(() => {
     if (!enabled) return false
     if (conversation.length < minMessages) return false
-    if (conversation.length === lastConversationLengthRef.current) return false
     
     const now = Date.now()
     const timeSinceLastSave = now - lastSaveRef.current
@@ -56,15 +55,7 @@ export function useAutoSave({
       lastSaveRef.current = Date.now()
       lastConversationLengthRef.current = conversation.length
       
-      // Show a subtle notification
-      if ('Notification' in window && Notification.permission === 'granted') {
-        new Notification('Conversación guardada automáticamente', {
-          body: autoTitle,
-          icon: '/placeholder-logo.svg',
-          silent: true,
-          tag: 'auto-save'
-        })
-      }
+      // Auto-save completed silently
     } catch (error) {
       console.error('Error en auto-guardado:', error)
     }
@@ -95,13 +86,10 @@ export function useAutoSave({
     }
   }, [enabled, intervalMs, performAutoSave])
 
-  // Auto-save when conversation changes (with debounce)
+  // Update conversation length reference when conversation changes
   useEffect(() => {
-    if (conversation.length > lastConversationLengthRef.current && shouldAutoSave()) {
-      const timeoutId = setTimeout(performAutoSave, 2000) // 2 second debounce
-      return () => clearTimeout(timeoutId)
-    }
-  }, [conversation.length, shouldAutoSave, performAutoSave])
+    lastConversationLengthRef.current = conversation.length
+  }, [conversation.length])
 
   // Manual save function
   const manualSave = useCallback(() => {

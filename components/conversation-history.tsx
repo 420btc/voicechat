@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react"
 import { XCard } from "@/components/ui/x-gradient-card"
 import { detectCodeBlocks } from "@/components/code-viewer"
-import { User, Bot, Loader2, Languages, Play, Pause, Copy, Download, X } from "lucide-react"
+import { User, Bot, Loader2, Languages, Play, Pause, Copy, Download, X, File, FileText } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { AIProvider } from "@/hooks/use-openai"
 import { ConversationSearch } from "@/components/conversation-search"
@@ -20,6 +20,7 @@ interface Message {
   tokensUsed?: number
   promptTokens?: number
   images?: File[]
+  files?: File[]
 }
 
 interface ConversationHistoryProps {
@@ -50,9 +51,22 @@ export function ConversationHistory({
   const [playingIndex, setPlayingIndex] = useState<number | null>(null)
   const [isPlaying, setIsPlaying] = useState(false)
   const [translatingIndex, setTranslatingIndex] = useState<number | null>(null)
-  const [translations, setTranslations] = useState<{ [key: number]: { text: string; language: string } }>({})  
+  const [translations, setTranslations] = useState<{ [key: number]: { text: string; language: string } }>({})
   const [selectedImage, setSelectedImage] = useState<File | null>(null)
   const [isImageModalOpen, setIsImageModalOpen] = useState(false)
+
+  // Function to get file icon and color based on file type
+  const getFileIcon = (file: File) => {
+    const extension = file.name.split('.').pop()?.toLowerCase()
+    
+    if (extension === 'pdf') {
+      return { icon: File, color: 'text-red-600' }
+    } else if (['txt', 'doc', 'docx'].includes(extension || '')) {
+      return { icon: FileText, color: 'text-blue-600' }
+    }
+    
+    return { icon: FileText, color: 'text-gray-600' }
+  }
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -175,8 +189,8 @@ export function ConversationHistory({
         {conversation.map((message, index) => (
         <div key={index} className={`flex gap-3 ${message.role === "user" ? "justify-end" : "justify-start"}`}>
           {message.role === "assistant" && (
-            <div className="w-8 h-8 bg-gradient-to-br from-gray-700 to-gray-900 rounded-full flex items-center justify-center flex-shrink-0 mt-1 shadow-lg border border-gray-600">
-              <Bot className="w-4 h-4 text-gray-200" />
+            <div className="w-8 h-8 bg-gradient-to-br from-muted to-muted/80 rounded-full flex items-center justify-center flex-shrink-0 mt-1 shadow-lg border border-border">
+              <Bot className="w-4 h-4 text-muted-foreground" />
             </div>
           )}
 
@@ -199,6 +213,41 @@ export function ConversationHistory({
               tokensUsed={message.role === "user" ? message.promptTokens : message.tokensUsed}
             />
 
+            {/* Images Preview */}
+            {message.images && message.images.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-2">
+                {message.images.map((image, imgIndex) => (
+                  <div key={imgIndex} className="relative group">
+                    <img
+                      src={URL.createObjectURL(image)}
+                      alt={`Imagen ${imgIndex + 1}`}
+                      className="w-20 h-20 object-cover rounded border cursor-pointer hover:opacity-80 transition-opacity"
+                      onClick={() => handleImageClick(image)}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Files Preview */}
+            {message.files && message.files.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-2">
+                {message.files.map((file, fileIndex) => {
+                  const { icon: IconComponent, color } = getFileIcon(file)
+                  return (
+                    <div key={fileIndex} className="flex items-center gap-2 bg-muted/30 rounded border p-2 hover:bg-muted/50 transition-colors">
+                      <IconComponent className={`w-4 h-4 ${color}`} />
+                      <span className="text-xs text-muted-foreground truncate max-w-[120px]" title={file.name}>
+                        {file.name}
+                      </span>
+                      <span className="text-xs text-muted-foreground/60">
+                        ({(file.size / 1024).toFixed(1)} KB)
+                      </span>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
 
             {/* Translation */}
             {translations[index] && (
@@ -254,9 +303,7 @@ export function ConversationHistory({
                    variant="ghost"
                    size="sm"
                    onClick={() => handleAudioPlay(index, message.audio!)}
-                   className={`h-6 text-xs ${
-                     message.role === "user" ? "text-blue-600 hover:text-blue-800" : "text-blue-600 hover:text-blue-800"
-                   }`}
+                   className={`h-6 text-xs text-primary hover:text-primary/80`}
                  >
                    {playingIndex === index && isPlaying ? (
                      <Pause className="w-3 h-3 mr-1" />
@@ -273,9 +320,7 @@ export function ConversationHistory({
                    variant="ghost"
                    size="sm"
                    onClick={() => handleDownloadAudio(message.audio!, index)}
-                   className={`h-6 text-xs ${
-                     message.role === "user" ? "text-blue-600 hover:text-blue-800" : "text-blue-600 hover:text-blue-800"
-                   }`}
+                   className={`h-6 text-xs text-primary hover:text-primary/80`}
                  >
                    <Download className="w-3 h-3 mr-1" />
                    Descargar
@@ -285,8 +330,8 @@ export function ConversationHistory({
           </div>
 
           {message.role === "user" && (
-            <div className="w-8 h-8 bg-gradient-to-br from-gray-700 to-gray-900 rounded-full flex items-center justify-center flex-shrink-0 mt-1 shadow-lg border border-gray-600">
-              <User className="w-4 h-4 text-gray-200" />
+            <div className="w-8 h-8 bg-gradient-to-br from-muted to-muted/80 rounded-full flex items-center justify-center flex-shrink-0 mt-1 shadow-lg border border-border">
+              <User className="w-4 h-4 text-muted-foreground" />
             </div>
           )}
         </div>
@@ -307,16 +352,16 @@ export function ConversationHistory({
               className="loading-card"
             />
           </div>
-          <div className="w-8 h-8 bg-gradient-to-br from-gray-700 to-gray-900 rounded-full flex items-center justify-center flex-shrink-0 mt-1 shadow-lg border border-gray-600">
-            <User className="w-4 h-4 text-gray-200" />
+          <div className="w-8 h-8 bg-gradient-to-br from-muted to-muted/80 rounded-full flex items-center justify-center flex-shrink-0 mt-1 shadow-lg border border-border">
+            <User className="w-4 h-4 text-muted-foreground" />
           </div>
         </div>
       )}
 
       {isGenerating && (
         <div className="flex gap-3 justify-start">
-          <div className="w-8 h-8 bg-gradient-to-br from-gray-700 to-gray-900 rounded-full flex items-center justify-center flex-shrink-0 mt-1 shadow-lg border border-gray-600">
-            <Bot className="w-4 h-4 text-gray-200" />
+          <div className="w-8 h-8 bg-gradient-to-br from-muted to-muted/80 rounded-full flex items-center justify-center flex-shrink-0 mt-1 shadow-lg border border-border">
+            <Bot className="w-4 h-4 text-muted-foreground" />
           </div>
           <div className="max-w-[80%]">
             <XCard

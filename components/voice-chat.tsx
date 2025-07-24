@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Settings, Volume2, VolumeX, Trash2, Plus, Mic, MessageSquare, Send, AlertTriangle, ImagePlus, X, Key, Code, FileText } from "lucide-react"
+import { Settings, Volume2, VolumeX, Trash2, Plus, Mic, MessageSquare, Send, AlertTriangle, ImagePlus, X, Code, FileText, File } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -16,10 +16,8 @@ import {
 import { Label } from "@/components/ui/label"
 import { AIVoiceInput } from "@/components/ui/ai-voice-input"
 import { ConversationHistory } from "@/components/conversation-history"
-import { ApiKeySetup } from "@/components/api-key-setup"
 import { UserProfile } from "@/components/user-profile"
 import { ConversationManager } from "@/components/conversation-manager"
-import { ThemeSelector } from "@/components/theme-selector"
 import AIProviderSelector from "@/components/ai-provider-selector"
 import { useAudioRecording } from "@/hooks/use-audio-recording"
 import { useOpenAI } from "@/hooks/use-openai"
@@ -29,14 +27,13 @@ import { useAutoSave } from "@/hooks/use-auto-save"
 import { useNotifications } from "@/hooks/use-notifications"
 import { calculateConversationTokens } from "@/lib/token-counter"
 
-import { KeyboardShortcutsHelp } from "@/components/keyboard-shortcuts-help"
 import { AutoSaveIndicator } from "@/components/auto-save-indicator"
 
 interface VoiceChatProps {
   apiKey: string
-  onApiKeyReset: () => void
-  onApiKeySubmit: (key: string) => void
-  onShowApiKeySetup: () => void
+  onApiKeyReset?: () => void
+  onApiKeySubmit?: (key: string) => void
+  onShowApiKeySetup?: () => void
 }
 
 export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeySetup }: VoiceChatProps) {
@@ -336,6 +333,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
               const content = await readFileContent(file)
               return `\n\n--- Contenido del archivo: ${file.name} ---\n${content}\n--- Fin del archivo ---`
             } catch (error) {
+              console.error(`Error leyendo archivo ${file.name}:`, error)
               return `\n\n--- Error leyendo archivo: ${file.name} ---`
             }
           })
@@ -368,7 +366,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
       const promptTokens = calculateConversationTokens(conversationMessages, userData.aiSettings.provider === "lmstudio" ? "gpt-4o" : "gpt-4o")
       
       // Add user message immediately with calculated prompt tokens
-      addMessage("user", displayMessage, undefined, undefined, undefined, undefined, undefined, undefined, promptTokens, selectedImages.length > 0 ? selectedImages : undefined)
+      addMessage("user", displayMessage, undefined, undefined, undefined, undefined, undefined, undefined, promptTokens, selectedImages.length > 0 ? selectedImages : undefined, selectedFiles.length > 0 ? selectedFiles : undefined)
       
       // Generate AI response (pass images if available)
       const response = await generateResponse(messageToAI, selectedImages)
@@ -433,20 +431,70 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
     setSelectedFiles(prev => prev.filter((_, i) => i !== index))
   }
 
+  // Function to get file icon and color based on file type and theme
+  const getFileIcon = (file: File) => {
+    const fileType = file.type
+    const fileName = file.name.toLowerCase()
+    
+    if (fileType === 'application/pdf' || fileName.endsWith('.pdf')) {
+      return { icon: File, color: 'text-red-500 dark:text-red-400' }
+    } else if (fileType === 'text/plain' || fileName.endsWith('.txt')) {
+      return { icon: FileText, color: 'text-blue-500 dark:text-blue-400' }
+    } else if (fileType === 'application/msword' || fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || fileName.endsWith('.doc') || fileName.endsWith('.docx')) {
+      return { icon: FileText, color: 'text-indigo-500 dark:text-indigo-400' }
+    } else {
+      return { icon: FileText, color: 'text-gray-500 dark:text-gray-400' }
+    }
+  }
+
   const readFileContent = async (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader()
-      reader.onload = (e) => {
-        const result = e.target?.result as string
-        resolve(result)
-      }
-      reader.onerror = () => reject(new Error('Error reading file'))
       
       if (file.type === 'application/pdf') {
-        // For PDFs, we'll read as text (basic extraction)
-        reader.readAsText(file)
+        // For PDFs, read as ArrayBuffer and use pdfjs-dist
+        reader.onload = async (e) => {
+          try {
+            const arrayBuffer = e.target?.result as ArrayBuffer
+            
+            // Dynamically import pdfjs-dist
+            const pdfjsLib = await import('pdfjs-dist')
+            
+            // Disable worker to avoid CORS issues
+            pdfjsLib.GlobalWorkerOptions.workerSrc = ''
+            
+            const pdf = await pdfjsLib.getDocument({ 
+              data: arrayBuffer,
+              useWorkerFetch: false,
+              isEvalSupported: false,
+              useSystemFonts: true
+            }).promise
+            let fullText = ''
+            
+            // Extract text from all pages
+            for (let i = 1; i <= pdf.numPages; i++) {
+              const page = await pdf.getPage(i)
+              const textContent = await page.getTextContent()
+              const pageText = textContent.items
+                .map((item: any) => item.str)
+                .join(' ')
+              fullText += pageText + '\n'
+            }
+            
+            resolve(fullText.trim())
+          } catch (error) {
+            reject(new Error(`Error parsing PDF: ${error}`))
+          }
+        }
+        reader.onerror = () => reject(new Error('Error reading PDF file'))
+        reader.readAsArrayBuffer(file)
       } else {
         // For text files, DOC, etc.
+        reader.onload = (e) => {
+          const result = e.target?.result as string
+          resolve(result)
+        }
+        reader.onerror = () => reject(new Error('Error reading file'))
         reader.readAsText(file)
       }
     })
@@ -483,20 +531,13 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
                 />
               )}
 
-              {/* Keyboard Shortcuts Help */}
-              <KeyboardShortcutsHelp />
-              {/* Theme Selector */}
-              {isLoaded && (
-                <ThemeSelector
-                  settings={userData.themeSettings}
-                  onSettingsChange={updateThemeSettings}
-                />
-              )}
               {/* AI Provider Settings */}
               {isLoaded && (
                 <AIProviderSelector
                   settings={userData.aiSettings}
                   onSettingsChange={updateAISettings}
+                  themeSettings={userData.themeSettings}
+                  onThemeSettingsChange={updateThemeSettings}
                 />
               )}
             </div>
@@ -664,53 +705,18 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
               />
             )}
             
-
-            
-            {/* Keyboard Shortcuts Help */}
-            <KeyboardShortcutsHelp />
-            
-            {/* Theme Selector */}
-            {isLoaded && (
-              <ThemeSelector
-                settings={userData.themeSettings}
-                onSettingsChange={updateThemeSettings}
-              />
-            )}
-            
             {/* AI Provider Settings */}
             {isLoaded && (
               <AIProviderSelector
                 settings={userData.aiSettings}
                 onSettingsChange={updateAISettings}
+                themeSettings={userData.themeSettings}
+                onThemeSettingsChange={updateThemeSettings}
               />
             )}
-            
-            {/* Legacy API Settings (for OpenAI key fallback) */}
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={onShowApiKeySetup} 
-              className="text-muted-foreground hover:text-foreground h-8 px-1 sm:px-2 lg:px-3"
-              title="Configuración API"
-            >
-              <Key className="w-4 h-4" />
-              <span className="hidden lg:inline ml-2">API Keys</span>
-            </Button>
           </div>
           
-          {/* Mobile: Bottom Row - API Settings */}
-          <div className="flex sm:hidden items-center justify-center w-full">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={onShowApiKeySetup} 
-              className="text-muted-foreground hover:text-foreground h-8 px-2"
-              title="Configuración API"
-            >
-              <Key className="w-4 h-4" />
-              <span className="ml-2">API Keys</span>
-            </Button>
-          </div>
+
         </div>
       </header>
 
@@ -855,36 +861,21 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
               {/* File Preview */}
               {selectedFiles.length > 0 && (
                 <div className="flex flex-wrap gap-2 p-2 bg-muted/30 rounded-lg">
-                  {selectedFiles.map((file, index) => (
-                    <div key={index} className="relative group flex items-center gap-2 bg-background/50 rounded border p-2">
-                      <FileText className="w-4 h-4 text-blue-500" />
-                      <span className="text-xs truncate max-w-[100px]">{file.name}</span>
-                      <button
-                        onClick={() => removeFile(index)}
-                        className="bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <X className="w-2 h-2" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-              
-              {/* File Preview */}
-              {selectedFiles.length > 0 && (
-                <div className="flex flex-wrap gap-2 p-2 bg-muted/30 rounded-lg">
-                  {selectedFiles.map((file, index) => (
-                    <div key={index} className="relative group flex items-center gap-2 bg-background/50 rounded border p-2">
-                      <FileText className="w-4 h-4 text-blue-500" />
-                      <span className="text-xs truncate max-w-[100px]">{file.name}</span>
-                      <button
-                        onClick={() => removeFile(index)}
-                        className="bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <X className="w-2 h-2" />
-                      </button>
-                    </div>
-                  ))}
+                  {selectedFiles.map((file, index) => {
+                    const { icon: IconComponent, color } = getFileIcon(file)
+                    return (
+                      <div key={index} className="relative group flex items-center gap-2 bg-background/50 rounded border p-2">
+                        <IconComponent className={`w-4 h-4 ${color}`} />
+                        <span className="text-xs truncate max-w-[100px]">{file.name}</span>
+                        <button
+                          onClick={() => removeFile(index)}
+                          className="bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <X className="w-2 h-2" />
+                        </button>
+                      </div>
+                    )
+                  })}
                 </div>
               )}
               
@@ -898,7 +889,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
                       size="sm"
                       onClick={() => fileInputRef.current?.click()}
                       disabled={isGenerating || selectedImages.length >= 3}
-                      className="px-4 h-10"
+                      className="px-4 h-10 bg-primary hover:bg-primary/90 text-primary-foreground"
                       title="Agregar imagen (máximo 3)"
                     >
                       <ImagePlus className="w-4 h-4" />
@@ -921,10 +912,10 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
                   size="sm"
                   onClick={() => documentInputRef.current?.click()}
                   disabled={isGenerating || selectedFiles.length >= 2}
-                  className="px-4 h-10"
+                  className="px-4 h-10 border-primary/20 hover:bg-primary/10 hover:border-primary/40"
                   title="Agregar archivo (PDF, TXT, DOC - máximo 2)"
                 >
-                  <FileText className="w-4 h-4" />
+                  <FileText className="w-4 h-4 text-primary" />
                 </Button>
                 <input
                   ref={documentInputRef}
@@ -996,7 +987,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
                       size="sm"
                       onClick={() => fileInputRef.current?.click()}
                       disabled={isGenerating || selectedImages.length >= 3}
-                      className="px-4 h-10"
+                      className="px-4 h-10 bg-primary hover:bg-primary/90 text-primary-foreground"
                       title="Agregar imagen (máximo 3)"
                     >
                       <ImagePlus className="w-4 h-4" />
@@ -1019,10 +1010,10 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
                   size="sm"
                   onClick={() => documentInputRef.current?.click()}
                   disabled={isGenerating || selectedFiles.length >= 2}
-                  className="px-4 h-10"
+                  className="px-4 h-10 border-primary/20 hover:bg-primary/10 hover:border-primary/40"
                   title="Agregar archivo (PDF, TXT, DOC - máximo 2)"
                 >
-                  <FileText className="w-4 h-4" />
+                  <FileText className="w-4 h-4 text-primary" />
                 </Button>
                 <input
                   ref={documentInputRef}

@@ -92,7 +92,7 @@ export function ConversationManager({
             <span className="hidden sm:inline">Historial</span>
           </Button>
         </DialogTrigger>
-        <DialogContent className="bg-card border-border text-foreground max-w-2xl max-h-[80vh]">
+        <DialogContent className="bg-background border-border text-foreground max-w-2xl max-h-[80vh] overflow-hidden">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <History className="w-5 h-5" />
@@ -147,17 +147,17 @@ export function ConversationManager({
                 <AlertDialogContent className="bg-card border-border text-foreground">
                   <AlertDialogHeader>
                     <AlertDialogTitle>¿Eliminar todas las conversaciones?</AlertDialogTitle>
-                    <AlertDialogDescription className="text-gray-400">
+                    <AlertDialogDescription className="text-muted-foreground">
                       Esta acción no se puede deshacer. Todas las conversaciones guardadas ({savedConversations.length}) serán eliminadas permanentemente.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
-                    <AlertDialogCancel className="bg-gray-800 border-gray-600 text-white hover:bg-gray-700">
+                    <AlertDialogCancel className="bg-background border-border text-foreground hover:bg-muted">
                       Cancelar
                     </AlertDialogCancel>
                     <AlertDialogAction 
                       onClick={onDeleteAllConversations}
-                      className="bg-red-600 hover:bg-red-700"
+                      className="bg-destructive hover:bg-destructive/90"
                     >
                       Eliminar Todas
                     </AlertDialogAction>
@@ -167,28 +167,28 @@ export function ConversationManager({
             )}
 
             {/* Conversations List */}
-            <ScrollArea className="h-96">
+            <ScrollArea className="h-64 max-h-[40vh]">
               <div className="space-y-2">
                 {savedConversations.length === 0 ? (
                   <CardCanvas className="empty-conversations">
-                    <AnimatedCard className="p-4 bg-gray-800 border-gray-700 text-center">
-                      <p className="text-gray-400">No hay conversaciones guardadas</p>
+                    <AnimatedCard className="p-4 bg-muted border-border text-center">
+                      <p className="text-muted-foreground">No hay conversaciones guardadas</p>
                     </AnimatedCard>
                   </CardCanvas>
                 ) : (
                   savedConversations.map((conversation) => (
                     <CardCanvas key={conversation.id} className="conversation-item">
-                      <AnimatedCard className="p-3 bg-gray-800 border-gray-700 hover:bg-gray-750 transition-colors">
+                      <AnimatedCard className="p-3 bg-card border-border hover:bg-muted/50 transition-colors">
                       <div className="flex items-start justify-between">
                         <div className="flex-1 cursor-pointer" onClick={() => {
                           onLoadConversation(conversation)
                           setIsOpen(false)
                         }}>
-                          <h3 className="font-medium text-white mb-1">{conversation.title}</h3>
-                          <p className="text-sm text-gray-400 mb-2">
+                          <h3 className="font-medium text-foreground mb-1">{conversation.title}</h3>
+                          <p className="text-sm text-muted-foreground mb-2">
                             {getConversationPreview(conversation.messages)}
                           </p>
-                          <div className="flex items-center gap-4 text-xs text-gray-500">
+                          <div className="flex items-center gap-4 text-xs text-muted-foreground">
                             <span className="flex items-center gap-1">
                               <Calendar className="w-3 h-3" />
                               {formatDate(conversation.updatedAt)}
@@ -199,24 +199,24 @@ export function ConversationManager({
                         
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="sm" className="text-red-400 hover:text-red-300 hover:bg-red-900/20">
+                            <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive/80 hover:bg-destructive/10">
                               <Trash2 className="w-4 h-4" />
                             </Button>
                           </AlertDialogTrigger>
                           <AlertDialogContent className="bg-card border-border text-foreground">
                             <AlertDialogHeader>
                               <AlertDialogTitle>¿Eliminar conversación?</AlertDialogTitle>
-                              <AlertDialogDescription className="text-gray-400">
+                              <AlertDialogDescription className="text-muted-foreground">
                                 Esta acción no se puede deshacer. La conversación "{conversation.title}" será eliminada permanentemente.
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
-                              <AlertDialogCancel className="bg-gray-800 border-gray-600 text-white hover:bg-gray-700">
+                              <AlertDialogCancel className="bg-background border-border text-foreground hover:bg-muted">
                                 Cancelar
                               </AlertDialogCancel>
                               <AlertDialogAction 
                                 onClick={() => onDeleteConversation(conversation.id)}
-                                className="bg-red-600 hover:bg-red-700"
+                                className="bg-destructive hover:bg-destructive/90"
                               >
                                 Eliminar
                               </AlertDialogAction>
@@ -242,7 +242,7 @@ export function ConversationManager({
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label htmlFor="title" className="text-sm text-gray-300">
+              <Label htmlFor="title" className="text-sm text-foreground">
                 Título de la conversación
               </Label>
               <Input
@@ -250,7 +250,7 @@ export function ConversationManager({
                 value={saveTitle}
                 onChange={(e) => setSaveTitle(e.target.value)}
                 placeholder="Ej: Consulta sobre programación"
-                className="bg-gray-800 border-gray-600 text-white"
+                className="bg-background border-border text-foreground"
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
                     handleSaveConversation()

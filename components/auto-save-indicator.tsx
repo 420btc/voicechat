@@ -114,12 +114,13 @@ export function AutoSaveIndicator({ conversations, onSave, className }: AutoSave
     return 'bg-gray-800 text-gray-400 border-gray-600'
   }
 
-  const shouldShowManualSave = status.canAutoSave && status.enabled
+  const isConversationSaved = status.lastSave && status.messageCount > 0
+  const hasUnsavedChanges = status.canAutoSave && status.enabled
 
   return (
     <div className={`flex items-center gap-2 ${className}`}>
-      {/* Manual save button with badge */}
-      {shouldShowManualSave && (
+      {/* Save button with status badge */}
+      {status.messageCount > 0 && (
         <div className="relative">
           <TooltipProvider>
             <Tooltip>
@@ -128,7 +129,7 @@ export function AutoSaveIndicator({ conversations, onSave, className }: AutoSave
                   variant="ghost"
                   size="sm"
                   onClick={handleManualSave}
-                  className="text-gray-400 hover:text-white h-8 px-2"
+                  className="text-muted-foreground hover:text-foreground h-8 px-2"
                 >
                   <Save className="w-4 h-4" />
                   <span className="hidden lg:inline ml-1 text-sm">Guardar</span>
@@ -137,7 +138,7 @@ export function AutoSaveIndicator({ conversations, onSave, className }: AutoSave
               <TooltipContent>
                 <div className="text-sm">
                   <p>Guardar conversación manualmente (Ctrl+S)</p>
-                  <p><strong>Mensajes sin guardar:</strong> {status.messageCount}</p>
+                  <p><strong>Estado:</strong> {isConversationSaved ? 'Guardada' : 'Sin guardar'}</p>
                   {status.nextSaveIn > 0 && status.enabled && (
                     <p><strong>Próximo guardado en:</strong> {Math.ceil(status.nextSaveIn / 60)}m</p>
                   )}
@@ -146,12 +147,16 @@ export function AutoSaveIndicator({ conversations, onSave, className }: AutoSave
             </Tooltip>
           </TooltipProvider>
           
-          {/* Small orange badge with message count */}
+          {/* Status badge - red if unsaved, green if saved */}
           <Badge 
-            className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs font-medium bg-orange-500 text-white border-0 min-w-[20px]"
-          >
-            {status.messageCount}
-          </Badge>
+            className={`absolute -top-1 -right-1 h-3 w-3 rounded-full p-0 border-0 ${
+              isConversationSaved 
+                ? 'bg-green-500' 
+                : hasUnsavedChanges 
+                  ? 'bg-red-500' 
+                  : 'bg-gray-500'
+            }`}
+          />
         </div>
       )}
     </div>

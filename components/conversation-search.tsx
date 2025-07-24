@@ -181,7 +181,7 @@ export function ConversationSearch({ savedConversations, onLoadConversation, cla
     let highlightedText = text
     searchTerms.forEach(term => {
       const regex = new RegExp(`(${term})`, 'gi')
-      highlightedText = highlightedText.replace(regex, '<mark class="bg-yellow-200 dark:bg-yellow-800 px-1 rounded">$1</mark>')
+      highlightedText = highlightedText.replace(regex, '<mark class="bg-primary/20 text-primary px-1 rounded">$1</mark>')
     })
     
     return highlightedText
@@ -304,12 +304,12 @@ export function ConversationSearch({ savedConversations, onLoadConversation, cla
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="sm" className={`text-gray-400 hover:text-white ${className}`}>
+        <Button variant="ghost" size="sm" className={`text-muted-foreground hover:text-foreground ${className}`}>
           <Search className="w-4 h-4 sm:mr-2" />
           <span className="hidden sm:inline">Buscar</span>
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-4xl max-h-[80vh] bg-card border-border text-foreground">
+      <DialogContent className="max-w-4xl max-h-[80vh] bg-background border-border text-foreground overflow-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Search className="w-5 h-5" />

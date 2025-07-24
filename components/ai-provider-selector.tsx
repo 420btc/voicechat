@@ -20,10 +20,15 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
-import { Settings, User, ExternalLink } from "lucide-react"
+import { Settings, User, ExternalLink, Palette, Keyboard, Sun, Moon, Monitor } from "lucide-react"
 import { AIProvider } from "@/hooks/use-openai"
 import { useLocalStorage } from "@/hooks/use-local-storage"
 import { AI_AGENTS, AIAgent } from "@/hooks/use-user-data"
+import { ThemeSelector, ThemeSettings } from "@/components/theme-selector"
+import { KeyboardShortcutsHelp } from "@/components/keyboard-shortcuts-help"
+import { useTheme } from "next-themes"
+import { Switch } from "@/components/ui/switch"
+import { Slider } from "@/components/ui/slider"
 
 interface AISettings {
   provider: AIProvider
@@ -50,6 +55,8 @@ interface AISettings {
 interface AIProviderSelectorProps {
   settings: AISettings
   onSettingsChange: (settings: AISettings) => void
+  themeSettings: ThemeSettings
+  onThemeSettingsChange: (settings: ThemeSettings) => void
 }
 
 interface ModelHistoryEntry {
@@ -59,18 +66,24 @@ interface ModelHistoryEntry {
   usageCount: number
 }
 
-export default function AIProviderSelector({ settings, onSettingsChange }: AIProviderSelectorProps) {
+export default function AIProviderSelector({ settings, onSettingsChange, themeSettings, onThemeSettingsChange }: AIProviderSelectorProps) {
   const [open, setOpen] = useState(false)
   const [tempSettings, setTempSettings] = useState<AISettings>(settings)
+  const [tempThemeSettings, setTempThemeSettings] = useState<ThemeSettings>(themeSettings)
   const [sortBy, setSortBy] = useState<'usage' | 'date'>('usage')
   const [isConnected, setIsConnected] = useState(navigator.onLine)
   const [sessionTime, setSessionTime] = useState(0)
   const [sessionStartTime] = useState(Date.now())
   const { conversation } = useLocalStorage()
+  const { setTheme } = useTheme()
 
   useEffect(() => {
     setTempSettings(settings)
   }, [settings])
+
+  useEffect(() => {
+    setTempThemeSettings(themeSettings)
+  }, [themeSettings])
 
   // Monitor connection status
   useEffect(() => {
@@ -172,20 +185,47 @@ export default function AIProviderSelector({ settings, onSettingsChange }: AIPro
 
   const handleSave = () => {
     onSettingsChange(tempSettings)
+    onThemeSettingsChange(tempThemeSettings)
     setOpen(false)
   }
 
   const handleCancel = () => {
     setTempSettings(settings)
+    setTempThemeSettings(themeSettings)
     setOpen(false)
   }
+
+  const updateThemeSetting = <K extends keyof ThemeSettings>(key: K, value: ThemeSettings[K]) => {
+    const newSettings = { ...tempThemeSettings, [key]: value }
+    setTempThemeSettings(newSettings)
+    
+    // Apply theme changes immediately
+    if (key === 'theme') {
+      setTheme(value as string)
+    }
+  }
+
+  const themeOptions = [
+    { value: "light" as const, label: "Claro", icon: Sun },
+    { value: "dark" as const, label: "Oscuro", icon: Moon },
+    { value: "system" as const, label: "Sistema", icon: Monitor },
+  ]
+
+  const accentColors = [
+    { value: "blue" as const, label: "Azul", color: "bg-blue-500" },
+    { value: "green" as const, label: "Verde", color: "bg-green-500" },
+    { value: "purple" as const, label: "Morado", color: "bg-purple-500" },
+    { value: "orange" as const, label: "Naranja", color: "bg-orange-500" },
+    { value: "red" as const, label: "Rojo", color: "bg-red-500" },
+    { value: "pink" as const, label: "Rosa", color: "bg-pink-500" },
+  ]
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
-          <Settings className="h-4 w-4 mr-2" />
-          Configurar IA
+        <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground h-8 px-1 sm:px-2 lg:px-3">
+          <Settings className="w-4 h-4" />
+          <span className="hidden lg:inline ml-2">Ajustes</span>
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[900px] max-h-[90vh] flex flex-col">
@@ -266,6 +306,91 @@ export default function AIProviderSelector({ settings, onSettingsChange }: AIPro
                       <SelectItem value="o1-mini">o1-mini (Razonamiento rápido)</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+
+                {/* Theme Settings */}
+                <div className="rounded-lg border p-4 bg-muted/50">
+                  <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
+                    <Palette className="w-4 h-4" />
+                    Personalización
+                  </h4>
+                  <div className="space-y-4">
+                    {/* Theme Selection */}
+                    <div className="space-y-3">
+                      <Label className="text-sm font-medium">Tema</Label>
+                      <div className="grid grid-cols-3 gap-2">
+                        {themeOptions.map((option) => {
+                          const Icon = option.icon
+                          return (
+                            <Button
+                              key={option.value}
+                              variant={tempThemeSettings.theme === option.value ? "default" : "outline"}
+                              size="sm"
+                              onClick={() => updateThemeSetting("theme", option.value)}
+                              className="flex flex-col gap-1 h-auto py-3"
+                            >
+                              <Icon className="w-4 h-4" />
+                              <span className="text-xs">{option.label}</span>
+                            </Button>
+                          )
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Accent Color */}
+                    <div className="space-y-3">
+                      <Label className="text-sm font-medium">Color de acento</Label>
+                      <div className="grid grid-cols-6 gap-2">
+                        {accentColors.map((color) => (
+                          <Button
+                            key={color.value}
+                            variant="outline"
+                            size="sm"
+                            onClick={() => updateThemeSetting("accentColor", color.value)}
+                            className={`h-8 w-8 p-0 border-2 ${
+                              tempThemeSettings.accentColor === color.value
+                                ? "border-foreground"
+                                : "border-muted"
+                            }`}
+                            title={color.label}
+                          >
+                            <div className={`w-4 h-4 rounded-full ${color.color}`} />
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Accessibility Options */}
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-sm font-medium">Movimiento reducido</Label>
+                        <Switch
+                          checked={tempThemeSettings.reducedMotion}
+                          onCheckedChange={(checked) => updateThemeSetting("reducedMotion", checked)}
+                        />
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <Label className="text-sm font-medium">Alto contraste</Label>
+                        <Switch
+                          checked={tempThemeSettings.highContrast}
+                          onCheckedChange={(checked) => updateThemeSetting("highContrast", checked)}
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium">Tamaño de fuente: {tempThemeSettings.fontSize}px</Label>
+                        <Slider
+                          value={[tempThemeSettings.fontSize]}
+                          onValueChange={([value]) => updateThemeSetting("fontSize", value)}
+                          min={12}
+                          max={20}
+                          step={1}
+                          className="w-full"
+                        />
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
@@ -697,6 +822,75 @@ export default function AIProviderSelector({ settings, onSettingsChange }: AIPro
                     <ExternalLink className="w-3 h-3 mr-1" />
                     Acceder
                   </Button>
+                </div>
+              </div>
+            </div>
+
+            {/* Keyboard Shortcuts */}
+            <div className="rounded-lg border p-4 bg-muted/50">
+              <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
+                <Keyboard className="w-4 h-4" />
+                Atajos de Teclado
+              </h4>
+              <div className="space-y-2 max-h-48 overflow-y-auto">
+                <div className="grid grid-cols-1 gap-2 text-xs">
+                  <div className="flex justify-between items-center py-1">
+                    <span>Enviar mensaje</span>
+                    <div className="flex gap-1">
+                      <Badge variant="outline" className="text-xs px-1 py-0">Ctrl</Badge>
+                      <Badge variant="outline" className="text-xs px-1 py-0">Enter</Badge>
+                    </div>
+                  </div>
+                  <div className="flex justify-between items-center py-1">
+                    <span>Nueva conversación</span>
+                    <div className="flex gap-1">
+                      <Badge variant="outline" className="text-xs px-1 py-0">Ctrl</Badge>
+                      <Badge variant="outline" className="text-xs px-1 py-0">N</Badge>
+                    </div>
+                  </div>
+                  <div className="flex justify-between items-center py-1">
+                    <span>Guardar conversación</span>
+                    <div className="flex gap-1">
+                      <Badge variant="outline" className="text-xs px-1 py-0">Ctrl</Badge>
+                      <Badge variant="outline" className="text-xs px-1 py-0">S</Badge>
+                    </div>
+                  </div>
+                  <div className="flex justify-between items-center py-1">
+                    <span>Abrir conversación</span>
+                    <div className="flex gap-1">
+                      <Badge variant="outline" className="text-xs px-1 py-0">Ctrl</Badge>
+                      <Badge variant="outline" className="text-xs px-1 py-0">O</Badge>
+                    </div>
+                  </div>
+                  <div className="flex justify-between items-center py-1">
+                    <span>Cambiar modo de chat</span>
+                    <div className="flex gap-1">
+                      <Badge variant="outline" className="text-xs px-1 py-0">Ctrl</Badge>
+                      <Badge variant="outline" className="text-xs px-1 py-0">M</Badge>
+                    </div>
+                  </div>
+                  <div className="flex justify-between items-center py-1">
+                    <span>Limpiar conversación</span>
+                    <div className="flex gap-1">
+                      <Badge variant="outline" className="text-xs px-1 py-0">Ctrl</Badge>
+                      <Badge variant="outline" className="text-xs px-1 py-0">K</Badge>
+                    </div>
+                  </div>
+                  <div className="flex justify-between items-center py-1">
+                    <span>Cambiar tema</span>
+                    <div className="flex gap-1">
+                      <Badge variant="outline" className="text-xs px-1 py-0">Ctrl</Badge>
+                      <Badge variant="outline" className="text-xs px-1 py-0">Shift</Badge>
+                      <Badge variant="outline" className="text-xs px-1 py-0">T</Badge>
+                    </div>
+                  </div>
+                  <div className="flex justify-between items-center py-1">
+                    <span>Mostrar atajos</span>
+                    <div className="flex gap-1">
+                      <Badge variant="outline" className="text-xs px-1 py-0">Ctrl</Badge>
+                      <Badge variant="outline" className="text-xs px-1 py-0">?</Badge>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
