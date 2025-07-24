@@ -23,7 +23,14 @@ import AIProviderSelector from "@/components/ai-provider-selector"
 import { useAudioRecording } from "@/hooks/use-audio-recording"
 import { useOpenAI } from "@/hooks/use-openai"
 import { useUserData, AI_AGENTS } from "@/hooks/use-user-data"
+import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts"
+import { useAutoSave } from "@/hooks/use-auto-save"
+import { useNotifications } from "@/hooks/use-notifications"
 import { calculateConversationTokens } from "@/lib/token-counter"
+
+import { KeyboardShortcutsHelp } from "@/components/keyboard-shortcuts-help"
+import { AutoSaveIndicator } from "@/components/auto-save-indicator"
+import { ConversationSearch } from "@/components/conversation-search"
 
 interface VoiceChatProps {
   apiKey: string
@@ -130,6 +137,56 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
       setTempOpenAIKey(userData.aiSettings.openaiApiKey)
     }
   }, [userData.aiSettings.openaiApiKey])
+
+  // Initialize new hooks
+  const { showNotification, playNotificationSound } = useNotifications()
+  const { manualSave: saveConversationManually } = useAutoSave({
+    conversation,
+    onSave: (title: string, messages: any[]) => {
+      if (messages.length > 0) {
+        saveConversation(title, messages)
+        showNotification({ title: 'Conversación guardada automáticamente', soundType: 'success' })
+      }
+    }
+  })
+
+  // Keyboard shortcuts
+  useKeyboardShortcuts({
+    onSend: () => {
+      if (chatMode === 'text' && textInput.trim()) {
+        handleTextSubmit()
+      }
+    },
+    onClear: () => {
+      clearConversation()
+      showNotification({ title: 'Conversación limpiada', soundType: 'success' })
+    },
+    onNewConversation: () => {
+      clearConversation()
+      setSelectedImages([])
+      setTextInput('')
+      showNotification({ title: 'Nueva conversación iniciada', soundType: 'success' })
+    },
+    onToggleMode: () => {
+      const modes: ('voice' | 'text' | 'programmer')[] = ['voice', 'text', 'programmer']
+      const currentIndex = modes.indexOf(chatMode)
+      const nextMode = modes[(currentIndex + 1) % modes.length]
+      handleChatModeChange(nextMode)
+    },
+    onFocusInput: () => {
+      // Focus the appropriate input based on chat mode
+      if (chatMode === 'text' || chatMode === 'programmer') {
+        const textArea = document.querySelector('textarea') as HTMLTextAreaElement
+        if (textArea) {
+          textArea.focus()
+        }
+      }
+    },
+    onEscape: () => {
+      setTextInput('')
+      setSelectedImages([])
+    }
+  })
 
   // Handle chat mode change with provider validation
   const handleChatModeChange = (newMode: 'voice' | 'text' | 'programmer') => {
@@ -353,6 +410,27 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
               />
             )}
             <div className="flex items-center gap-1">
+              {/* Auto-save Indicator */}
+              {isLoaded && (
+                <AutoSaveIndicator
+                  conversations={userData.savedConversations}
+                  onSave={() => {
+                    if (conversation.length > 0) {
+                      const autoTitle = `Auto-guardado ${new Date().toLocaleDateString('es-ES')} ${new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}`
+                      saveConversation(autoTitle, conversation)
+                    }
+                  }}
+                />
+              )}
+              {/* Conversation Search */}
+              {isLoaded && (
+                <ConversationSearch
+                  savedConversations={userData.savedConversations}
+                  onLoadConversation={(conv) => loadConversation(conv.messages)}
+                />
+              )}
+              {/* Keyboard Shortcuts Help */}
+              <KeyboardShortcutsHelp />
               {/* Theme Selector */}
               {isLoaded && (
                 <ThemeSelector
@@ -503,6 +581,24 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
           
           {/* Desktop: Right Section - Settings & Theme */}
           <div className="hidden sm:flex items-center gap-1 lg:gap-2">
+            {/* Auto-save Indicator */}
+            {isLoaded && (
+              <AutoSaveIndicator
+                conversations={userData.savedConversations}
+                onSave={() => {
+                  if (conversation.length > 0) {
+                    const autoTitle = `Auto-guardado ${new Date().toLocaleDateString('es-ES')} ${new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}`
+                    saveConversation(autoTitle, conversation)
+                  }
+                }}
+              />
+            )}
+            
+
+            
+            {/* Keyboard Shortcuts Help */}
+            <KeyboardShortcutsHelp />
+            
             {/* Theme Selector */}
             {isLoaded && (
               <ThemeSelector
@@ -559,6 +655,8 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
             onTranslate={translateMessage}
             chatMode={chatMode}
             userName={userData.name}
+            savedConversations={userData.savedConversations}
+            onLoadConversation={(conv) => loadConversation(conv.messages)}
           />
         </div>
 

@@ -239,6 +239,28 @@ export function useUserData() {
     }))
   }
 
+  // Generate hash for conversation content
+  const generateConversationHash = (messages: Array<{
+    role: "user" | "assistant"
+    content: string
+    timestamp: Date
+    audio?: Blob
+  }>) => {
+    // Create a string representation of the conversation content
+    const contentString = messages
+      .map(msg => `${msg.role}:${msg.content}`)
+      .join('|')
+    
+    // Simple hash function
+    let hash = 0
+    for (let i = 0; i < contentString.length; i++) {
+      const char = contentString.charCodeAt(i)
+      hash = ((hash << 5) - hash) + char
+      hash = hash & hash // Convert to 32-bit integer
+    }
+    return hash.toString()
+  }
+
   const saveConversation = (
     title: string,
     messages: Array<{
@@ -248,6 +270,28 @@ export function useUserData() {
       audio?: Blob
     }>
   ) => {
+    // Generate hash for the conversation
+    const conversationHash = generateConversationHash(messages)
+    
+    // Check if a conversation with the same hash already exists
+    const existingConversation = userData.savedConversations.find(
+      conv => generateConversationHash(conv.messages) === conversationHash
+    )
+    
+    if (existingConversation) {
+      // Update existing conversation instead of creating a duplicate
+      setUserData(prev => ({
+        ...prev,
+        savedConversations: prev.savedConversations.map(conv =>
+          conv.id === existingConversation.id
+            ? { ...conv, title, updatedAt: new Date() }
+            : conv
+        )
+      }))
+      return existingConversation.id
+    }
+    
+    // Create new conversation if no duplicate found
     const newConversation: SavedConversation = {
       id: Date.now().toString(),
       title,

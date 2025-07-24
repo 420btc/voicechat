@@ -161,3 +161,88 @@
   font-style: normal;
   font-size: 120%;
 }
+
+/* Compact Mode Styles */
+.compact-mode {
+  /* Message containers */
+  .conversation-message {
+    margin-bottom: var(--chat-message-spacing, 1rem);
+    padding: var(--chat-message-padding, 1rem);
+  }
+  
+  /* Avatar sizes */
+  .user-avatar,
+  .ai-avatar {
+    width: var(--chat-avatar-size, 2.5rem);
+    height: var(--chat-avatar-size, 2.5rem);
+  }
+  
+  /* Text sizing */
+  .message-content {
+    font-size: var(--chat-font-size, 1rem);
+    line-height: var(--chat-line-height, 1.5);
+  }
+  
+  /* Header padding */
+  .chat-header {
+    padding: var(--header-padding, 1rem);
+  }
+  
+  /* Input area padding */
+  .chat-input-area {
+    padding: var(--input-padding, 1rem);
+  }
+  
+  /* Reduce button sizes */
+  .compact-button {
+    height: 2rem;
+    padding: 0 0.75rem;
+    font-size: 0.875rem;
+  }
+  
+  /* Reduce spacing in conversation history */
+  .conversation-history {
+    gap: 0.5rem;
+  }
+  
+  /* Smaller code blocks */
+  .code-viewer {
+    font-size: 0.8rem;
+  }
+  
+  /* Compact metadata */
+  .message-metadata {
+    font-size: 0.75rem;
+    margin-top: 0.25rem;
+  }
+  
+  /* Reduce spacing in dialogs */
+  .dialog-content {
+    padding: 1rem;
+  }
+  
+  /* Smaller voice input */
+  .voice-input-container {
+    padding: 1rem;
+  }
+  
+  /* Compact settings panels */
+  .settings-panel {
+    padding: 0.75rem;
+  }
+  
+  /* Reduce margins in cards */
+  .animated-card {
+    margin: 0.5rem 0;
+  }
+}
+
+/* Smooth transitions for mode switching */
+.conversation-message,
+.user-avatar,
+.ai-avatar,
+.message-content,
+.chat-header,
+.chat-input-area {
+  transition: all 0.2s ease-in-out;
+}
