@@ -47,6 +47,7 @@ export function useOpenAI(config: AIConfig) {
   const { provider, apiKey, baseUrl, model, openaiModel, anthropicModel, geminiModel, selectedAgent, onModelUsed, qwenBaseUrl, qwenModel, deepseekLmBaseUrl, deepseekLmModel, useSpecialPrompt } = config
   const [isTranscribing, setIsTranscribing] = useState(false)
   const [isGenerating, setIsGenerating] = useState(false)
+  const [abortController, setAbortController] = useState<AbortController | null>(null)
   
   const {
     conversation,
@@ -125,8 +126,24 @@ export function useOpenAI(config: AIConfig) {
     })
   }
 
+  const cancelGeneration = useCallback(() => {
+    if (abortController) {
+      abortController.abort()
+      setAbortController(null)
+    }
+    setIsGenerating(false)
+  }, [abortController])
+
   const generateResponse = useCallback(
     async (userMessage: string, images?: File[]): Promise<AIResponse | null> => {
+      // Cancel any existing generation
+      if (abortController) {
+        abortController.abort()
+      }
+      
+      // Create new abort controller
+      const newAbortController = new AbortController()
+      setAbortController(newAbortController)
       setIsGenerating(true)
       
       // Track response time
@@ -432,7 +449,7 @@ ${contextualPrompt}`
         const textResponse = await fetch(apiUrl, {
           method: "POST",
           headers,
-          signal: controller.signal,
+          signal: newAbortController.signal,
           ...(provider === "lmstudio" && { keepalive: false }),
           body: JSON.stringify(requestBody),
         })
@@ -565,39 +582,49 @@ ${contextualPrompt}`
           onModelUsed(detectedModel, provider)
         }
 
-        // Generate audio response (only available with OpenAI)
+        // Generate audio response (only available with OpenAI) - non-blocking
         let audioBlob: Blob | undefined
         if (provider === "openai") {
-          try {
-            const audioResponse = await fetch("https://api.openai.com/v1/audio/speech", {
-              method: "POST",
-              headers: {
-                Authorization: `Bearer ${apiKey}`,
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                model: "tts-1",
-                voice: selectedVoice,
-                input: responseText,
-                response_format: "mp3",
-              }),
-            })
+          // Generate audio asynchronously without blocking the response
+          setTimeout(async () => {
+            try {
+              const audioResponse = await fetch("https://api.openai.com/v1/audio/speech", {
+                method: "POST",
+                headers: {
+                  Authorization: `Bearer ${apiKey}`,
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  model: "tts-1",
+                  voice: selectedVoice,
+                  input: responseText,
+                  response_format: "mp3",
+                }),
+              })
 
-            if (audioResponse.ok) {
-              audioBlob = await audioResponse.blob()
+              if (audioResponse.ok) {
+                audioBlob = await audioResponse.blob()
+                // You could emit an event here to update the message with audio
+              }
+            } catch (audioError) {
+              console.error("Audio generation error:", audioError)
             }
-          } catch (audioError) {
-            console.error("Audio generation error:", audioError)
-          }
+          }, 0)
         }
 
-        // Save to long-term memory after successful response
-        try {
-          const memoryContent = `Usuario: ${userMessage}\nAsistente: ${responseText}`
-          addMemoryEntry(memoryContent, 'context')
-        } catch (memoryError) {
-          console.error('Error saving to long-term memory:', memoryError)
-        }
+        // Set generating to false immediately after getting response text
+        setIsGenerating(false)
+        setAbortController(null)
+
+        // Save to long-term memory after successful response (non-blocking)
+        setTimeout(() => {
+          try {
+            const memoryContent = `Usuario: ${userMessage}\nAsistente: ${responseText}`
+            addMemoryEntry(memoryContent, 'context')
+          } catch (memoryError) {
+            console.error('Error saving to long-term memory:', memoryError)
+          }
+        }, 0)
 
         return {
           text: responseText,
@@ -609,6 +636,8 @@ ${contextualPrompt}`
         }
       } catch (error) {
         clearTimeout(timeoutId)
+        setIsGenerating(false)
+        setAbortController(null)
         
         console.error(`${provider} response generation error:`, error)
         
@@ -659,7 +688,7 @@ ${contextualPrompt}`
           model: selectedModel,
         }
       } finally {
-        setIsGenerating(false)
+        // setIsGenerating(false) is now called immediately after getting response text
       }
     },
     [apiKey, conversation, provider, baseUrl, model, selectedVoice, onModelUsed],
@@ -722,6 +751,7 @@ ${contextualPrompt}`
   return {
     transcribeAudio,
     generateResponse,
+    cancelGeneration,
     translateMessage,
     isTranscribing,
     isGenerating,

@@ -108,6 +108,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
   const {
     transcribeAudio,
     generateResponse,
+    cancelGeneration,
     translateMessage,
     isTranscribing,
     isGenerating,
@@ -840,6 +841,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
             isGenerating={isGenerating}
             onTranslate={translateMessage}
             onUpdateConversation={setConversation}
+            onCancelGeneration={cancelGeneration}
             chatMode={chatMode}
             userName={userData.name}
             userAvatar={userData.avatar}

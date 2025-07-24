@@ -29,6 +29,7 @@ interface ConversationHistoryProps {
   isGenerating: boolean
   onTranslate: (text: string, targetLanguage: "es" | "en") => Promise<string | null>
   onUpdateConversation?: (updatedConversation: Message[]) => void
+  onCancelGeneration?: () => void
   chatMode?: 'voice' | 'text' | 'programmer'
   userName?: string
   userAvatar?: string
@@ -42,6 +43,7 @@ export function ConversationHistory({
   isGenerating,
   onTranslate,
   onUpdateConversation,
+  onCancelGeneration,
   userName = "Usuario",
   userAvatar,
   chatMode = 'voice',
@@ -386,7 +388,7 @@ export function ConversationHistory({
           <div className="w-8 h-8 bg-gradient-to-br from-muted to-muted/80 rounded-full flex items-center justify-center flex-shrink-0 mt-1 shadow-lg border border-border">
             <Bot className="w-4 h-4 text-muted-foreground" />
           </div>
-          <div className="max-w-[80%]">
+          <div className="max-w-[80%] space-y-2">
             <XCard
               link="#"
               authorName="Asistente IA"
@@ -397,6 +399,20 @@ export function ConversationHistory({
               timestamp="Generando"
               className="generating-card"
             />
+            {onCancelGeneration && (
+              <div className="flex justify-end">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onCancelGeneration}
+                  className="text-xs px-3 py-1.5 h-8 bg-gradient-to-r from-gray-800/80 to-black/90 hover:from-gray-700/90 hover:to-black text-red-400 border-red-500/50 hover:border-red-400 backdrop-blur-sm shadow-lg transition-all duration-200 hover:shadow-red-500/20"
+                  title="Cancelar generación"
+                >
+                  <X className="w-3 h-3 mr-1.5" />
+                  Cancelar
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       )}

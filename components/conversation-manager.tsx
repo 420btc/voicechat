@@ -167,7 +167,7 @@ export function ConversationManager({
             )}
 
             {/* Conversations List */}
-            <ScrollArea className="h-64 max-h-[40vh]">
+            <ScrollArea className="h-48 max-h-[35vh]">
               <div className="space-y-2">
                 {savedConversations.length === 0 ? (
                   <CardCanvas className="empty-conversations">

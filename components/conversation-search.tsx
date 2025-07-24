@@ -214,13 +214,13 @@ export function ConversationSearch({ savedConversations, onLoadConversation, cla
         </div>
         
         {/* Search Results */}
-        <ScrollArea className="h-[300px] w-full">
+        <ScrollArea className="h-[180px] w-full">
           {isSearching ? (
-            <div className="flex items-center justify-center py-8">
+            <div className="flex items-center justify-center py-4">
               <div className="text-muted-foreground">Buscando...</div>
             </div>
           ) : searchQuery && searchResults.length === 0 ? (
-            <div className="flex items-center justify-center py-8">
+            <div className="flex items-center justify-center py-4">
               <div className="text-muted-foreground">No se encontraron resultados</div>
             </div>
           ) : searchResults.length > 0 ? (
@@ -280,10 +280,10 @@ export function ConversationSearch({ savedConversations, onLoadConversation, cla
               ))}
             </div>
           ) : (
-            <div className="flex items-center justify-center py-8">
+            <div className="flex items-center justify-center py-4">
               <div className="text-center text-muted-foreground">
-                <Search className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                <p>Escribe para buscar en tus conversaciones</p>
+                <Search className="w-6 h-6 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">Escribe para buscar en tus conversaciones</p>
                 <p className="text-xs mt-1">Busca por contenido, títulos o palabras clave</p>
               </div>
             </div>
@@ -341,7 +341,7 @@ export function ConversationSearch({ savedConversations, onLoadConversation, cla
           </div>
           
           {/* Search Results */}
-          <ScrollArea className="h-[400px] w-full">
+          <ScrollArea className="h-[300px] w-full">
             {isSearching ? (
               <div className="flex items-center justify-center py-8">
                 <div className="text-muted-foreground">Buscando...</div>

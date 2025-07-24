@@ -20,7 +20,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
-import { Settings, User, ExternalLink, Palette, Keyboard, Sun, Moon, Monitor, AlertTriangle, TrendingUp } from "lucide-react"
+import { Settings, User, ExternalLink, Palette, Keyboard, Sun, Moon, Monitor, AlertTriangle, TrendingUp, RefreshCw } from "lucide-react"
 import { AIProvider } from "@/hooks/use-openai"
 import { useLocalStorage } from "@/hooks/use-local-storage"
 import { AI_AGENTS, AIAgent } from "@/hooks/use-user-data"
@@ -75,6 +75,7 @@ export default function AIProviderSelector({ settings, onSettingsChange, themeSe
   const [isConnected, setIsConnected] = useState(navigator.onLine)
   const [sessionTime, setSessionTime] = useState(0)
   const [sessionStartTime] = useState(Date.now())
+  const [refreshKey, setRefreshKey] = useState(0)
   const { conversation, clearCorruptedData, forceResetApp } = useLocalStorage()
   const { setTheme } = useTheme()
   const { showNotification } = useNotifications()
@@ -207,6 +208,16 @@ export default function AIProviderSelector({ settings, onSettingsChange, themeSe
     }
   }
 
+  const handleRefreshChart = () => {
+    setRefreshKey(prev => prev + 1)
+    showNotification({ 
+      title: 'Gráfica actualizada', 
+      body: 'Los datos de velocidad de respuesta se han recargado',
+      soundType: 'success', 
+      playSound: false 
+    })
+  }
+
   const themeOptions = [
     { value: "light" as const, label: "Claro", icon: Sun },
     { value: "dark" as const, label: "Oscuro", icon: Moon },
@@ -239,7 +250,7 @@ export default function AIProviderSelector({ settings, onSettingsChange, themeSe
           <img 
             src="/iaconfig.png" 
             alt="IA Config" 
-            className="absolute -top-4 right-4 w-18 h-16 opacity-100 object-contain"
+            className="absolute -top-4 right-4 w-16 h-16 opacity-100 object-contain"
           />
         </DialogHeader>
         
@@ -397,11 +408,21 @@ export default function AIProviderSelector({ settings, onSettingsChange, themeSe
 
                 {/* Response Speed Graph */}
                 <div className="rounded-lg border p-4 bg-muted/50 h-[430px] flex flex-col">
-                  <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
-                    <TrendingUp className="w-4 h-4" />
-                    Velocidades de Respuesta
-                  </h4>
-                  <div className="flex-1 relative">
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="text-sm font-medium flex items-center gap-2">
+                      <TrendingUp className="w-4 h-4" />
+                      Velocidades de Respuesta
+                    </h4>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleRefreshChart}
+                      className="h-8 px-2 text-muted-foreground hover:text-foreground"
+                    >
+                      <RefreshCw className="w-3 h-3" />
+                    </Button>
+                  </div>
+                  <div className="flex-1 relative" key={refreshKey}>
                     {(() => {
                       const responseData = conversation
                          .filter(message => message.role === "assistant" && message.responseTime && message.timestamp)

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, startTransition } from "react"
 import { AIProvider } from "./use-openai"
 
 interface Message {
@@ -46,10 +46,14 @@ export function useLocalStorage() {
     loadFromStorage()
   }, [])
 
-  // Save conversation to localStorage whenever it changes
+  // Save conversation to localStorage whenever it changes (with debounce to avoid blocking)
   useEffect(() => {
     if (conversation.length > 0) {
-      localStorage.setItem(STORAGE_KEYS.CONVERSATION, JSON.stringify(conversation))
+      // Use requestIdleCallback or setTimeout to avoid blocking the UI
+      const timeoutId = setTimeout(() => {
+        localStorage.setItem(STORAGE_KEYS.CONVERSATION, JSON.stringify(conversation))
+      }, 0)
+      return () => clearTimeout(timeoutId)
     }
   }, [conversation])
 
@@ -129,7 +133,10 @@ export function useLocalStorage() {
       images,
       files,
     }
-    setConversation((prev) => [...prev, message])
+    // Use startTransition to prioritize UI updates
+    startTransition(() => {
+      setConversation((prev) => [...prev, message])
+    })
   }, [])
 
   const clearConversation = useCallback(() => {
