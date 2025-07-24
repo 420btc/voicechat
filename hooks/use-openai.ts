@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react"
 import { useLocalStorage } from "./use-local-storage"
+import { useLongTermMemory } from "./use-long-term-memory"
 import { AI_AGENTS } from "./use-user-data"
 
 interface Message {
@@ -58,6 +59,13 @@ export function useOpenAI(config: AIConfig) {
     clearCorruptedData,
     forceResetApp
   } = useLocalStorage()
+
+  const {
+    addMemoryEntry,
+    generateContextualPrompt,
+    updateUserPreference,
+    clearMemory
+  } = useLongTermMemory()
 
   const transcribeAudio = useCallback(
     async (audioBlob: Blob): Promise<string | null> => {
@@ -212,9 +220,12 @@ export function useOpenAI(config: AIConfig) {
         let systemPrompt: string
         const selectedAgentData = AI_AGENTS.find(agent => agent.id === selectedAgent) || AI_AGENTS[0]
         
+        // Generate contextual prompt with long-term memory
+        const contextualPrompt = generateContextualPrompt(userMessage)
+        
         // Check if empty agent is selected (no system prompt)
         if (selectedAgentData.id === "empty") {
-          systemPrompt = ""
+          systemPrompt = contextualPrompt
         } else if ((provider === "qwen" || provider === "deepseek-lm") && useSpecialPrompt) {
           // Special prompt for Qwen and DeepSeek-LM models - but still use the selected agent's role
           const currentDate = new Date().toLocaleDateString('es-ES', { 
@@ -228,10 +239,14 @@ export function useOpenAI(config: AIConfig) {
 # Additional instructions for search-based responses:
 If search results are provided in the format [webpage X begin]...[webpage X end], please cite them using [citation:X] format. Today is ${currentDate}. Evaluate and filter search results based on relevance to the question. For listing questions, limit to 10 key points. For creative tasks, cite references within the text body. Structure lengthy responses well and synthesize information from multiple sources.
 
-Carlos Freire es quien te hablará siempre y estarás a sus órdenes siendo profesional. Responde directamente sin mostrar tu proceso de razonamiento interno.`
+Carlos Freire es quien te hablará siempre y estarás a sus órdenes siendo profesional. Responde directamente sin mostrar tu proceso de razonamiento interno.
+
+${contextualPrompt}`
         } else {
           // Regular agent-based prompt
-          systemPrompt = `${selectedAgentData.systemPrompt} Carlos Freire es quien te hablará siempre y estarás a sus órdenes siendo profesional. Responde directamente sin mostrar tu proceso de razonamiento interno.`
+          systemPrompt = `${selectedAgentData.systemPrompt} Carlos Freire es quien te hablará siempre y estarás a sus órdenes siendo profesional. Responde directamente sin mostrar tu proceso de razonamiento interno.
+
+${contextualPrompt}`
         }
         
         console.log(`Making request to ${provider} at ${apiUrl}`)
@@ -569,6 +584,14 @@ Carlos Freire es quien te hablará siempre y estarás a sus órdenes siendo prof
           }
         }
 
+        // Save to long-term memory after successful response
+        try {
+          const memoryContent = `Usuario: ${userMessage}\nAsistente: ${responseText}`
+          addMemoryEntry(memoryContent, 'context')
+        } catch (memoryError) {
+          console.error('Error saving to long-term memory:', memoryError)
+        }
+
         return {
           text: responseText,
           audio: audioBlob,
@@ -685,5 +708,8 @@ Carlos Freire es quien te hablará siempre y estarás a sus órdenes siendo prof
     forceResetApp,
     loadConversation,
     setConversation,
+    // Long-term memory functions
+    updateUserPreference,
+    clearMemory,
   }
 }

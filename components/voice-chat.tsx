@@ -25,6 +25,8 @@ import { useUserData, AI_AGENTS } from "@/hooks/use-user-data"
 import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts"
 import { useAutoSave } from "@/hooks/use-auto-save"
 import { useNotifications } from "@/hooks/use-notifications"
+import { useRealTimeTranscription } from "@/hooks/use-real-time-transcription"
+import { useDragAndDrop } from "@/hooks/use-drag-and-drop"
 import { calculateConversationTokens } from "@/lib/token-counter"
 
 import { AutoSaveIndicator } from "@/components/auto-save-indicator"
@@ -114,8 +116,6 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
     selectedVoice,
     setSelectedVoice,
     clearConversation,
-    clearCorruptedData,
-    forceResetApp,
     loadConversation,
     setConversation,
   } = useOpenAI({
@@ -144,6 +144,36 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
 
   // Initialize new hooks
   const { showNotification, playNotificationSound } = useNotifications()
+  
+  // Real-time transcription hook
+  const {
+    isSupported: isTranscriptionSupported,
+    isListening,
+    transcript,
+    confidence,
+    error: transcriptionError,
+    startListening: startTranscription,
+    stopListening: stopTranscription,
+    resetTranscript: resetTranscription
+  } = useRealTimeTranscription()
+  
+  // Drag and drop hook
+  const {
+    isDragOver,
+    files: droppedFiles,
+    error: dragError,
+    handleDragEnter,
+    handleDragLeave,
+    handleDragOver,
+    handleDrop,
+    clearFiles: clearDroppedFiles,
+    clearError: clearDragError
+  } = useDragAndDrop({
+    accept: ['image/*', '.pdf', '.txt', '.md', '.js', '.ts', '.jsx', '.tsx', '.py', '.java', '.cpp', '.c', '.html', '.css', '.json'],
+    maxFiles: 10,
+    maxSize: 10 * 1024 * 1024 // 10MB
+  })
+  
   const { manualSave: saveConversationManually } = useAutoSave({
     conversation,
     onSave: (title: string, messages: any[]) => {
@@ -287,6 +317,60 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
       root.style.setProperty('--ring', `${color.hue} ${color.sat}% ${color.light}%`)
     }
   }, [userData.themeSettings, isLoaded])
+
+  // Handle dropped files
+  useEffect(() => {
+    if (droppedFiles.length > 0) {
+      const imageFiles = droppedFiles.filter(file => file.type.startsWith('image/'))
+      const documentFiles = droppedFiles.filter(file => !file.type.startsWith('image/'))
+      
+      if (imageFiles.length > 0) {
+        setSelectedImages(prev => [...prev, ...imageFiles])
+      }
+      
+      if (documentFiles.length > 0) {
+        setSelectedFiles(prev => [...prev, ...documentFiles])
+      }
+      
+      showNotification({
+        title: `${droppedFiles.length} archivo(s) agregado(s)`,
+        body: `${imageFiles.length} imagen(es), ${documentFiles.length} documento(s)`,
+        soundType: 'success'
+      })
+      
+      clearDroppedFiles()
+    }
+  }, [droppedFiles, showNotification, clearDroppedFiles])
+
+  // Handle drag and drop errors
+  useEffect(() => {
+    if (dragError) {
+      showNotification({
+        title: 'Error al arrastrar archivos',
+        body: dragError,
+        soundType: 'error'
+      })
+      clearDragError()
+    }
+  }, [dragError, showNotification, clearDragError])
+
+  // Handle real-time transcription
+  useEffect(() => {
+    if (transcript && confidence > 0.7) {
+      setTextInput(transcript)
+    }
+  }, [transcript, confidence])
+
+  // Handle transcription errors
+  useEffect(() => {
+    if (transcriptionError) {
+      showNotification({
+        title: 'Error de transcripción',
+        body: transcriptionError,
+        soundType: 'error'
+      })
+    }
+  }, [transcriptionError, showNotification])
 
   const handleAudioSubmit = async (blob: Blob) => {
     try {
@@ -436,6 +520,10 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
 
   // Function to get file icon and color based on file type and theme
   const getFileIcon = (file: File) => {
+    if (!file || !file.name) {
+      return { icon: FileText, color: 'text-gray-500 dark:text-gray-400' }
+    }
+    
     const fileType = file.type
     const fileName = file.name.toLowerCase()
     
@@ -506,7 +594,25 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
 
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col h-screen overflow-hidden">
+    <div 
+      className={`min-h-screen bg-background text-foreground flex flex-col h-screen overflow-hidden relative ${
+        isDragOver ? 'bg-primary/5 border-2 border-dashed border-primary' : ''
+      }`}
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+    >
+      {/* Drag and Drop Overlay */}
+      {isDragOver && (
+        <div className="absolute inset-0 z-50 bg-primary/10 backdrop-blur-sm flex items-center justify-center">
+          <div className="bg-card border-2 border-dashed border-primary rounded-lg p-8 text-center">
+            <FileIcon className="w-16 h-16 mx-auto mb-4 text-primary" />
+            <h3 className="text-lg font-semibold mb-2">Suelta los archivos aquí</h3>
+            <p className="text-muted-foreground">Imágenes, documentos y archivos de código</p>
+          </div>
+        </div>
+      )}
       {/* Header */}
       <header className="flex-shrink-0 p-2 sm:p-4 lg:p-6 border-b border-border">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4 lg:gap-8">
@@ -649,35 +755,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
                 <Plus className="w-4 h-4" />
                 <span className="hidden lg:inline ml-2">Nueva</span>
               </Button>
-              
-              {/* Clear Corrupted Data - Temporary Fix Button */}
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={() => {
-                  clearCorruptedData()
-                  showNotification({ 
-                    title: 'Datos corruptos limpiados', 
-                    body: 'Si el error persiste, haz doble clic en este botón para reiniciar completamente',
-                    soundType: 'success', 
-                    playSound: false 
-                  })
-                }}
-                onDoubleClick={() => {
-                  showNotification({ 
-                    title: 'Reiniciando aplicación...', 
-                    body: 'Se eliminará todo y la página se recargará',
-                    soundType: 'warning', 
-                    playSound: false 
-                  })
-                  forceResetApp()
-                }} 
-                className="text-orange-500 hover:text-orange-600 h-8 px-1 sm:px-2 lg:px-3"
-                title="Clic: Limpiar datos corruptos | Doble clic: Reiniciar app completamente"
-              >
-                <AlertTriangle className="w-4 h-4" />
-                <span className="hidden lg:inline ml-2">Fix</span>
-              </Button>
+
               
               {/* Conversation Manager */}
               {isLoaded && (
@@ -894,7 +972,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
               {/* File Preview */}
               {selectedFiles.length > 0 && (
                 <div className="flex flex-wrap gap-2 p-2 bg-muted/30 rounded-lg">
-                  {selectedFiles.map((file, index) => {
+                  {selectedFiles.filter(file => file && file.name).map((file, index) => {
                     const { icon: IconComponent, color } = getFileIcon(file)
                     return (
                       <div key={index} className="relative group flex items-center gap-2 bg-background/50 rounded border p-2">
@@ -959,14 +1037,46 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
                   className="hidden"
                 />
                 
-                <Input
-                  value={textInput}
-                  onChange={(e) => setTextInput(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  placeholder={supportsVision() ? "Escribe tu mensaje, sube imágenes o archivos..." : "Escribe tu mensaje o sube archivos..."}
-                  disabled={isGenerating}
-                  className="flex-1"
-                />
+                {/* Real-time transcription button */}
+                {isTranscriptionSupported && (
+                  <Button
+                    type="button"
+                    variant={isListening ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => {
+                      if (isListening) {
+                        stopTranscription()
+                      } else {
+                        startTranscription()
+                      }
+                    }}
+                    className={`px-4 h-10 ${isListening ? 'bg-red-500 hover:bg-red-600 text-white' : 'border-primary/20 hover:bg-primary/10'}`}
+                    title={isListening ? "Detener transcripción" : "Iniciar transcripción en tiempo real"}
+                  >
+                    <Mic className={`w-4 h-4 ${isListening ? 'animate-pulse' : ''}`} />
+                  </Button>
+                )}
+                
+                <div className="flex-1 relative">
+                  <Input
+                    value={textInput}
+                    onChange={(e) => setTextInput(e.target.value)}
+                    onKeyPress={handleKeyPress}
+                    placeholder={supportsVision() ? "Escribe tu mensaje, sube imágenes o archivos..." : "Escribe tu mensaje o sube archivos..."}
+                    disabled={isGenerating}
+                    className="w-full"
+                  />
+                  {/* Real-time transcription preview */}
+                  {isListening && transcript && (
+                    <div className="absolute top-full left-0 right-0 mt-1 p-2 bg-muted/90 backdrop-blur-sm border rounded-md text-sm z-10">
+                      <div className="flex items-center gap-2 mb-1">
+                        <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                        <span className="text-xs text-muted-foreground">Transcribiendo... (Confianza: {Math.round(confidence * 100)}%)</span>
+                      </div>
+                      <p className="text-foreground">{transcript}</p>
+                    </div>
+                  )}
+                </div>
                 <Button
                   onClick={handleTextSubmit}
                   disabled={!textInput.trim() || isGenerating}
@@ -1057,14 +1167,46 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
                   className="hidden"
                 />
                 
-                <Input
-                  value={textInput}
-                  onChange={(e) => setTextInput(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  placeholder="Describe tu problema de programación, sube archivos de código o pide ayuda..."
-                  disabled={isGenerating}
-                  className="flex-1"
-                />
+                {/* Real-time transcription button */}
+                {isTranscriptionSupported && (
+                  <Button
+                    type="button"
+                    variant={isListening ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => {
+                      if (isListening) {
+                        stopTranscription()
+                      } else {
+                        startTranscription()
+                      }
+                    }}
+                    className={`px-4 h-10 ${isListening ? 'bg-red-500 hover:bg-red-600 text-white' : 'border-primary/20 hover:bg-primary/10'}`}
+                    title={isListening ? "Detener transcripción" : "Iniciar transcripción en tiempo real"}
+                  >
+                    <Mic className={`w-4 h-4 ${isListening ? 'animate-pulse' : ''}`} />
+                  </Button>
+                )}
+                
+                <div className="flex-1 relative">
+                  <Input
+                    value={textInput}
+                    onChange={(e) => setTextInput(e.target.value)}
+                    onKeyPress={handleKeyPress}
+                    placeholder="Describe tu problema de programación, sube archivos de código o pide ayuda..."
+                    disabled={isGenerating}
+                    className="w-full"
+                  />
+                  {/* Real-time transcription preview */}
+                  {isListening && transcript && (
+                    <div className="absolute top-full left-0 right-0 mt-1 p-2 bg-muted/90 backdrop-blur-sm border rounded-md text-sm z-10">
+                      <div className="flex items-center gap-2 mb-1">
+                        <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                        <span className="text-xs text-muted-foreground">Transcribiendo... (Confianza: {Math.round(confidence * 100)}%)</span>
+                      </div>
+                      <p className="text-foreground">{transcript}</p>
+                    </div>
+                  )}
+                </div>
                 <Button
                   onClick={handleTextSubmit}
                   disabled={!textInput.trim() || isGenerating}

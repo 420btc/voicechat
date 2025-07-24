@@ -20,7 +20,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
-import { Settings, User, ExternalLink, Palette, Keyboard, Sun, Moon, Monitor } from "lucide-react"
+import { Settings, User, ExternalLink, Palette, Keyboard, Sun, Moon, Monitor, AlertTriangle, TrendingUp } from "lucide-react"
 import { AIProvider } from "@/hooks/use-openai"
 import { useLocalStorage } from "@/hooks/use-local-storage"
 import { AI_AGENTS, AIAgent } from "@/hooks/use-user-data"
@@ -29,6 +29,7 @@ import { KeyboardShortcutsHelp } from "@/components/keyboard-shortcuts-help"
 import { useTheme } from "next-themes"
 import { Switch } from "@/components/ui/switch"
 import { Slider } from "@/components/ui/slider"
+import { useNotifications } from "@/hooks/use-notifications"
 
 interface AISettings {
   provider: AIProvider
@@ -74,8 +75,9 @@ export default function AIProviderSelector({ settings, onSettingsChange, themeSe
   const [isConnected, setIsConnected] = useState(navigator.onLine)
   const [sessionTime, setSessionTime] = useState(0)
   const [sessionStartTime] = useState(Date.now())
-  const { conversation } = useLocalStorage()
+  const { conversation, clearCorruptedData, forceResetApp } = useLocalStorage()
   const { setTheme } = useTheme()
+  const { showNotification } = useNotifications()
 
   useEffect(() => {
     setTempSettings(settings)
@@ -390,6 +392,162 @@ export default function AIProviderSelector({ settings, onSettingsChange, themeSe
                         />
                       </div>
                     </div>
+                  </div>
+                </div>
+
+                {/* Response Speed Graph */}
+                <div className="rounded-lg border p-4 bg-muted/50 h-[430px] flex flex-col">
+                  <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
+                    <TrendingUp className="w-4 h-4" />
+                    Velocidades de Respuesta
+                  </h4>
+                  <div className="flex-1 relative">
+                    {(() => {
+                      const responseData = conversation
+                         .filter(message => message.role === "assistant" && message.responseTime && message.timestamp)
+                         .map(message => ({
+                           time: new Date(message.timestamp).getTime(),
+                           responseTime: message.responseTime! / 1000, // Convert to seconds
+                           timestamp: message.timestamp
+                         }))
+                         .sort((a, b) => a.time - b.time)
+                         .slice(-20) // Show last 20 messages for better visualization
+                      
+                      if (responseData.length === 0) {
+                        return (
+                          <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
+                            No hay datos de velocidad disponibles
+                          </div>
+                        )
+                      }
+                      
+                      const maxTime = Math.max(...responseData.map(d => d.responseTime))
+                      const minTime = Math.min(...responseData.map(d => d.responseTime))
+                      const timeRange = maxTime - minTime || 1
+                      
+                      const svgWidth = 100
+                      const svgHeight = 100
+                      const padding = 10
+                      
+                      const points = responseData.map((data, index) => {
+                        const x = padding + (index / (responseData.length - 1 || 1)) * (svgWidth - 2 * padding)
+                        const y = svgHeight - padding - ((data.responseTime - minTime) / timeRange) * (svgHeight - 2 * padding)
+                        return { x, y, data }
+                      })
+                      
+                      const pathData = points.map((point, index) => 
+                        `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`
+                      ).join(' ')
+                      
+                      const currentTheme = tempThemeSettings.theme
+                      const accentColor = tempThemeSettings.accentColor
+                      
+                      // Define colors based on theme and accent
+                      const getLineColor = () => {
+                        if (currentTheme === 'dark') {
+                          switch (accentColor) {
+                            case 'blue': return '#3b82f6'
+                            case 'green': return '#10b981'
+                            case 'purple': return '#8b5cf6'
+                            case 'orange': return '#f59e0b'
+                            case 'red': return '#ef4444'
+                            case 'pink': return '#ec4899'
+                            default: return '#3b82f6'
+                          }
+                        } else {
+                          switch (accentColor) {
+                            case 'blue': return '#2563eb'
+                            case 'green': return '#059669'
+                            case 'purple': return '#7c3aed'
+                            case 'orange': return '#d97706'
+                            case 'red': return '#dc2626'
+                            case 'pink': return '#db2777'
+                            default: return '#2563eb'
+                          }
+                        }
+                      }
+                      
+                      return (
+                         <div className="w-full h-full flex flex-col">
+                           <div className="flex-1 min-h-0">
+                             <svg 
+                               viewBox={`0 0 ${svgWidth} ${svgHeight}`} 
+                               className="w-full h-full"
+                               preserveAspectRatio="none"
+                             >
+                               {/* Background */}
+                                <rect width="100%" height="100%" fill="currentColor" fillOpacity="0.02" />
+                                
+                                {/* Grid lines */}
+                                <defs>
+                                  <pattern id="responseGrid" width="20" height="20" patternUnits="userSpaceOnUse">
+                                    <path d="M 20 0 L 0 0 0 20" fill="none" stroke="currentColor" strokeWidth="0.5" opacity="0.05"/>
+                                  </pattern>
+                                </defs>
+                                <rect width="100%" height="100%" fill="url(#responseGrid)" />
+                               
+                               {/* Line */}
+                               <path
+                                  d={pathData}
+                                  fill="none"
+                                  stroke={getLineColor()}
+                                  strokeWidth="1.5"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                />
+                               
+                               {/* Points */}
+                               {points.map((point, index) => (
+                                 <circle
+                                    key={index}
+                                    cx={point.x}
+                                    cy={point.y}
+                                    r="2.5"
+                                    fill="white"
+                                    stroke={getLineColor()}
+                                    strokeWidth="1.5"
+                                    className="hover:r-4 transition-all cursor-pointer"
+                                  >
+                                    <title>{`${point.data.responseTime.toFixed(2)}s - ${new Date(point.data.timestamp).toLocaleTimeString()}`}</title>
+                                  </circle>
+                               ))}
+                             </svg>
+                           </div>
+                           
+                           {/* Legend */}
+                           <div className="mt-2 flex flex-wrap gap-3 text-xs text-muted-foreground flex-shrink-0">
+                             <div className="flex items-center gap-1">
+                               <div className="w-3 h-0.5 bg-current" style={{backgroundColor: getLineColor()}}></div>
+                               <span>Tendencia de velocidad</span>
+                             </div>
+                             <div className="flex items-center gap-1">
+                               <div className="w-2 h-2 rounded-full bg-white border" style={{borderColor: getLineColor()}}></div>
+                               <span>Tiempo de respuesta</span>
+                             </div>
+                             <div className="flex items-center gap-1">
+                               <div className="w-3 h-3 opacity-20" style={{backgroundImage: 'url(#responseGrid)'}}></div>
+                               <span>Cuadrícula de referencia</span>
+                             </div>
+                           </div>
+                           
+                           {/* Stats */}
+                           <div className="mt-2 grid grid-cols-3 gap-2 text-xs flex-shrink-0">
+                             <div className="text-center">
+                               <div className="font-medium">{responseData.length}</div>
+                               <div className="text-muted-foreground">Mensajes</div>
+                             </div>
+                             <div className="text-center">
+                               <div className="font-medium">{(responseData.reduce((sum, d) => sum + d.responseTime, 0) / responseData.length).toFixed(1)}s</div>
+                               <div className="text-muted-foreground">Promedio</div>
+                             </div>
+                             <div className="text-center">
+                               <div className="font-medium">{minTime.toFixed(1)}s</div>
+                               <div className="text-muted-foreground">Más rápido</div>
+                             </div>
+                           </div>
+                         </div>
+                       )
+                    })()}
                   </div>
                 </div>
               </div>
@@ -821,6 +979,67 @@ export default function AIProviderSelector({ settings, onSettingsChange, themeSe
                   >
                     <ExternalLink className="w-3 h-3 mr-1" />
                     Acceder
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            {/* Repair Tools */}
+            <div className="rounded-lg border p-4 bg-muted/50">
+              <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4" />
+                Herramientas de Reparación
+              </h4>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between p-3 rounded border bg-background/50">
+                  <div className="flex-1">
+                    <div className="text-sm font-medium mb-1">Limpiar Datos Corruptos</div>
+                    <div className="text-xs text-muted-foreground">
+                      Elimina datos corruptos que pueden causar errores
+                    </div>
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => {
+                      clearCorruptedData()
+                      showNotification({ 
+                        title: 'Datos corruptos limpiados', 
+                        body: 'Si el error persiste, usa la opción de reinicio completo',
+                        soundType: 'success', 
+                        playSound: false 
+                      })
+                    }}
+                    className="h-8 px-3 text-orange-600 border-orange-200 hover:bg-orange-50"
+                  >
+                    <AlertTriangle className="w-3 h-3 mr-1" />
+                    Limpiar
+                  </Button>
+                </div>
+                
+                <div className="flex items-center justify-between p-3 rounded border bg-background/50">
+                  <div className="flex-1">
+                    <div className="text-sm font-medium mb-1">Reinicio Completo</div>
+                    <div className="text-xs text-muted-foreground">
+                      Elimina todos los datos y reinicia la aplicación
+                    </div>
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => {
+                      showNotification({ 
+                        title: 'Reiniciando aplicación...', 
+                        body: 'Se eliminará todo y la página se recargará',
+                        soundType: 'warning', 
+                        playSound: false 
+                      })
+                      forceResetApp()
+                    }}
+                    className="h-8 px-3 text-red-600 border-red-200 hover:bg-red-50"
+                  >
+                    <AlertTriangle className="w-3 h-3 mr-1" />
+                    Reiniciar
                   </Button>
                 </div>
               </div>

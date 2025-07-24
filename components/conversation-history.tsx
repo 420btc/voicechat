@@ -59,6 +59,10 @@ export function ConversationHistory({
 
   // Function to get file icon and color based on file type
   const getFileIcon = (file: File) => {
+    if (!file || !file.name) {
+      return { icon: FileText, color: 'text-gray-600' }
+    }
+    
     const extension = file.name.split('.').pop()?.toLowerCase()
     
     if (extension === 'pdf') {
@@ -257,7 +261,7 @@ export function ConversationHistory({
             {/* Files Preview */}
             {message.files && message.files.length > 0 && (
               <div className="flex flex-wrap gap-2 mt-2">
-                {message.files.map((file, fileIndex) => {
+                {message.files.filter(file => file && file.name).map((file, fileIndex) => {
                   const { icon: IconComponent, color } = getFileIcon(file)
                   return (
                     <div key={fileIndex} className="flex items-center gap-2 bg-muted/30 rounded border p-2 hover:bg-muted/50 transition-colors">

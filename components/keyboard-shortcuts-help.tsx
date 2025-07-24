@@ -162,7 +162,7 @@ export function KeyboardShortcutsHelp({ className }: KeyboardShortcutsHelpProps)
         </Tooltip>
       </TooltipProvider>
       
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto bg-gray-900 border-gray-700">
+      <DialogContent className="max-w-2xl max-h-[190vh] overflow-y-auto bg-gray-900 border-gray-700">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-white">
             <Command className="w-5 h-5" />
