@@ -46,8 +46,14 @@ interface UserData {
   name: string
   avatar?: string
   savedConversations: SavedConversation[]
-  themeSettings: ThemeSettings
+  themeSettings: ThemeSettings & {
+    notifications?: boolean
+    autoSave?: boolean
+    compactMode?: boolean
+    voiceAutoSend?: boolean
+  }
   aiSettings: AISettings
+  createdAt?: string
 }
 
 const AI_AGENTS: AIAgent[] = [
@@ -139,8 +145,13 @@ const DEFAULT_USER_DATA: UserData = {
     accentColor: "blue",
     reducedMotion: false,
     fontSize: 14,
-    highContrast: false
+    highContrast: false,
+    notifications: true,
+    autoSave: true,
+    compactMode: false,
+    voiceAutoSend: false
   },
+  createdAt: new Date().toISOString(),
   aiSettings: {
     provider: "openai",
     openaiApiKey: "",
@@ -230,7 +241,12 @@ export function useUserData() {
     setUserData(prev => ({ ...prev, avatar }))
   }
 
-  const updateThemeSettings = (themeSettings: ThemeSettings) => {
+  const updateThemeSettings = (themeSettings: ThemeSettings & {
+    notifications?: boolean
+    autoSave?: boolean
+    compactMode?: boolean
+    voiceAutoSend?: boolean
+  }) => {
     setUserData(prev => ({ ...prev, themeSettings }))
   }
 
@@ -380,9 +396,7 @@ export function useUserData() {
     return userData.savedConversations.find(conv => conv.id === id)
   }
 
-  const exportUserData = (): string => {
-    return JSON.stringify(userData, null, 2)
-  }
+
 
   const importUserData = (jsonData: string): boolean => {
     try {
@@ -459,6 +473,10 @@ export function useUserData() {
         }
       }
     })
+  }
+
+  const exportUserData = (): string => {
+    return JSON.stringify(userData, null, 2)
   }
 
   return {

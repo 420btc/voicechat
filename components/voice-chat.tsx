@@ -84,6 +84,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
     deleteAllConversations,
     cleanupDuplicateConversations,
     addModelToHistory,
+    exportUserData,
   } = useUserData()
 
   // Determine which API key to use based on provider
@@ -626,6 +627,47 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
                 userAvatar={userData.avatar}
                 onUserNameChange={updateUserName}
                 onAvatarChange={updateUserAvatar}
+                userStats={{
+                  totalConversations: userData.savedConversations?.length || 0,
+                  totalMessages: userData.savedConversations?.reduce((total, conv) => total + conv.messages.length, 0) || 0,
+                  voiceMessages: userData.savedConversations?.reduce((total, conv) => 
+                     total + conv.messages.filter(msg => msg.audio).length, 0) || 0,
+                   textMessages: userData.savedConversations?.reduce((total, conv) => 
+                     total + conv.messages.filter(msg => !msg.audio).length, 0) || 0,
+                  favoriteProvider: userData.aiSettings.provider || "OpenAI",
+                  totalTime: "0h 0m", // TODO: Implementar tracking de tiempo
+                  joinDate: new Date(userData.createdAt || Date.now()).toLocaleDateString()
+                }}
+                userPreferences={{
+                  theme: userData.themeSettings.theme || "dark",
+                  language: "es", // TODO: Añadir configuración de idioma
+                  notifications: userData.themeSettings.notifications !== false,
+                  autoSave: userData.themeSettings.autoSave !== false,
+                  compactMode: userData.themeSettings.compactMode || false,
+                  voiceAutoSend: userData.themeSettings.voiceAutoSend || false
+                }}
+                onPreferencesChange={(preferences) => {
+                   updateThemeSettings({
+                     ...userData.themeSettings,
+                     theme: preferences.theme,
+                     notifications: preferences.notifications,
+                     autoSave: preferences.autoSave,
+                     compactMode: preferences.compactMode,
+                     voiceAutoSend: preferences.voiceAutoSend
+                   })
+                 }}
+                 onExportData={() => {
+                   const dataStr = exportUserData()
+                   const dataBlob = new Blob([dataStr], { type: 'application/json' })
+                   const url = URL.createObjectURL(dataBlob)
+                   const link = document.createElement('a')
+                   link.href = url
+                   link.download = `ai-voice-chat-backup-${new Date().toISOString().split('T')[0]}.json`
+                   document.body.appendChild(link)
+                   link.click()
+                   document.body.removeChild(link)
+                   URL.revokeObjectURL(url)
+                 }}
               />
             )}
           </div>
