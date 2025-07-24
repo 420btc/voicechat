@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react"
 import { XCard } from "@/components/ui/x-gradient-card"
 import { detectCodeBlocks } from "@/components/code-viewer"
-import { User, Bot, Loader2, Languages, Play, Pause, Copy, Download, X, File, FileText } from "lucide-react"
+import { User, Bot, Loader2, Languages, Play, Pause, Copy, Download, X, File as FileIcon, FileText } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { AIProvider } from "@/hooks/use-openai"
 import { ConversationSearch } from "@/components/conversation-search"
@@ -60,7 +60,7 @@ export function ConversationHistory({
     const extension = file.name.split('.').pop()?.toLowerCase()
     
     if (extension === 'pdf') {
-      return { icon: File, color: 'text-red-600' }
+      return { icon: FileIcon, color: 'text-red-600' }
     } else if (['txt', 'doc', 'docx'].includes(extension || '')) {
       return { icon: FileText, color: 'text-blue-600' }
     }
@@ -399,7 +399,7 @@ export function ConversationHistory({
             >
               <X className="w-4 h-4 text-gray-600" />
             </button>
-            {selectedImage instanceof File && (
+            {selectedImage instanceof window.File && (
               <img
                 src={URL.createObjectURL(selectedImage)}
                 alt="Imagen ampliada"

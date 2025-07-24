@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Settings, Volume2, VolumeX, Trash2, Plus, Mic, MessageSquare, Send, AlertTriangle, ImagePlus, X, Code, FileText, File } from "lucide-react"
+import { Settings, Volume2, VolumeX, Trash2, Plus, Mic, MessageSquare, Send, AlertTriangle, ImagePlus, X, Code, FileText, File as FileIcon } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -437,7 +437,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
     const fileName = file.name.toLowerCase()
     
     if (fileType === 'application/pdf' || fileName.endsWith('.pdf')) {
-      return { icon: File, color: 'text-red-500 dark:text-red-400' }
+      return { icon: FileIcon, color: 'text-red-500 dark:text-red-400' }
     } else if (fileType === 'text/plain' || fileName.endsWith('.txt')) {
       return { icon: FileText, color: 'text-blue-500 dark:text-blue-400' }
     } else if (fileType === 'application/msword' || fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || fileName.endsWith('.doc') || fileName.endsWith('.docx')) {
@@ -840,7 +840,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
                 <div className="flex flex-wrap gap-2 p-2 bg-muted/30 rounded-lg">
                   {selectedImages.map((image, index) => (
                     <div key={index} className="relative group">
-                      {image instanceof File && (
+                      {image instanceof window.File && (
                         <img
                           src={URL.createObjectURL(image)}
                           alt={`Imagen ${index + 1}`}
@@ -959,7 +959,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
                 <div className="flex flex-wrap gap-2 p-2 bg-muted/30 rounded-lg">
                   {selectedImages.map((image, index) => (
                     <div key={index} className="relative group">
-                      {image instanceof File && (
+                      {image instanceof window.File && (
                         <img
                           src={URL.createObjectURL(image)}
                           alt={`Imagen ${index + 1}`}
