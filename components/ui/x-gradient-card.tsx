@@ -64,6 +64,8 @@ function XCard({
                 className={cn(
                     "w-full min-w-[400px] md:min-w-[500px] max-w-xl p-1.5 rounded-2xl relative isolate overflow-hidden cursor-pointer",
                     "bg-white dark:bg-black/90",
+                    "bg-gradient-to-br from-black/5 to-black/[0.02] dark:from-white/5 dark:to-white/[0.02]",
+                    "backdrop-blur-xl backdrop-saturate-[180%]",
                     "border border-black/10 dark:border-white/10",
                     "shadow-[0_8px_16px_rgb(0_0_0_/_0.15)] dark:shadow-[0_8px_16px_rgb(0_0_0_/_0.25)]",
                     "will-change-transform translate-z-0 transition-transform hover:scale-[1.02]",
@@ -73,7 +75,8 @@ function XCard({
                 <div
                     className={cn(
                         "w-full p-5 rounded-xl relative",
-                        "bg-white dark:bg-gradient-to-br dark:from-white/[0.08] dark:to-transparent",
+                        "bg-gradient-to-br from-black/[0.05] to-transparent dark:from-white/[0.08] dark:to-transparent",
+                        "backdrop-blur-md backdrop-saturate-150",
                         "border border-black/[0.05] dark:border-white/[0.08]",
                         "text-black/90 dark:text-white",
                         "shadow-sm",

@@ -23,7 +23,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={inter.className}>
+      <body className={`${inter.className} bg-gradient-to-br from-black/40 to-white/10 min-h-screen`}>
         <ThemeProvider
           attribute="class"
           defaultTheme="dark"

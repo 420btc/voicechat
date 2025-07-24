@@ -34,9 +34,10 @@ interface ConversationSearchProps {
   savedConversations: SavedConversation[]
   onLoadConversation: (conversation: SavedConversation) => void
   className?: string
+  showTrigger?: boolean
 }
 
-export function ConversationSearch({ savedConversations, onLoadConversation, className }: ConversationSearchProps) {
+export function ConversationSearch({ savedConversations, onLoadConversation, className, showTrigger = true }: ConversationSearchProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const [searchResults, setSearchResults] = useState<SearchResult[]>([])
@@ -184,6 +185,120 @@ export function ConversationSearch({ savedConversations, onLoadConversation, cla
     })
     
     return highlightedText
+  }
+
+  if (!showTrigger) {
+    // When used inside another modal, just return the search interface
+    return (
+      <div className="space-y-4">
+        {/* Search Input */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Buscar en mensajes, títulos de conversaciones..."
+            className="pl-10 pr-10"
+            autoFocus
+          />
+          {searchQuery && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSearchQuery("")}
+              className="absolute right-1 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0"
+            >
+              <X className="w-4 h-4" />
+            </Button>
+          )}
+        </div>
+        
+        {/* Search Results */}
+        <ScrollArea className="h-[300px] w-full">
+          {isSearching ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="text-muted-foreground">Buscando...</div>
+            </div>
+          ) : searchQuery && searchResults.length === 0 ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="text-muted-foreground">No se encontraron resultados</div>
+            </div>
+          ) : searchResults.length > 0 ? (
+            <div className="space-y-3">
+              {searchResults.map((result, index) => (
+                <div
+                  key={`${result.conversation.id}-${result.messageIndex}-${index}`}
+                  className="p-4 border border-border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
+                  onClick={() => handleLoadConversation(result)}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      {/* Conversation Title */}
+                      <div className="flex items-center gap-2 mb-2">
+                        <MessageSquare className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                        <h4 className="font-medium text-sm truncate">{result.conversation.title}</h4>
+                      </div>
+                      
+                      {/* Message Preview */}
+                      <div className="text-sm text-muted-foreground mb-2">
+                        <div className="flex items-center gap-1 mb-1">
+                          {result.message.role === 'user' ? (
+                            <User className="w-3 h-3" />
+                          ) : (
+                            <Bot className="w-3 h-3" />
+                          )}
+                          <span className="text-xs capitalize">{result.message.role}</span>
+                        </div>
+                        <div 
+                          className="text-sm leading-relaxed"
+                          dangerouslySetInnerHTML={{ 
+                            __html: highlightText(result.snippet, searchQuery.toLowerCase().split(' ').filter(term => term.length > 0))
+                          }}
+                        />
+                      </div>
+                      
+                      {/* Metadata */}
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <Calendar className="w-3 h-3" />
+                        <span>{new Date(result.message.timestamp).toLocaleDateString('es-ES')}</span>
+                        {result.message.model && (
+                          <Badge variant="secondary" className="text-xs px-1 py-0">
+                            {result.message.model}
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {/* Relevance Score (for debugging) */}
+                    {process.env.NODE_ENV === 'development' && (
+                      <Badge variant="outline" className="text-xs">
+                        {result.relevanceScore}
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="flex items-center justify-center py-8">
+              <div className="text-center text-muted-foreground">
+                <Search className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                <p>Escribe para buscar en tus conversaciones</p>
+                <p className="text-xs mt-1">Busca por contenido, títulos o palabras clave</p>
+              </div>
+            </div>
+          )}
+        </ScrollArea>
+        
+        {/* Search Stats */}
+        {searchQuery && searchResults.length > 0 && (
+          <div className="text-xs text-muted-foreground text-center pt-2 border-t border-border">
+            {searchResults.length} resultado{searchResults.length !== 1 ? 's' : ''} encontrado{searchResults.length !== 1 ? 's' : ''}
+            {searchResults.length === 50 && ' (mostrando los primeros 50)'}
+          </div>
+        )}
+      </div>
+    )
   }
 
   return (

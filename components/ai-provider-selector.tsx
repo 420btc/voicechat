@@ -28,6 +28,7 @@ import { AI_AGENTS, AIAgent } from "@/hooks/use-user-data"
 interface AISettings {
   provider: AIProvider
   openaiApiKey: string
+  openaiModel: string
   lmstudioApiKey: string
   lmstudioBaseUrl: string
   lmstudioModel: string
@@ -242,6 +243,29 @@ export default function AIProviderSelector({ settings, onSettingsChange }: AIPro
                       setTempSettings(prev => ({ ...prev, openaiApiKey: e.target.value }))
                     }
                   />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="openai-model">Modelo de OpenAI</Label>
+                  <Select
+                    value={tempSettings.openaiModel}
+                    onValueChange={(value) => 
+                      setTempSettings(prev => ({ ...prev, openaiModel: value }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecciona un modelo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="gpt-4o">GPT-4o (Más reciente)</SelectItem>
+                      <SelectItem value="gpt-4o-mini">GPT-4o Mini (Rápido y económico)</SelectItem>
+                      <SelectItem value="gpt-4-turbo">GPT-4 Turbo</SelectItem>
+                      <SelectItem value="gpt-4">GPT-4 (Clásico)</SelectItem>
+                      <SelectItem value="gpt-3.5-turbo">GPT-3.5 Turbo (Económico)</SelectItem>
+                      <SelectItem value="o1-preview">o1-preview (Razonamiento avanzado)</SelectItem>
+                      <SelectItem value="o1-mini">o1-mini (Razonamiento rápido)</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             )}

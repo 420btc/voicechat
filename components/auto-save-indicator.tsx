@@ -118,58 +118,41 @@ export function AutoSaveIndicator({ conversations, onSave, className }: AutoSave
 
   return (
     <div className={`flex items-center gap-2 ${className}`}>
-      {/* Status indicator */}
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Badge 
-              variant="outline" 
-              className={`flex items-center gap-1 px-1.5 py-0.5 text-xs ${getStatusColor()}`}
-            >
-              {getStatusIcon()}
-              <span className="hidden sm:inline">{getStatusText()}</span>
-            </Badge>
-          </TooltipTrigger>
-          <TooltipContent>
-            <div className="text-sm">
-              <p><strong>Estado:</strong> {getStatusText()}</p>
-              {status.lastSave && (
-                <p><strong>Último guardado:</strong> {formatTimeAgo(status.lastSave.getTime())}</p>
-              )}
-              {status.canAutoSave && (
-                <p><strong>Mensajes:</strong> {status.messageCount}</p>
-              )}
-              {status.nextSaveIn > 0 && status.enabled && (
-                <p><strong>Próximo guardado en:</strong> {Math.ceil(status.nextSaveIn / 60)}m</p>
-              )}
-              <p className="text-xs text-gray-400 mt-1">
-                Auto-guardado cada 5 minutos
-              </p>
-            </div>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-
-      {/* Manual save button */}
+      {/* Manual save button with badge */}
       {shouldShowManualSave && (
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleManualSave}
-                className="text-gray-400 hover:text-white h-6 px-1.5"
-              >
-                <Save className="w-3 h-3" />
-                <span className="hidden lg:inline ml-1 text-xs">Guardar</span>
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Guardar conversación manualmente (Ctrl+S)</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+        <div className="relative">
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleManualSave}
+                  className="text-gray-400 hover:text-white h-8 px-2"
+                >
+                  <Save className="w-4 h-4" />
+                  <span className="hidden lg:inline ml-1 text-sm">Guardar</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <div className="text-sm">
+                  <p>Guardar conversación manualmente (Ctrl+S)</p>
+                  <p><strong>Mensajes sin guardar:</strong> {status.messageCount}</p>
+                  {status.nextSaveIn > 0 && status.enabled && (
+                    <p><strong>Próximo guardado en:</strong> {Math.ceil(status.nextSaveIn / 60)}m</p>
+                  )}
+                </div>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+          
+          {/* Small orange badge with message count */}
+          <Badge 
+            className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs font-medium bg-orange-500 text-white border-0 min-w-[20px]"
+          >
+            {status.messageCount}
+          </Badge>
+        </div>
       )}
     </div>
   )

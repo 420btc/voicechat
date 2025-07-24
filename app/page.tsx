@@ -41,7 +41,7 @@ export default function Home() {
   }
 
   return (
-    <div className="h-screen bg-background text-foreground overflow-hidden">
+    <div className="h-screen text-foreground overflow-hidden">
       {showApiKeySetup ? (
         <ApiKeySetup 
           onApiKeySubmit={handleApiKeySubmit} 

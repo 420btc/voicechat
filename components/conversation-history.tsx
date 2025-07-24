@@ -167,15 +167,6 @@ export function ConversationHistory({
 
   return (
     <div className="h-full flex flex-col">
-      {/* Conversation Search */}
-      {savedConversations.length > 0 && onLoadConversation && (
-        <div className="mb-4 flex-shrink-0">
-          <ConversationSearch
-            savedConversations={savedConversations}
-            onLoadConversation={onLoadConversation}
-          />
-        </div>
-      )}
       
       {/* Conversation Messages */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto space-y-4 pr-2">

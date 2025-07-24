@@ -3,8 +3,9 @@
 import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Settings, Volume2, VolumeX, Trash2, Plus, Mic, MessageSquare, Send, AlertTriangle, ImagePlus, X, Key, Code } from "lucide-react"
+import { Settings, Volume2, VolumeX, Trash2, Plus, Mic, MessageSquare, Send, AlertTriangle, ImagePlus, X, Key, Code, FileText } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -30,7 +31,6 @@ import { calculateConversationTokens } from "@/lib/token-counter"
 
 import { KeyboardShortcutsHelp } from "@/components/keyboard-shortcuts-help"
 import { AutoSaveIndicator } from "@/components/auto-save-indicator"
-import { ConversationSearch } from "@/components/conversation-search"
 
 interface VoiceChatProps {
   apiKey: string
@@ -46,10 +46,13 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
   const [showProviderWarning, setShowProviderWarning] = useState(false)
   const [tempOpenAIKey, setTempOpenAIKey] = useState('')
   const [selectedImages, setSelectedImages] = useState<File[]>([])
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [volume, setVolume] = useState(0.7) // Volume state (0.0 to 1.0)
   const [isMuted, setIsMuted] = useState(false)
+  const [autoPlayAudioInText, setAutoPlayAudioInText] = useState(false) // Control audio playback in text mode
   const audioRef = useRef<HTMLAudioElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const documentInputRef = useRef<HTMLInputElement>(null)
 
   // Handle audio events
   useEffect(() => {
@@ -120,6 +123,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
     apiKey: currentApiKey,
     baseUrl: userData.aiSettings.lmstudioBaseUrl,
     model: userData.aiSettings.lmstudioModel,
+    openaiModel: userData.aiSettings.openaiModel,
     anthropicModel: userData.aiSettings.anthropicModel,
     geminiModel: userData.aiSettings.geminiModel,
     selectedAgent: userData.aiSettings.selectedAgent,
@@ -164,6 +168,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
     onNewConversation: () => {
       clearConversation()
       setSelectedImages([])
+      setSelectedFiles([])
       setTextInput('')
       showNotification({ title: 'Nueva conversación iniciada', soundType: 'success' })
     },
@@ -185,6 +190,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
     onEscape: () => {
       setTextInput('')
       setSelectedImages([])
+      setSelectedFiles([])
     }
   })
 
@@ -321,8 +327,27 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
       const userMessage = textInput.trim()
       setTextInput('')
       
-      // Create display message for user (no need to include image info as images will be shown visually)
+      // Process file contents if any files are selected
+      let fileContents = ''
+      if (selectedFiles.length > 0) {
+        const fileTexts = await Promise.all(
+          selectedFiles.map(async (file) => {
+            try {
+              const content = await readFileContent(file)
+              return `\n\n--- Contenido del archivo: ${file.name} ---\n${content}\n--- Fin del archivo ---`
+            } catch (error) {
+              return `\n\n--- Error leyendo archivo: ${file.name} ---`
+            }
+          })
+        )
+        fileContents = fileTexts.join('')
+      }
+      
+      // Create display message for user (no need to include file content as files will be shown visually)
       const displayMessage = userMessage
+      
+      // Create the actual message to send to AI (includes file contents)
+      const messageToAI = userMessage + fileContents
       
       // Calculate prompt tokens immediately
       const conversationMessages = [
@@ -336,7 +361,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
         })),
         {
           role: "user",
-          content: userMessage,
+          content: messageToAI,
         },
       ]
       
@@ -346,12 +371,12 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
       addMessage("user", displayMessage, undefined, undefined, undefined, undefined, undefined, undefined, promptTokens, selectedImages.length > 0 ? selectedImages : undefined)
       
       // Generate AI response (pass images if available)
-      const response = await generateResponse(userMessage, selectedImages)
+      const response = await generateResponse(messageToAI, selectedImages)
       if (response) {
         addMessage("assistant", response.text, undefined, response.audio, response.model, userData.aiSettings.provider, response.responseTime, response.tokensUsed, undefined)
 
-        // Play AI audio response if available
-        if (response.audio && response.audio instanceof Blob) {
+        // Play AI audio response if available and auto-play is enabled in text mode
+        if (response.audio && response.audio instanceof Blob && autoPlayAudioInText) {
           const audioUrl = URL.createObjectURL(response.audio)
           if (audioRef.current) {
             audioRef.current.src = audioUrl
@@ -362,8 +387,9 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
         }
       }
       
-      // Clear selected images after sending
+      // Clear selected images and files after sending
       setSelectedImages([])
+      setSelectedFiles([])
     } catch (error) {
       console.error("Error processing text:", error)
     }
@@ -388,8 +414,42 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
     setSelectedImages(prev => [...prev, ...imageFiles].slice(0, 3)) // Max 3 images
   }
 
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || [])
+    const documentFiles = files.filter(file => 
+      file.type === 'application/pdf' || 
+      file.type === 'text/plain' || 
+      file.type === 'application/msword' || 
+      file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    )
+    setSelectedFiles(prev => [...prev, ...documentFiles].slice(0, 2)) // Max 2 files
+  }
+
   const removeImage = (index: number) => {
     setSelectedImages(prev => prev.filter((_, i) => i !== index))
+  }
+
+  const removeFile = (index: number) => {
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index))
+  }
+
+  const readFileContent = async (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        const result = e.target?.result as string
+        resolve(result)
+      }
+      reader.onerror = () => reject(new Error('Error reading file'))
+      
+      if (file.type === 'application/pdf') {
+        // For PDFs, we'll read as text (basic extraction)
+        reader.readAsText(file)
+      } else {
+        // For text files, DOC, etc.
+        reader.readAsText(file)
+      }
+    })
   }
 
 
@@ -422,13 +482,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
                   }}
                 />
               )}
-              {/* Conversation Search */}
-              {isLoaded && (
-                <ConversationSearch
-                  savedConversations={userData.savedConversations}
-                  onLoadConversation={(conv) => loadConversation(conv.messages)}
-                />
-              )}
+
               {/* Keyboard Shortcuts Help */}
               <KeyboardShortcutsHelp />
               {/* Theme Selector */}
@@ -495,6 +549,22 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
                 <span className="hidden lg:inline ml-2">Código</span>
               </Button>
             </div>
+            
+            {/* Audio Response Selector - Only show in text mode */}
+            {chatMode === 'text' && (
+              <div className="flex items-center gap-1 sm:gap-2 lg:gap-3">
+                <Button
+                  variant={autoPlayAudioInText ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setAutoPlayAudioInText(!autoPlayAudioInText)}
+                  className="h-8 px-1 sm:px-2 lg:px-3"
+                  title={autoPlayAudioInText ? "Desactivar respuesta en audio" : "Activar respuesta en audio"}
+                >
+                  {autoPlayAudioInText ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+                  <span className="hidden lg:inline ml-2">{autoPlayAudioInText ? 'Audio ON' : 'Audio OFF'}</span>
+                </Button>
+              </div>
+            )}
             
             {/* Voice Selector - Only show in voice mode */}
             {chatMode === 'voice' && (
@@ -781,6 +851,42 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
                 </div>
               )}
               
+              {/* File Preview */}
+              {selectedFiles.length > 0 && (
+                <div className="flex flex-wrap gap-2 p-2 bg-muted/30 rounded-lg">
+                  {selectedFiles.map((file, index) => (
+                    <div key={index} className="relative group flex items-center gap-2 bg-background/50 rounded border p-2">
+                      <FileText className="w-4 h-4 text-blue-500" />
+                      <span className="text-xs truncate max-w-[100px]">{file.name}</span>
+                      <button
+                        onClick={() => removeFile(index)}
+                        className="bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <X className="w-2 h-2" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              
+              {/* File Preview */}
+              {selectedFiles.length > 0 && (
+                <div className="flex flex-wrap gap-2 p-2 bg-muted/30 rounded-lg">
+                  {selectedFiles.map((file, index) => (
+                    <div key={index} className="relative group flex items-center gap-2 bg-background/50 rounded border p-2">
+                      <FileText className="w-4 h-4 text-blue-500" />
+                      <span className="text-xs truncate max-w-[100px]">{file.name}</span>
+                      <button
+                        onClick={() => removeFile(index)}
+                        className="bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <X className="w-2 h-2" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              
               <div className="flex gap-2">
                 {/* Image Upload Button - Only show for LM Studio with vision models */}
                 {supportsVision() && (
@@ -807,11 +913,32 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
                   </>
                 )}
                 
+                {/* File Upload Button */}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => documentInputRef.current?.click()}
+                  disabled={isGenerating || selectedFiles.length >= 2}
+                  className="px-4 h-10"
+                  title="Agregar archivo (PDF, TXT, DOC - máximo 2)"
+                >
+                  <FileText className="w-4 h-4" />
+                </Button>
+                <input
+                  ref={documentInputRef}
+                  type="file"
+                  accept=".pdf,.txt,.doc,.docx"
+                  multiple
+                  onChange={handleFileSelect}
+                  className="hidden"
+                />
+                
                 <Input
                   value={textInput}
                   onChange={(e) => setTextInput(e.target.value)}
                   onKeyPress={handleKeyPress}
-                  placeholder={supportsVision() ? "Escribe tu mensaje o sube imágenes..." : "Escribe tu mensaje aquí..."}
+                  placeholder={supportsVision() ? "Escribe tu mensaje, sube imágenes o archivos..." : "Escribe tu mensaje o sube archivos..."}
                   disabled={isGenerating}
                   className="flex-1"
                 />
@@ -828,8 +955,8 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
               {/* Status */}
               <div className="text-xs sm:text-sm text-muted-foreground text-center">
                 {isGenerating && "La IA está pensando..."}
-                {!isGenerating && supportsVision() && "Presiona Enter para enviar • Soporta imágenes"}
-                {!isGenerating && !supportsVision() && "Presiona Enter para enviar"}
+                {!isGenerating && supportsVision() && "Presiona Enter para enviar • Soporta imágenes y archivos"}
+                {!isGenerating && !supportsVision() && "Presiona Enter para enviar • Soporta archivos"}
               </div>
             </div>
           ) : (
@@ -884,11 +1011,32 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
                   </>
                 )}
                 
+                {/* File Upload Button */}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => documentInputRef.current?.click()}
+                  disabled={isGenerating || selectedFiles.length >= 2}
+                  className="px-4 h-10"
+                  title="Agregar archivo (PDF, TXT, DOC - máximo 2)"
+                >
+                  <FileText className="w-4 h-4" />
+                </Button>
+                <input
+                  ref={documentInputRef}
+                  type="file"
+                  accept=".pdf,.txt,.doc,.docx"
+                  multiple
+                  onChange={handleFileSelect}
+                  className="hidden"
+                />
+                
                 <Input
                   value={textInput}
                   onChange={(e) => setTextInput(e.target.value)}
                   onKeyPress={handleKeyPress}
-                  placeholder="Describe tu problema de programación o pide ayuda con código..."
+                  placeholder="Describe tu problema de programación, sube archivos de código o pide ayuda..."
                   disabled={isGenerating}
                   className="flex-1"
                 />

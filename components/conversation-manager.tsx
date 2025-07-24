@@ -10,6 +10,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
 import { History, Plus, Trash2, MessageSquare, Calendar } from "lucide-react"
 import { AIProvider } from "@/hooks/use-openai"
+import { ConversationSearch } from "@/components/conversation-search"
 
 export interface SavedConversation {
   id: string
@@ -100,6 +101,15 @@ export function ConversationManager({
           </DialogHeader>
           
           <div className="space-y-4">
+            {/* Conversation Search */}
+            <ConversationSearch
+              savedConversations={savedConversations}
+              onLoadConversation={(conv) => {
+                onLoadConversation(conv)
+                setIsOpen(false)
+              }}
+              showTrigger={false}
+            />
             {/* Action Buttons */}
             <div className="flex gap-2">
               <Button 

@@ -30,6 +30,7 @@ interface AIConfig {
   apiKey: string
   baseUrl?: string
   model?: string
+  openaiModel?: string
   anthropicModel?: string
   geminiModel?: string
   selectedAgent?: string
@@ -42,7 +43,7 @@ interface AIConfig {
 }
 
 export function useOpenAI(config: AIConfig) {
-  const { provider, apiKey, baseUrl, model, anthropicModel, geminiModel, selectedAgent, onModelUsed, qwenBaseUrl, qwenModel, deepseekLmBaseUrl, deepseekLmModel, useSpecialPrompt } = config
+  const { provider, apiKey, baseUrl, model, openaiModel, anthropicModel, geminiModel, selectedAgent, onModelUsed, qwenBaseUrl, qwenModel, deepseekLmBaseUrl, deepseekLmModel, useSpecialPrompt } = config
   const [isTranscribing, setIsTranscribing] = useState(false)
   const [isGenerating, setIsGenerating] = useState(false)
   
@@ -164,7 +165,7 @@ export function useOpenAI(config: AIConfig) {
           break
         default: // openai
           apiUrl = "https://api.openai.com/v1/chat/completions"
-          selectedModel = "gpt-4o"
+          selectedModel = openaiModel || "gpt-4o"
           timeoutMs = 90000
           break
       }
@@ -622,7 +623,7 @@ Carlos Freire es quien te hablará siempre y estarás a sus órdenes siendo prof
         
         const selectedModel = provider === "lmstudio" 
           ? (model || "local-model")
-          : "gpt-4o"
+          : (openaiModel || "gpt-4o")
 
         const response = await fetch(apiUrl, {
           method: "POST",

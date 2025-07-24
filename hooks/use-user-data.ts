@@ -23,6 +23,7 @@ interface AIAgent {
 interface AISettings {
   provider: AIProvider
   openaiApiKey: string
+  openaiModel: string
   lmstudioApiKey: string
   lmstudioBaseUrl: string
   lmstudioModel: string
@@ -143,6 +144,7 @@ const DEFAULT_USER_DATA: UserData = {
   aiSettings: {
     provider: "openai",
     openaiApiKey: "",
+    openaiModel: "gpt-4o",
     lmstudioApiKey: "lm-studio",
     lmstudioBaseUrl: "http://localhost:1234",
     lmstudioModel: "local-model",
