@@ -258,8 +258,8 @@ function XCard({
                         {/* Images Section */}
                         {images && images.length > 0 && (
                             <div className="flex-shrink-0 flex flex-col gap-1 max-w-[120px]">
-                                {images.slice(0, 3).map((image, index) => (
-                                    <div key={index} className="relative group">
+                                {images?.slice(0, 3).map((image, index) => (
+                                    image && <div key={index} className="relative group">
                                         <img
                                             src={URL.createObjectURL(image)}
                                             alt={`Imagen ${index + 1}`}

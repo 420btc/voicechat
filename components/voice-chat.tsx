@@ -114,7 +114,10 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
     selectedVoice,
     setSelectedVoice,
     clearConversation,
+    clearCorruptedData,
+    forceResetApp,
     loadConversation,
+    setConversation,
   } = useOpenAI({
     provider: userData.aiSettings.provider,
     apiKey: currentApiKey,
@@ -146,7 +149,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
     onSave: (title: string, messages: any[]) => {
       if (messages.length > 0) {
         saveConversation(title, messages)
-        showNotification({ title: 'Conversación guardada automáticamente', soundType: 'success' })
+        showNotification({ title: 'Conversación guardada automáticamente', soundType: 'success', playSound: false })
       }
     }
   })
@@ -647,6 +650,35 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
                 <span className="hidden lg:inline ml-2">Nueva</span>
               </Button>
               
+              {/* Clear Corrupted Data - Temporary Fix Button */}
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => {
+                  clearCorruptedData()
+                  showNotification({ 
+                    title: 'Datos corruptos limpiados', 
+                    body: 'Si el error persiste, haz doble clic en este botón para reiniciar completamente',
+                    soundType: 'success', 
+                    playSound: false 
+                  })
+                }}
+                onDoubleClick={() => {
+                  showNotification({ 
+                    title: 'Reiniciando aplicación...', 
+                    body: 'Se eliminará todo y la página se recargará',
+                    soundType: 'warning', 
+                    playSound: false 
+                  })
+                  forceResetApp()
+                }} 
+                className="text-orange-500 hover:text-orange-600 h-8 px-1 sm:px-2 lg:px-3"
+                title="Clic: Limpiar datos corruptos | Doble clic: Reiniciar app completamente"
+              >
+                <AlertTriangle className="w-4 h-4" />
+                <span className="hidden lg:inline ml-2">Fix</span>
+              </Button>
+              
               {/* Conversation Manager */}
               {isLoaded && (
                 <ConversationManager
@@ -729,6 +761,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
             isTranscribing={isTranscribing}
             isGenerating={isGenerating}
             onTranslate={translateMessage}
+            onUpdateConversation={setConversation}
             chatMode={chatMode}
             userName={userData.name}
             userAvatar={userData.avatar}

@@ -26,7 +26,7 @@ interface AutoSaveOptions {
 export function useAutoSave({
   conversation,
   onSave,
-  intervalMs = 60 * 1000, // 1 minute
+  intervalMs = 5 * 60 * 1000, // 5 minutes
   minMessages = 1,
   enabled = true
 }: AutoSaveOptions) {

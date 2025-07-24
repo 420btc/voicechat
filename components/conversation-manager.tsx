@@ -78,9 +78,9 @@ export function ConversationManager({
   const getConversationPreview = (messages: SavedConversation['messages']) => {
     const lastMessage = messages[messages.length - 1]
     if (!lastMessage) return "Conversación vacía"
-    return lastMessage.content.length > 50 
-      ? lastMessage.content.substring(0, 50) + "..."
-      : lastMessage.content
+    return (lastMessage.content || '').length > 50
+          ? (lastMessage.content || '').substring(0, 50) + "..."
+          : (lastMessage.content || '')
   }
 
   return (

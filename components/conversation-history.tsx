@@ -28,6 +28,7 @@ interface ConversationHistoryProps {
   isTranscribing: boolean
   isGenerating: boolean
   onTranslate: (text: string, targetLanguage: "es" | "en") => Promise<string | null>
+  onUpdateConversation?: (updatedConversation: Message[]) => void
   chatMode?: 'voice' | 'text' | 'programmer'
   userName?: string
   userAvatar?: string
@@ -40,6 +41,7 @@ export function ConversationHistory({
   isTranscribing,
   isGenerating,
   onTranslate,
+  onUpdateConversation,
   userName = "Usuario",
   userAvatar,
   chatMode = 'voice',
@@ -51,7 +53,7 @@ export function ConversationHistory({
   const [playingIndex, setPlayingIndex] = useState<number | null>(null)
   const [isPlaying, setIsPlaying] = useState(false)
   const [translatingIndex, setTranslatingIndex] = useState<number | null>(null)
-  const [translations, setTranslations] = useState<{ [key: number]: { text: string; language: string } }>({})
+  const [translations, setTranslations] = useState<{ [key: number]: { text: string; language: string; originalText: string } }>({})
   const [selectedImage, setSelectedImage] = useState<File | null>(null)
   const [isImageModalOpen, setIsImageModalOpen] = useState(false)
 
@@ -81,13 +83,48 @@ export function ConversationHistory({
     const translation = await onTranslate(text, targetLanguage)
 
     if (translation) {
+      // Modificar directamente el contenido del mensaje en lugar de crear una nueva tarjeta
+      const updatedConversation = [...conversation]
+      updatedConversation[index] = {
+        ...updatedConversation[index],
+        content: translation
+      }
+      
+      // Actualizar la conversación en el componente padre
+      if (onUpdateConversation) {
+        onUpdateConversation(updatedConversation)
+      }
+      
+      // Guardar el estado de traducción con el texto original
       setTranslations((prev) => ({
         ...prev,
-        [index]: { text: translation, language: targetLanguage },
+        [index]: { text: translation, language: targetLanguage, originalText: text },
       }))
     }
 
     setTranslatingIndex(null)
+  }
+
+  const handleRestore = (index: number) => {
+    const translationData = translations[index]
+    if (translationData && onUpdateConversation) {
+      // Restaurar el texto original
+      const updatedConversation = [...conversation]
+      updatedConversation[index] = {
+        ...updatedConversation[index],
+        content: translationData.originalText
+      }
+      
+      // Actualizar la conversación en el componente padre
+      onUpdateConversation(updatedConversation)
+      
+      // Eliminar el estado de traducción
+      setTranslations((prev) => {
+        const newTranslations = { ...prev }
+        delete newTranslations[index]
+        return newTranslations
+      })
+    }
   }
 
   const handleAudioPlay = (index: number, audioBlob: Blob) => {
@@ -201,8 +238,8 @@ export function ConversationHistory({
               authorHandle={message.role === "user" ? userName.toLowerCase().replace(/\s+/g, '') : "ai"}
               authorImage={message.role === "user" ? (userAvatar || "/userr.png") : "/fondo.png"}
               content={chatMode === 'programmer' && message.role === 'assistant' ? 
-                detectCodeBlocks(message.content) : 
-                [message.content]
+                detectCodeBlocks(message.content || '') : 
+                [message.content || '']
               }
               isVerified={message.role === "assistant"}
               isProgrammerMode={chatMode === 'programmer' && message.role === 'assistant'}
@@ -237,26 +274,20 @@ export function ConversationHistory({
               </div>
             )}
 
-            {/* Translation */}
-            {translations[index] && (
-              <XCard
-                link="#"
-                authorName="Traductor"
-                authorHandle="translator"
-                authorImage="/placeholder-logo.png"
-                content={[translations[index].text]}
-                isVerified={true}
-                timestamp={`Traducido al ${translations[index].language === "es" ? "español" : "inglés"}`}
-                className="translation-card"
-              />
-            )}
+
 
             {/* Action Buttons */}
             <div className="flex gap-2">
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => handleTranslate(index, message.content, "es")}
+                onClick={() => {
+                          if (translations[index]) {
+                            handleRestore(index)
+                          } else {
+                            handleTranslate(index, message.content || '', "es")
+                          }
+                        }}
                 disabled={translatingIndex === index}
                 className={`h-6 text-xs ${
                   message.role === "user" ? "text-blue-600 hover:text-blue-800" : "text-blue-600 hover:text-blue-800"
@@ -267,7 +298,7 @@ export function ConversationHistory({
                 ) : (
                   <Languages className="w-3 h-3 mr-1" />
                 )}
-                {translatingIndex === index ? "Traduciendo..." : "Traducir"}
+                {translatingIndex === index ? "Traduciendo..." : translations[index] ? "Restaurar" : "Traducir"}
               </Button>
               
               {/* Copy Message Button - For text messages */}
@@ -275,7 +306,7 @@ export function ConversationHistory({
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => handleCopyMessage(message.content)}
+                  onClick={() => handleCopyMessage(message.content || '')}
                   className={`h-6 text-xs ${
                     message.role === "user" ? "text-blue-600 hover:text-blue-800" : "text-blue-600 hover:text-blue-800"
                   }`}

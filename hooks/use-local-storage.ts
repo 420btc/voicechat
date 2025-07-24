@@ -146,6 +146,72 @@ export function useLocalStorage() {
     setApiKey("")
   }, [])
 
+  const forceResetApp = useCallback(() => {
+    try {
+      // Nuclear option: clear ALL localStorage data related to the app
+      const keysToRemove = Object.keys(localStorage).filter(key => 
+        key.includes('ai-chat') || 
+        key.includes('conversation') || 
+        key.includes('image') ||
+        key.includes('auto-save') ||
+        key.includes('user-data') ||
+        key.includes('theme')
+      )
+      
+      keysToRemove.forEach(key => {
+        localStorage.removeItem(key)
+        console.log(`Force removed: ${key}`)
+      })
+      
+      // Reset all state
+      setConversation([])
+      setSelectedVoice("alloy")
+      setApiKey("")
+      
+      console.log("Aplicación completamente reiniciada")
+      
+      // Force page reload to ensure clean state
+      setTimeout(() => {
+        window.location.reload()
+      }, 1000)
+      
+    } catch (error) {
+      console.error("Error al reiniciar la aplicación:", error)
+    }
+  }, [])
+
+  const clearCorruptedData = useCallback(() => {
+    try {
+      // Clear conversation data that might contain corrupted File objects
+      localStorage.removeItem(STORAGE_KEYS.CONVERSATION)
+      
+      // Also clear any other potential corrupted data
+      const keysToCheck = Object.keys(localStorage)
+      keysToCheck.forEach(key => {
+        if (key.includes('ai-chat') || key.includes('conversation') || key.includes('image')) {
+          try {
+            const value = localStorage.getItem(key)
+            if (value && value.includes('[object File]')) {
+              localStorage.removeItem(key)
+              console.log(`Removed corrupted key: ${key}`)
+            }
+          } catch (e) {
+            // If we can't parse it, it might be corrupted, remove it
+            localStorage.removeItem(key)
+            console.log(`Removed unparseable key: ${key}`)
+          }
+        }
+      })
+      
+      // Reset conversation to empty array
+      setConversation([])
+      
+      console.log("Datos corruptos limpiados del localStorage")
+    } catch (error) {
+      console.error("Error al limpiar datos corruptos:", error)
+    }
+  }, [])
+
   const updateLastUserMessageWithPromptTokens = useCallback((promptTokens: number) => {
     setConversation(prev => {
       const updated = [...prev]
@@ -190,6 +256,8 @@ export function useLocalStorage() {
     removeApiKey,
     clearConversation,
     clearAllData,
+    clearCorruptedData,
+    forceResetApp,
     isApiKeyValid,
     loadFromStorage
   }

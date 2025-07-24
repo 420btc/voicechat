@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fix localStorage - AI Voice Chat</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #fff;
+            text-align: center;
+        }
+        .container {
+            background: #2a2a2a;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        button {
+            background: #ff6b35;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background: #e55a2b;
+        }
+        .success {
+            background: #4caf50;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 20px 0;
+            display: none;
+        }
+        .warning {
+            background: #ff9800;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .code {
+            background: #333;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            text-align: left;
+            margin: 20px 0;
+            border-left: 4px solid #ff6b35;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Fix localStorage - AI Voice Chat</h1>
+        
+        <div class="warning">
+            <strong>⚠️ PROBLEMA:</strong> La aplicación no puede cargar debido a datos corruptos en localStorage.
+        </div>
+        
+        <h2>Solución Automática:</h2>
+        <button onclick="clearAllData()">🗑️ Limpiar TODO el localStorage</button>
+        
+        <div id="success" class="success">
+            ✅ <strong>¡Datos limpiados exitosamente!</strong><br>
+            Ahora puedes cerrar esta página y abrir la aplicación normalmente.
+        </div>
+        
+        <hr style="margin: 30px 0; border-color: #444;">
+        
+        <h2>Solución Manual (si la automática no funciona):</h2>
+        <p>Copia y pega este código en la consola del navegador (F12 → Console):</p>
+        
+        <div class="code">
+// Limpiar TODOS los datos de localStorage<br>
+Object.keys(localStorage).forEach(key => {<br>
+&nbsp;&nbsp;if (key.includes('ai-chat') || key.includes('conversation') || <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;key.includes('image') || key.includes('auto-save') || <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;key.includes('user-data') || key.includes('theme')) {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;localStorage.removeItem(key);<br>
+&nbsp;&nbsp;&nbsp;&nbsp;console.log('Removed:', key);<br>
+&nbsp;&nbsp;}<br>
+});<br>
+console.log('✅ localStorage limpiado completamente');<br>
+location.reload();
+        </div>
+        
+        <h2>Pasos:</h2>
+        <ol style="text-align: left; max-width: 400px; margin: 0 auto;">
+            <li>Presiona <strong>F12</strong> para abrir las herramientas de desarrollador</li>
+            <li>Ve a la pestaña <strong>Console</strong></li>
+            <li>Copia y pega el código de arriba</li>
+            <li>Presiona <strong>Enter</strong></li>
+            <li>La página se recargará automáticamente</li>
+        </ol>
+        
+        <div style="margin-top: 30px; padding: 15px; background: #333; border-radius: 5px;">
+            <small>Este archivo se puede eliminar después de solucionar el problema.</small>
+        </div>
+    </div>
+    
+    <script>
+        function clearAllData() {
+            try {
+                // Limpiar TODOS los datos relacionados con la aplicación
+                const keysToRemove = Object.keys(localStorage).filter(key => 
+                    key.includes('ai-chat') || 
+                    key.includes('conversation') || 
+                    key.includes('image') ||
+                    key.includes('auto-save') ||
+                    key.includes('user-data') ||
+                    key.includes('theme')
+                );
+                
+                keysToRemove.forEach(key => {
+                    localStorage.removeItem(key);
+                    console.log('Removed:', key);
+                });
+                
+                // También limpiar sessionStorage por si acaso
+                sessionStorage.clear();
+                
+                console.log('✅ localStorage y sessionStorage limpiados completamente');
+                
+                // Mostrar mensaje de éxito
+                document.getElementById('success').style.display = 'block';
+                
+                // Opcional: recargar después de 2 segundos
+                setTimeout(() => {
+                    if (confirm('¿Quieres que recargue la página automáticamente?')) {
+                        location.reload();
+                    }
+                }, 2000);
+                
+            } catch (error) {
+                alert('Error al limpiar localStorage: ' + error.message);
+                console.error('Error:', error);
+            }
+        }
+        
+        // Mostrar información del localStorage actual
+        console.log('📊 Claves actuales en localStorage:');
+        Object.keys(localStorage).forEach(key => {
+            console.log('-', key, ':', localStorage.getItem(key)?.substring(0, 100) + '...');
+        });
+    </script>
+</body>
+</html>

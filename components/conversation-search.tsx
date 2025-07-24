@@ -53,7 +53,7 @@ export function ConversationSearch({ savedConversations, onLoadConversation, cla
       
       savedConversations.forEach(conversation => {
         conversation.messages.forEach((message, messageIndex) => {
-          const content = message.content.toLowerCase()
+          const content = (message.content || '').toLowerCase()
           const title = conversation.title.toLowerCase()
           
           // Calculate relevance score
@@ -82,7 +82,7 @@ export function ConversationSearch({ savedConversations, onLoadConversation, cla
           // Only include if at least one term matches
           if (matchedTerms > 0) {
             // Create snippet with highlighted terms
-            const snippet = createSnippet(message.content, searchTerms)
+            const snippet = createSnippet(message.content || '', searchTerms)
             
             results.push({
               conversation,

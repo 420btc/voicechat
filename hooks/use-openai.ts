@@ -54,7 +54,9 @@ export function useOpenAI(config: AIConfig) {
     setConversation,
     addMessage,
     updateLastUserMessageWithPromptTokens,
-    clearConversation
+    clearConversation,
+    clearCorruptedData,
+    forceResetApp
   } = useLocalStorage()
 
   const transcribeAudio = useCallback(
@@ -679,6 +681,9 @@ Carlos Freire es quien te hablará siempre y estarás a sus órdenes siendo prof
     selectedVoice,
     setSelectedVoice,
     clearConversation,
+    clearCorruptedData,
+    forceResetApp,
     loadConversation,
+    setConversation,
   }
 }
