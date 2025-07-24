@@ -211,23 +211,11 @@ export function ConversationHistory({
               provider={message.provider}
               responseTime={message.responseTime}
               tokensUsed={message.role === "user" ? message.promptTokens : message.tokensUsed}
+              images={message.images}
+              onImageClick={handleImageClick}
             />
 
-            {/* Images Preview */}
-            {message.images && message.images.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-2">
-                {message.images.map((image, imgIndex) => (
-                  <div key={imgIndex} className="relative group">
-                    <img
-                      src={URL.createObjectURL(image)}
-                      alt={`Imagen ${imgIndex + 1}`}
-                      className="w-20 h-20 object-cover rounded border cursor-pointer hover:opacity-80 transition-opacity"
-                      onClick={() => handleImageClick(image)}
-                    />
-                  </div>
-                ))}
-              </div>
-            )}
+
 
             {/* Files Preview */}
             {message.files && message.files.length > 0 && (

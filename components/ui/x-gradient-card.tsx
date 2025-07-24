@@ -20,6 +20,8 @@ export interface XCardProps {
     provider?: string
     responseTime?: number // in milliseconds
     tokensUsed?: number
+    images?: File[]
+    onImageClick?: (image: File) => void
 }
 
 function XCard({
@@ -40,7 +42,9 @@ function XCard({
     model,
     provider,
     responseTime,
-    tokensUsed
+    tokensUsed,
+    images,
+    onImageClick
 }: XCardProps) {
     const [copiedStates, setCopiedStates] = useState<{[key: number]: boolean}>({})
     const [expandedCode, setExpandedCode] = useState<{content: string, language: string, filename?: string} | null>(null)
@@ -96,7 +100,7 @@ function XCard({
                             </div>
                         </div>
 
-                        <div className="flex-1">
+                        <div className="flex-1 min-w-0">
                             <div className="flex justify-between items-start">
                                 <div className="flex flex-col">
                                     <div className="flex items-center gap-1">
@@ -134,7 +138,8 @@ function XCard({
                         </div>
                     </div>
 
-                    <div className="mt-2">
+                    <div className="mt-2 flex gap-3">
+                        <div className="flex-1 min-w-0">
                         {isProgrammerMode && Array.isArray(content) && content.length > 0 && typeof content[0] === 'object' && 'type' in content[0] ? (
                             // Renderizado para modo programador con bloques de código
                             (content as Array<{type: 'text' | 'code', content: string, language?: string, filename?: string}>).map((block, index) => {
@@ -248,6 +253,31 @@ function XCard({
                                 </span>
                             )}
                         </div>
+                        </div>
+                        
+                        {/* Images Section */}
+                        {images && images.length > 0 && (
+                            <div className="flex-shrink-0 flex flex-col gap-1 max-w-[120px]">
+                                {images.slice(0, 3).map((image, index) => (
+                                    <div key={index} className="relative group">
+                                        <img
+                                            src={URL.createObjectURL(image)}
+                                            alt={`Imagen ${index + 1}`}
+                                            className="w-16 h-16 object-cover rounded border cursor-pointer hover:opacity-80 transition-opacity"
+                                            onClick={(e) => {
+                                                e.stopPropagation()
+                                                onImageClick?.(image)
+                                            }}
+                                        />
+                                    </div>
+                                ))}
+                                {images.length > 3 && (
+                                    <div className="w-16 h-16 bg-muted/50 rounded border flex items-center justify-center text-xs text-muted-foreground">
+                                        +{images.length - 3}
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
 
 
