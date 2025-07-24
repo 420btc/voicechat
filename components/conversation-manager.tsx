@@ -42,6 +42,7 @@ interface ConversationManagerProps {
   onDeleteConversation: (id: string) => void
   onDeleteAllConversations: () => void
   onNewConversation: () => void
+  onCleanupDuplicates?: () => number
 }
 
 export function ConversationManager({
@@ -51,17 +52,32 @@ export function ConversationManager({
   onSaveConversation,
   onDeleteConversation,
   onDeleteAllConversations,
-  onNewConversation
+  onNewConversation,
+  onCleanupDuplicates
 }: ConversationManagerProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [saveTitle, setSaveTitle] = useState("")
   const [showSaveDialog, setShowSaveDialog] = useState(false)
+  const [cleanupMessage, setCleanupMessage] = useState("")
 
   const handleSaveConversation = () => {
     if (saveTitle.trim() && currentConversation.length > 0) {
       onSaveConversation(saveTitle.trim())
       setSaveTitle("")
       setShowSaveDialog(false)
+    }
+  }
+
+  const handleCleanupDuplicates = () => {
+    if (onCleanupDuplicates) {
+      const removedCount = onCleanupDuplicates()
+      if (removedCount > 0) {
+        setCleanupMessage(`Se eliminaron ${removedCount} conversaciones duplicadas.`)
+        setTimeout(() => setCleanupMessage(""), 3000)
+      } else {
+        setCleanupMessage("No se encontraron conversaciones duplicadas.")
+        setTimeout(() => setCleanupMessage(""), 3000)
+      }
     }
   }
 
@@ -131,6 +147,25 @@ export function ConversationManager({
                 </Button>
               )}
             </div>
+            
+            {/* Cleanup Message */}
+            {cleanupMessage && (
+              <div className="text-center text-sm text-green-400 bg-green-900/20 p-2 rounded">
+                {cleanupMessage}
+              </div>
+            )}
+            
+            {/* Cleanup Duplicates Button */}
+            {savedConversations.length > 1 && onCleanupDuplicates && (
+              <Button 
+                onClick={handleCleanupDuplicates}
+                variant="outline"
+                className="w-full border-yellow-600 text-yellow-400 hover:bg-yellow-600/10"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Limpiar Conversaciones Duplicadas
+              </Button>
+            )}
             
             {/* Delete All Button */}
             {savedConversations.length > 0 && (

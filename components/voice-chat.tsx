@@ -82,6 +82,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
     saveConversation,
     deleteConversation,
     deleteAllConversations,
+    cleanupDuplicateConversations,
     addModelToHistory,
   } = useUserData()
 
@@ -731,6 +732,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
                   onSaveConversation={(title) => saveConversation(title, conversation)}
                   onDeleteConversation={deleteConversation}
                   onDeleteAllConversations={deleteAllConversations}
+                  onCleanupDuplicates={cleanupDuplicateConversations}
                   onNewConversation={() => {
                     // Auto-save current conversation before clearing if it has messages
                     if (conversation.length > 0) {
@@ -814,15 +816,18 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
           />
         </div>
 
+        {/* Divider - Only visible on mobile */}
+        <div className="border-t border-white/30 sm:hidden" style={{marginTop: '-22px'}}></div>
+        
         {/* Input Interface */}
-        <div className="flex-shrink-0 bg-card p-2 sm:p-3 md:p-6">
+        <div className="flex-shrink-0 bg-card p-1.5 sm:p-3 md:p-6 lg:pt-2 lg:px-2 lg:pb-1">
           {chatMode === 'voice' ? (
             /* Voice Input Interface */
-            <div className="text-center space-y-2 sm:space-y-4">
-              <div className="text-muted-foreground text-sm sm:text-lg">{isRecording ? "Escuchando..." : ""}</div>
+            <div className="text-center space-y-0.5 sm:space-y-4 lg:space-y-0.5">
+              <div className="text-muted-foreground text-xs sm:text-lg">{isRecording ? "Escuchando..." : ""}</div>
 
               {/* Voice Input with Volume Control */}
-              <div className="flex items-center justify-center gap-3">
+              <div className="flex items-center justify-center gap-1 sm:gap-3 lg:gap-0.5">
                 {/* Vertical Volume Control */}
                 <div className="flex flex-col items-center gap-1">
                   <Button
@@ -834,7 +839,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
                   >
                     {isMuted ? <VolumeX className="w-3 h-3" /> : <Volume2 className="w-3 h-3" />}
                   </Button>
-                  <div className="flex flex-col items-center gap-1">
+                  <div className="flex flex-col items-center gap-0.5 sm:gap-1">
                     <span className="text-xs text-muted-foreground text-center" style={{fontSize: '10px'}}>10</span>
                     <input
                       type="range"
@@ -852,7 +857,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
                           audioRef.current.volume = newVolume
                         }
                       }}
-                      className="w-2 h-16 bg-muted rounded-lg appearance-none cursor-pointer"
+                      className="w-2 h-10 sm:h-16 bg-muted rounded-lg appearance-none cursor-pointer"
                       style={{
                         writingMode: 'vertical-lr' as const,
                         WebkitAppearance: 'slider-vertical',

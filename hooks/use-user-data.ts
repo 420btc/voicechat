@@ -249,14 +249,19 @@ export function useUserData() {
     audio?: Blob
   }>) => {
     // Create a string representation of the conversation content
+    // Include message count and first/last message timestamps for better uniqueness
     const contentString = messages
-      .map(msg => `${msg.role}:${msg.content}`)
+      .map((msg, index) => `${index}:${msg.role}:${msg.content.substring(0, 100)}`)
       .join('|')
     
-    // Simple hash function
+    const firstTimestamp = messages.length > 0 ? messages[0].timestamp.getTime() : 0
+    const lastTimestamp = messages.length > 0 ? messages[messages.length - 1].timestamp.getTime() : 0
+    const fullString = `${contentString}|count:${messages.length}|first:${firstTimestamp}|last:${lastTimestamp}`
+    
+    // Better hash function
     let hash = 0
-    for (let i = 0; i < contentString.length; i++) {
-      const char = contentString.charCodeAt(i)
+    for (let i = 0; i < fullString.length; i++) {
+      const char = fullString.charCodeAt(i)
       hash = ((hash << 5) - hash) + char
       hash = hash & hash // Convert to 32-bit integer
     }
@@ -272,6 +277,11 @@ export function useUserData() {
       audio?: Blob
     }>
   ) => {
+    // Don't save empty conversations
+    if (messages.length === 0) {
+      return null
+    }
+
     // Generate hash for the conversation
     const conversationHash = generateConversationHash(messages)
     
@@ -286,7 +296,7 @@ export function useUserData() {
         ...prev,
         savedConversations: prev.savedConversations.map(conv =>
           conv.id === existingConversation.id
-            ? { ...conv, title, updatedAt: new Date() }
+            ? { ...conv, title, messages, updatedAt: new Date() }
             : conv
         )
       }))
@@ -294,8 +304,10 @@ export function useUserData() {
     }
     
     // Create new conversation if no duplicate found
+    // Use a more unique ID combining timestamp and random number
+    const uniqueId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
     const newConversation: SavedConversation = {
-      id: Date.now().toString(),
+      id: uniqueId,
       title,
       messages,
       createdAt: new Date(),
@@ -336,6 +348,32 @@ export function useUserData() {
           : conv
       )
     }))
+  }
+
+  // Function to clean up duplicate conversations based on content similarity
+  const cleanupDuplicateConversations = () => {
+    const conversationHashes = new Map<string, string>()
+    const duplicateIds: string[] = []
+    
+    userData.savedConversations.forEach(conv => {
+      const hash = generateConversationHash(conv.messages)
+      if (conversationHashes.has(hash)) {
+        // Mark the newer conversation as duplicate (keep the older one)
+        duplicateIds.push(conv.id)
+      } else {
+        conversationHashes.set(hash, conv.id)
+      }
+    })
+    
+    if (duplicateIds.length > 0) {
+      setUserData(prev => ({
+        ...prev,
+        savedConversations: prev.savedConversations.filter(conv => !duplicateIds.includes(conv.id))
+      }))
+      return duplicateIds.length
+    }
+    
+    return 0
   }
 
   const getConversationById = (id: string): SavedConversation | undefined => {
@@ -434,6 +472,7 @@ export function useUserData() {
     deleteConversation,
     deleteAllConversations,
     updateConversation,
+    cleanupDuplicateConversations,
     getConversationById,
     exportUserData,
     importUserData,
