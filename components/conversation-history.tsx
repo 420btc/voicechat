@@ -5,6 +5,7 @@ import { XCard } from "@/components/ui/x-gradient-card"
 import { detectCodeBlocks } from "@/components/code-viewer"
 import { User, Bot, Loader2, Languages, Play, Pause, Copy, Download, X, File as FileIcon, FileText } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { AIProvider } from "@/hooks/use-openai"
 import { ConversationSearch } from "@/components/conversation-search"
 import { SavedConversation } from "@/components/conversation-manager"
@@ -59,6 +60,8 @@ export function ConversationHistory({
   const [translations, setTranslations] = useState<{ [key: number]: { text: string; language: string; originalText: string } }>({})
   const [selectedImage, setSelectedImage] = useState<File | null>(null)
   const [isImageModalOpen, setIsImageModalOpen] = useState(false)
+  const [selectedGeneratedImage, setSelectedGeneratedImage] = useState<{url: string, mimeType: string} | null>(null)
+  const [isGeneratedImageModalOpen, setIsGeneratedImageModalOpen] = useState(false)
 
   // Function to get file icon and color based on file type
   const getFileIcon = (file: File) => {
@@ -199,6 +202,23 @@ export function ConversationHistory({
     setSelectedImage(null)
   }
 
+  const handleGeneratedImageClick = (generatedImage: {url: string, mimeType: string}) => {
+    setSelectedGeneratedImage(generatedImage)
+    setIsGeneratedImageModalOpen(true)
+  }
+
+  const closeGeneratedImageModal = () => {
+    setIsGeneratedImageModalOpen(false)
+    setSelectedGeneratedImage(null)
+  }
+
+  const downloadGeneratedImage = (imageUrl: string, filename: string) => {
+    const link = document.createElement('a')
+    link.href = imageUrl
+    link.download = filename
+    link.click()
+  }
+
   if (conversation.length === 0 && !isTranscribing && !isGenerating) {
     const getInstructionText = () => {
       switch (chatMode) {
@@ -271,10 +291,7 @@ export function ConversationHistory({
                         src={generatedImage.url}
                         alt={`Imagen generada ${index + 1}`}
                         className="w-32 h-32 object-cover rounded border cursor-pointer hover:opacity-80 transition-opacity"
-                        onClick={() => {
-                          // Open image in new tab
-                          window.open(generatedImage.url, '_blank')
-                        }}
+                        onClick={() => handleGeneratedImageClick(generatedImage)}
                       />
                       <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <Button
@@ -283,11 +300,7 @@ export function ConversationHistory({
                           className="h-6 w-6 p-0"
                           onClick={(e) => {
                             e.stopPropagation()
-                            // Download image
-                            const link = document.createElement('a')
-                            link.href = generatedImage.url
-                            link.download = `imagen-generada-${index + 1}.png`
-                            link.click()
+                            downloadGeneratedImage(generatedImage.url, `imagen-generada-${index + 1}.png`)
                           }}
                         >
                           <Download className="w-3 h-3" />
@@ -488,6 +501,51 @@ export function ConversationHistory({
           </div>
         </div>
       )}
+
+      {/* Generated Image Modal */}
+      <Dialog open={isGeneratedImageModalOpen} onOpenChange={setIsGeneratedImageModalOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] p-0">
+          <DialogHeader className="p-6 pb-2">
+            <DialogTitle className="flex items-center justify-between">
+              <span>Imagen Generada</span>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    if (selectedGeneratedImage) {
+                      downloadGeneratedImage(selectedGeneratedImage.url, 'imagen-generada.png')
+                    }
+                  }}
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Descargar
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    if (selectedGeneratedImage) {
+                      window.open(selectedGeneratedImage.url, '_blank')
+                    }
+                  }}
+                >
+                  Abrir en nueva pestaña
+                </Button>
+              </div>
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex items-center justify-center p-6 pt-2">
+            {selectedGeneratedImage && (
+              <img
+                src={selectedGeneratedImage.url}
+                alt="Imagen generada ampliada"
+                className="max-w-full max-h-[70vh] object-contain rounded-lg shadow-lg"
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
       </div>
     </div>
   )
