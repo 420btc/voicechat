@@ -34,6 +34,8 @@ interface AISettings {
   geminiApiKey: string
   geminiModel: string
   geminiImageModel: string
+  falApiKey: string
+  falVideoModel: string
   selectedAgent: string
   modelHistory: ModelHistoryEntry[]
   qwenBaseUrl: string
@@ -167,6 +169,8 @@ const DEFAULT_USER_DATA: UserData = {
     geminiApiKey: "",
     geminiModel: "gemini-2.5-flash",
     geminiImageModel: "gemini-2.5-flash-image-preview",
+    falApiKey: "",
+    falVideoModel: "fal-ai/kling-video/v2.1/pro/image-to-video",
     selectedAgent: "general",
     modelHistory: [],
     qwenBaseUrl: "http://25.35.17.85:1234",

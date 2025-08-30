@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react"
 import { XCard } from "@/components/ui/x-gradient-card"
 import { detectCodeBlocks } from "@/components/code-viewer"
-import { User, Bot, Loader2, Languages, Play, Pause, Copy, Download, X, File as FileIcon, FileText } from "lucide-react"
+import { User, Bot, Loader2, Languages, Play, Pause, Copy, Download, X, File as FileIcon, FileText, Video } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { AIProvider } from "@/hooks/use-openai"
@@ -23,6 +23,7 @@ interface Message {
   images?: File[]
   files?: File[]
   generatedImages?: Array<{url: string, mimeType: string}>
+  generatedVideos?: Array<{url: string, mimeType: string}>
 }
 
 interface ConversationHistoryProps {
@@ -62,6 +63,10 @@ export function ConversationHistory({
   const [isImageModalOpen, setIsImageModalOpen] = useState(false)
   const [selectedGeneratedImage, setSelectedGeneratedImage] = useState<{url: string, mimeType: string} | null>(null)
   const [isGeneratedImageModalOpen, setIsGeneratedImageModalOpen] = useState(false)
+  const [isGeneratingVideo, setIsGeneratingVideo] = useState<{[key: string]: boolean}>({})
+  const [generatedVideos, setGeneratedVideos] = useState<{[key: string]: string}>({})
+  const [selectedVideo, setSelectedVideo] = useState<string | null>(null)
+  const [isVideoModalOpen, setIsVideoModalOpen] = useState(false)
 
   // Function to get file icon and color based on file type
   const getFileIcon = (file: File) => {
@@ -219,6 +224,62 @@ export function ConversationHistory({
     link.click()
   }
 
+  const generateVideoFromImage = async (imageUrl: string, imageIndex: number, messageIndex: number) => {
+    const videoKey = `${messageIndex}-${imageIndex}`
+    
+    try {
+      setIsGeneratingVideo(prev => ({ ...prev, [videoKey]: true }))
+      
+      const response = await fetch('/api/fal-video', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          prompt: "Transform this image into a dynamic video with natural movement and cinematic quality",
+          image_url: imageUrl,
+          duration: "5",
+          model: "pro"
+        })
+      })
+      
+      if (!response.ok) {
+        throw new Error('Failed to generate video')
+      }
+      
+      const result = await response.json()
+      
+      if (result.video_url) {
+        setGeneratedVideos(prev => ({ ...prev, [videoKey]: result.video_url }))
+      } else {
+        throw new Error('No video URL in response')
+      }
+      
+    } catch (error) {
+      console.error('Error generating video:', error)
+      alert('Error al generar el video. Por favor, intenta de nuevo.')
+    } finally {
+      setIsGeneratingVideo(prev => ({ ...prev, [videoKey]: false }))
+    }
+  }
+
+  const handleVideoClick = (videoUrl: string) => {
+    setSelectedVideo(videoUrl)
+    setIsVideoModalOpen(true)
+  }
+
+  const closeVideoModal = () => {
+    setIsVideoModalOpen(false)
+    setSelectedVideo(null)
+  }
+
+  const downloadVideo = (videoUrl: string, filename: string) => {
+    const link = document.createElement('a')
+    link.href = videoUrl
+    link.download = filename
+    link.click()
+  }
+
   if (conversation.length === 0 && !isTranscribing && !isGenerating) {
     const getInstructionText = () => {
       switch (chatMode) {
@@ -293,7 +354,7 @@ export function ConversationHistory({
                         className="w-32 h-32 object-cover rounded border cursor-pointer hover:opacity-80 transition-opacity"
                         onClick={() => handleGeneratedImageClick(generatedImage)}
                       />
-                      <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
                         <Button
                           variant="secondary"
                           size="sm"
@@ -305,10 +366,102 @@ export function ConversationHistory({
                         >
                           <Download className="w-3 h-3" />
                         </Button>
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          className="h-6 w-6 p-0"
+                          disabled={isGeneratingVideo[`${index}-${index}`]}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            generateVideoFromImage(generatedImage.url, index, index)
+                          }}
+                        >
+                          {isGeneratingVideo[`${index}-${index}`] ? (
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                          ) : (
+                            <Video className="w-3 h-3" />
+                          )}
+                        </Button>
                       </div>
                     </div>
                   )
                 })}
+              </div>
+            )}
+
+            {/* API Generated Videos Preview */}
+            {message.generatedVideos && message.generatedVideos.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-2">
+                <span className="text-sm text-muted-foreground mb-2 w-full">Videos generados por IA:</span>
+                {message.generatedVideos.map((generatedVideo, videoIndex) => {
+                  console.log('Rendering generated video:', generatedVideo)
+                  return (
+                    <div key={videoIndex} className="relative group">
+                      <video
+                        src={generatedVideo.url}
+                        className="w-32 h-32 object-cover rounded border cursor-pointer hover:opacity-80 transition-opacity"
+                        controls={false}
+                        muted
+                        loop
+                        onMouseEnter={(e) => e.currentTarget.play()}
+                        onMouseLeave={(e) => e.currentTarget.pause()}
+                        onClick={() => handleVideoClick(generatedVideo.url)}
+                      />
+                      <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          className="h-6 w-6 p-0"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            downloadVideo(generatedVideo.url, `video-ia-${videoIndex + 1}.mp4`)
+                          }}
+                        >
+                          <Download className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+
+            {/* Manual Generated Videos Preview */}
+            {Object.keys(generatedVideos).some(key => key.startsWith(`${index}-`)) && (
+              <div className="mt-2 flex flex-wrap gap-2">
+                <span className="text-sm text-muted-foreground mb-2 w-full">Videos generados:</span>
+                {Object.entries(generatedVideos)
+                  .filter(([key]) => key.startsWith(`${index}-`))
+                  .map(([videoKey, videoUrl]) => {
+                    const videoIndex = videoKey.split('-')[1]
+                    return (
+                      <div key={videoKey} className="relative group">
+                        <video
+                          src={videoUrl}
+                          className="w-32 h-32 object-cover rounded border cursor-pointer hover:opacity-80 transition-opacity"
+                          controls={false}
+                          muted
+                          loop
+                          onMouseEnter={(e) => e.currentTarget.play()}
+                          onMouseLeave={(e) => e.currentTarget.pause()}
+                          onClick={() => handleVideoClick(videoUrl)}
+                        />
+                        <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            className="h-6 w-6 p-0"
+                            onClick={(e) => {
+                               e.stopPropagation()
+                               downloadVideo(videoUrl, `video-generado-${videoIndex}.mp4`)
+                             }}
+                          >
+                            <Download className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    )
+                  })}
               </div>
             )}
 
@@ -541,6 +694,53 @@ export function ConversationHistory({
                 src={selectedGeneratedImage.url}
                 alt="Imagen generada ampliada"
                 className="max-w-full max-h-[70vh] object-contain rounded-lg shadow-lg"
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Video Modal */}
+      <Dialog open={isVideoModalOpen} onOpenChange={setIsVideoModalOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] p-0">
+          <DialogHeader className="p-6 pb-2">
+            <DialogTitle className="flex items-center justify-between">
+              <span>Video Generado</span>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    if (selectedVideo) {
+                      downloadVideo(selectedVideo, 'video-generado.mp4')
+                    }
+                  }}
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Descargar
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    if (selectedVideo) {
+                      window.open(selectedVideo, '_blank')
+                    }
+                  }}
+                >
+                  Abrir en nueva pestaña
+                </Button>
+              </div>
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex items-center justify-center p-6 pt-2">
+            {selectedVideo && (
+              <video
+                src={selectedVideo}
+                controls
+                autoPlay
+                loop
+                className="max-w-full max-h-[70vh] rounded-lg shadow-lg"
               />
             )}
           </div>

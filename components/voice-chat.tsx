@@ -102,6 +102,8 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
         return userData.aiSettings.grokApiKey
       case "gemini":
         return userData.aiSettings.geminiApiKey
+      case "fal":
+        return userData.aiSettings.falApiKey
       default:
         return apiKey
     }
@@ -131,6 +133,8 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
     anthropicModel: userData.aiSettings.anthropicModel,
     geminiModel: userData.aiSettings.geminiModel,
     geminiImageModel: userData.aiSettings.geminiImageModel,
+    falApiKey: userData.aiSettings.falApiKey,
+    falVideoModel: userData.aiSettings.falVideoModel,
     selectedAgent: userData.aiSettings.selectedAgent,
     onModelUsed: addModelToHistory,
     qwenBaseUrl: userData.aiSettings.qwenBaseUrl,
@@ -390,7 +394,8 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
         if (response) {
           // Add message with generated images if available
           console.log('Voice mode - Response with generated images:', response.generatedImages)
-          addMessage("assistant", response.text, undefined, response.audio, response.model, userData.aiSettings.provider, response.responseTime, response.tokensUsed, undefined, undefined, undefined, response.generatedImages)
+          console.log('Voice mode - Response with generated videos:', response.generatedVideos)
+          addMessage("assistant", response.text, undefined, response.audio, response.model, userData.aiSettings.provider, response.responseTime, response.tokensUsed, undefined, undefined, undefined, response.generatedImages, response.generatedVideos)
 
           // Play AI audio response if available
           if (response.audio && response.audio instanceof Blob) {
@@ -466,7 +471,8 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
       const response = await generateResponse(messageToAI, selectedImages)
       if (response) {
           console.log('Text mode - Response with generated images:', response.generatedImages)
-          addMessage("assistant", response.text, undefined, response.audio, response.model, userData.aiSettings.provider, response.responseTime, response.tokensUsed, undefined, undefined, undefined, response.generatedImages)
+          console.log('Text mode - Response with generated videos:', response.generatedVideos)
+          addMessage("assistant", response.text, undefined, response.audio, response.model, userData.aiSettings.provider, response.responseTime, response.tokensUsed, undefined, undefined, undefined, response.generatedImages, response.generatedVideos)
 
         // Play AI audio response if available and auto-play is enabled in text mode
         if (response.audio && response.audio instanceof Blob && autoPlayAudioInText) {

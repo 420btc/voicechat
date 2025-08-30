@@ -23,9 +23,10 @@ interface AIResponse {
   tokensUsed?: number
   promptTokens?: number
   generatedImages?: Array<{url: string, mimeType: string}>
+  generatedVideos?: Array<{url: string, mimeType: string}>
 }
 
-export type AIProvider = "openai" | "lmstudio" | "anthropic" | "deepseek" | "grok" | "gemini" | "qwen" | "deepseek-lm"
+export type AIProvider = "openai" | "lmstudio" | "anthropic" | "deepseek" | "grok" | "gemini" | "qwen" | "deepseek-lm" | "fal"
 
 interface AIConfig {
   provider: AIProvider
@@ -36,6 +37,8 @@ interface AIConfig {
   anthropicModel?: string
   geminiModel?: string
   geminiImageModel?: string
+  falApiKey?: string
+  falVideoModel?: string
   selectedAgent?: string
   onModelUsed?: (modelName: string, provider: AIProvider) => void
   qwenBaseUrl?: string
@@ -194,6 +197,11 @@ export function useOpenAI(config: AIConfig) {
             ? (geminiImageModel || "gemini-2.5-flash-image-preview")
             : (geminiModel || "gemini-2.5-flash")
           timeoutMs = 90000
+          break
+        case "fal":
+          apiUrl = "/api/fal-video"
+          selectedModel = config.falVideoModel || "fal-ai/kling-video/v2.1/pro/image-to-video"
+          timeoutMs = 300000 // 5 minutes for video generation
           break
         default: // openai
           apiUrl = "https://api.openai.com/v1/chat/completions"
@@ -458,6 +466,33 @@ ${contextualPrompt}`
             }
             break
             
+          case "fal":
+            headers = {
+              "x-fal-key": config.falApiKey || apiKey,
+              "Content-Type": "application/json"
+            }
+            
+            // For Fal AI, we need an image to generate video
+            if (!images || images.length === 0) {
+              throw new Error("Fal AI requiere una imagen para generar videos")
+            }
+            
+            // Convert image to base64 for Fal AI
+            const firstImage = images[0]
+            const base64Image = await fileToBase64(firstImage)
+            
+            requestBody = {
+              prompt: userMessage || "Transform this image into a dynamic video with natural movement and cinematic quality",
+              imageData: base64Image,
+              mimeType: firstImage.type || 'image/jpeg',
+              duration: "5",
+              model: selectedModel.includes("pro") ? "pro" : "standard",
+              negative_prompt: "blur, distort, and low quality",
+              cfg_scale: 0.5,
+              aspect_ratio: "16:9"
+            }
+            break
+            
           default: // openai
             headers = {
               Authorization: `Bearer ${apiKey}`,
@@ -552,6 +587,14 @@ ${contextualPrompt}`
             break
           case "gemini":
             responseText = textData.choices?.[0]?.message?.content || "I apologize, but I could not generate a response."
+            break
+          case "fal":
+            // For Fal AI, the response contains video URL
+            if (textData.video_url) {
+              responseText = `Video generado exitosamente desde la imagen. Duración: ${textData.duration || '5'} segundos.`
+            } else {
+              responseText = "Error al generar el video. Por favor, intenta de nuevo."
+            }
             break
           case "lmstudio":
             responseText = textData.choices?.[0]?.message?.content || "I apologize, but I could not generate a response."
@@ -659,6 +702,16 @@ ${contextualPrompt}`
           console.log('Extracting generated images from Gemini response:', textData.images)
           generatedImages = textData.images
         }
+        
+        // Extract generated videos for Fal AI
+        let generatedVideos: Array<{url: string, mimeType: string}> | undefined
+        if (provider === 'fal' && textData.video_url) {
+          console.log('Extracting generated video from Fal AI response:', textData.video_url)
+          generatedVideos = [{
+            url: textData.video_url,
+            mimeType: 'video/mp4'
+          }]
+        }
         console.log('Final generatedImages to return:', generatedImages)
 
         return {
@@ -669,6 +722,7 @@ ${contextualPrompt}`
           tokensUsed,
           promptTokens,
           generatedImages,
+          generatedVideos,
         }
       } catch (error) {
         clearTimeout(timeoutId)

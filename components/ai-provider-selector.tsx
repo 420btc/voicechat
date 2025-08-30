@@ -45,6 +45,8 @@ interface AISettings {
   geminiApiKey: string
   geminiModel: string
   geminiImageModel: string
+  falApiKey: string
+  falVideoModel: string
   selectedAgent: string
   modelHistory: ModelHistoryEntry[]
   qwenBaseUrl: string
@@ -277,6 +279,7 @@ export default function AIProviderSelector({ settings, onSettingsChange, themeSe
                   <SelectItem value="deepseek">DeepSeek</SelectItem>
                   <SelectItem value="grok">Grok (X.AI)</SelectItem>
                   <SelectItem value="gemini">Google Gemini</SelectItem>
+                  <SelectItem value="fal">Fal AI (Video)</SelectItem>
                   <SelectItem value="qwen">Qwen (Local)</SelectItem>
                   <SelectItem value="deepseek-lm">DeepSeek-LM (Local)</SelectItem>
                 </SelectContent>
@@ -828,6 +831,49 @@ export default function AIProviderSelector({ settings, onSettingsChange, themeSe
                     </p>
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* Fal AI Settings */}
+            {tempSettings.provider === "fal" && (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="fal-key">API Key de Fal AI</Label>
+                  <Input
+                    id="fal-key"
+                    type="password"
+                    placeholder="fal_..."
+                    value={tempSettings.falApiKey}
+                    onChange={(e) => 
+                      setTempSettings(prev => ({ ...prev, falApiKey: e.target.value }))
+                    }
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="fal-video-model">Modelo de Video</Label>
+                  <Select
+                    value={tempSettings.falVideoModel}
+                    onValueChange={(value) => 
+                      setTempSettings(prev => ({ ...prev, falVideoModel: value }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecciona modelo de video" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="fal-ai/kling-video/v2.1/pro/image-to-video">Kling Video Pro (fal-ai/kling-video/v2.1/pro/image-to-video)</SelectItem>
+                      <SelectItem value="fal-ai/kling-video/v2.1/standard/image-to-video">Kling Video Standard (fal-ai/kling-video/v2.1/standard/image-to-video)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="rounded-lg border p-3 bg-purple-50 dark:bg-purple-950/20">
+                  <p className="text-sm text-purple-700 dark:text-purple-300">
+                    <strong>Fal AI:</strong> Especializado en generación de videos desde imágenes. 
+                    Sube una imagen y genera videos dinámicos con movimiento natural.
+                  </p>
+                </div>
               </div>
             )}
 

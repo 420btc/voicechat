@@ -16,6 +16,7 @@ interface Message {
   images?: File[]
   files?: File[]
   generatedImages?: Array<{url: string, mimeType: string}>
+  generatedVideos?: Array<{url: string, mimeType: string}>
 }
 
 interface StoredApiKey {
@@ -146,7 +147,7 @@ export function useLocalStorage() {
     setApiKey("")
   }, [])
 
-  const addMessage = useCallback((role: "user" | "assistant", content: string, timestamp?: Date, audio?: Blob, model?: string, provider?: AIProvider, responseTime?: number, tokensUsed?: number, promptTokens?: number, images?: File[], files?: File[], generatedImages?: Array<{url: string, mimeType: string}>) => {
+  const addMessage = useCallback((role: "user" | "assistant", content: string, timestamp?: Date, audio?: Blob, model?: string, provider?: AIProvider, responseTime?: number, tokensUsed?: number, promptTokens?: number, images?: File[], files?: File[], generatedImages?: Array<{url: string, mimeType: string}>, generatedVideos?: Array<{url: string, mimeType: string}>) => {
     const message: Message = {
       role,
       content,
@@ -161,6 +162,8 @@ export function useLocalStorage() {
       files,
       // Don't save generated images to localStorage to avoid quota issues
       generatedImages: role === 'assistant' ? generatedImages : undefined,
+      // Don't save generated videos to localStorage to avoid quota issues
+      generatedVideos: role === 'assistant' ? generatedVideos : undefined,
     }
     // Use startTransition to prioritize UI updates
     startTransition(() => {
