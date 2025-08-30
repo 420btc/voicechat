@@ -398,15 +398,15 @@ export function ConversationHistory({
                   return (
                     <div key={videoIndex} className="relative group">
                       <video
-                        src={generatedVideo.url}
-                        className="w-32 h-32 object-cover rounded border cursor-pointer hover:opacity-80 transition-opacity"
-                        controls={false}
-                        muted
-                        loop
-                        onMouseEnter={(e) => e.currentTarget.play()}
-                        onMouseLeave={(e) => e.currentTarget.pause()}
-                        onClick={() => handleVideoClick(generatedVideo.url)}
-                      />
+                         src={generatedVideo.url}
+                         className="w-48 h-32 object-cover rounded border cursor-pointer hover:opacity-80 transition-opacity"
+                         controls={false}
+                         muted
+                         loop
+                         onMouseEnter={(e) => e.currentTarget.play()}
+                         onMouseLeave={(e) => e.currentTarget.pause()}
+                         onClick={() => handleVideoClick(generatedVideo.url)}
+                       />
                       <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <Button
                           variant="secondary"
@@ -437,15 +437,15 @@ export function ConversationHistory({
                     return (
                       <div key={videoKey} className="relative group">
                         <video
-                          src={videoUrl}
-                          className="w-32 h-32 object-cover rounded border cursor-pointer hover:opacity-80 transition-opacity"
-                          controls={false}
-                          muted
-                          loop
-                          onMouseEnter={(e) => e.currentTarget.play()}
-                          onMouseLeave={(e) => e.currentTarget.pause()}
-                          onClick={() => handleVideoClick(videoUrl)}
-                        />
+                           src={videoUrl}
+                           className="w-48 h-32 object-cover rounded border cursor-pointer hover:opacity-80 transition-opacity"
+                           controls={false}
+                           muted
+                           loop
+                           onMouseEnter={(e) => e.currentTarget.play()}
+                           onMouseLeave={(e) => e.currentTarget.pause()}
+                           onClick={() => handleVideoClick(videoUrl)}
+                         />
                         <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
                           <Button
                             variant="secondary"
