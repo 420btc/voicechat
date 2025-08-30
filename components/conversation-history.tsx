@@ -21,6 +21,7 @@ interface Message {
   promptTokens?: number
   images?: File[]
   files?: File[]
+  generatedImages?: Array<{url: string, mimeType: string}>
 }
 
 interface ConversationHistoryProps {
@@ -245,7 +246,7 @@ export function ConversationHistory({
               authorImage={message.role === "user" ? (userAvatar || "/userr.png") : "/fondo.png"}
               content={chatMode === 'programmer' && message.role === 'assistant' ? 
                 detectCodeBlocks(message.content || '') : 
-                [message.content || '']
+                [{ type: 'text' as const, content: message.content || '' }]
               }
               isVerified={message.role === "assistant"}
               isProgrammerMode={chatMode === 'programmer' && message.role === 'assistant'}
@@ -258,7 +259,45 @@ export function ConversationHistory({
               onImageClick={handleImageClick}
             />
 
-
+            {/* Generated Images Preview */}
+            {message.generatedImages && message.generatedImages.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-2">
+                <span className="text-sm text-muted-foreground mb-2 w-full">Imágenes generadas:</span>
+                {message.generatedImages.map((generatedImage, index) => {
+                  console.log('Rendering generated image:', generatedImage)
+                  return (
+                    <div key={index} className="relative group">
+                      <img
+                        src={generatedImage.url}
+                        alt={`Imagen generada ${index + 1}`}
+                        className="w-32 h-32 object-cover rounded border cursor-pointer hover:opacity-80 transition-opacity"
+                        onClick={() => {
+                          // Open image in new tab
+                          window.open(generatedImage.url, '_blank')
+                        }}
+                      />
+                      <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          className="h-6 w-6 p-0"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            // Download image
+                            const link = document.createElement('a')
+                            link.href = generatedImage.url
+                            link.download = `imagen-generada-${index + 1}.png`
+                            link.click()
+                          }}
+                        >
+                          <Download className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
 
             {/* Files Preview */}
             {message.files && message.files.length > 0 && (

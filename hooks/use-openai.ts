@@ -22,6 +22,7 @@ interface AIResponse {
   responseTime?: number
   tokensUsed?: number
   promptTokens?: number
+  generatedImages?: Array<{url: string, mimeType: string}>
 }
 
 export type AIProvider = "openai" | "lmstudio" | "anthropic" | "deepseek" | "grok" | "gemini" | "qwen" | "deepseek-lm"
@@ -34,6 +35,7 @@ interface AIConfig {
   openaiModel?: string
   anthropicModel?: string
   geminiModel?: string
+  geminiImageModel?: string
   selectedAgent?: string
   onModelUsed?: (modelName: string, provider: AIProvider) => void
   qwenBaseUrl?: string
@@ -44,7 +46,7 @@ interface AIConfig {
 }
 
 export function useOpenAI(config: AIConfig) {
-  const { provider, apiKey, baseUrl, model, openaiModel, anthropicModel, geminiModel, selectedAgent, onModelUsed, qwenBaseUrl, qwenModel, deepseekLmBaseUrl, deepseekLmModel, useSpecialPrompt } = config
+  const { provider, apiKey, baseUrl, model, openaiModel, anthropicModel, geminiModel, geminiImageModel, selectedAgent, onModelUsed, qwenBaseUrl, qwenModel, deepseekLmBaseUrl, deepseekLmModel, useSpecialPrompt } = config
   const [isTranscribing, setIsTranscribing] = useState(false)
   const [isGenerating, setIsGenerating] = useState(false)
   const [abortController, setAbortController] = useState<AbortController | null>(null)
@@ -187,7 +189,10 @@ export function useOpenAI(config: AIConfig) {
           break
         case "gemini":
           apiUrl = "/api/gemini"
-          selectedModel = geminiModel || "gemini-1.5-pro"
+          // Use image model if images are present, otherwise use regular model
+          selectedModel = (images && images.length > 0) 
+            ? (geminiImageModel || "gemini-2.5-flash-image-preview")
+            : (geminiModel || "gemini-2.5-flash")
           timeoutMs = 90000
           break
         default: // openai
@@ -206,19 +211,29 @@ export function useOpenAI(config: AIConfig) {
 
       try {
         // Convert images to base64 if provided
-        let imageContents: Array<{type: string, image_url: {url: string}}> = []
+        let imageContents: Array<any> = []
         if (images && images.length > 0) {
           console.log(`Converting ${images.length} images to base64...`)
           for (const image of images) {
             try {
               const base64 = await fileToBase64(image)
               const mimeType = image.type || 'image/jpeg'
-              imageContents.push({
-                type: "image_url",
-                image_url: {
-                  url: `data:${mimeType};base64,${base64}`
-                }
-              })
+              
+              if (provider === 'gemini') {
+                // Gemini format
+                imageContents.push({
+                  data: base64,
+                  mimeType: mimeType
+                })
+              } else {
+                // OpenAI format
+                imageContents.push({
+                  type: "image_url",
+                  image_url: {
+                    url: `data:${mimeType};base64,${base64}`
+                  }
+                })
+              }
             } catch (error) {
               console.error('Error converting image to base64:', error)
             }
@@ -227,12 +242,21 @@ export function useOpenAI(config: AIConfig) {
         }
 
         // Prepare user message content
-        const userContent = imageContents.length > 0 
-          ? [
+        let userContent: any
+        if (imageContents.length > 0) {
+          if (provider === 'gemini') {
+            // For Gemini, images are handled separately in the API call
+            userContent = userMessage
+          } else {
+            // For other providers (OpenAI format)
+            userContent = [
               { type: "text", text: userMessage },
               ...imageContents
             ]
-          : userMessage
+          }
+        } else {
+          userContent = userMessage
+        }
         // Get system prompt from selected agent or use special prompt for Qwen/DeepSeek-LM
         let systemPrompt: string
         const selectedAgentData = AI_AGENTS.find(agent => agent.id === selectedAgent) || AI_AGENTS[0]
@@ -427,7 +451,10 @@ ${contextualPrompt}`
               model: selectedModel,
               messages: baseMessages,
               max_tokens: 4096,
-              temperature: 0.7
+              temperature: 0.7,
+              ...(imageContents.length > 0 && {
+                images: imageContents // For Gemini, imageContents already has the correct format {data, mimeType}
+              })
             }
             break
             
@@ -524,7 +551,7 @@ ${contextualPrompt}`
             responseText = textData.choices?.[0]?.message?.content || "I apologize, but I could not generate a response."
             break
           case "gemini":
-            responseText = textData.candidates?.[0]?.content?.parts?.[0]?.text || "I apologize, but I could not generate a response."
+            responseText = textData.choices?.[0]?.message?.content || "I apologize, but I could not generate a response."
             break
           case "lmstudio":
             responseText = textData.choices?.[0]?.message?.content || "I apologize, but I could not generate a response."
@@ -626,6 +653,14 @@ ${contextualPrompt}`
           }
         }, 0)
 
+        // Extract generated images for Gemini
+        let generatedImages: Array<{url: string, mimeType: string}> | undefined
+        if (provider === 'gemini' && textData.images && textData.images.length > 0) {
+          console.log('Extracting generated images from Gemini response:', textData.images)
+          generatedImages = textData.images
+        }
+        console.log('Final generatedImages to return:', generatedImages)
+
         return {
           text: responseText,
           audio: audioBlob,
@@ -633,6 +668,7 @@ ${contextualPrompt}`
           responseTime,
           tokensUsed,
           promptTokens,
+          generatedImages,
         }
       } catch (error) {
         clearTimeout(timeoutId)
@@ -694,6 +730,51 @@ ${contextualPrompt}`
     [apiKey, conversation, provider, baseUrl, model, selectedVoice, onModelUsed],
   )
 
+  const generateImage = useCallback(
+    async (prompt: string): Promise<{ imageUrl?: string; error?: string }> => {
+      if (provider !== "gemini") {
+        return { error: "Image generation is only available with Gemini provider" }
+      }
+
+      if (!apiKey) {
+        return { error: "API key is required for image generation" }
+      }
+
+      try {
+        const response = await fetch("/api/gemini/generate-image", {
+          method: "POST",
+          headers: {
+            "x-api-key": apiKey,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            prompt,
+            model: geminiImageModel || "gemini-2.5-flash-image-preview"
+          })
+        })
+
+        if (!response.ok) {
+          const errorData = await response.json()
+          return { error: errorData.error || "Failed to generate image" }
+        }
+
+        const data = await response.json()
+        
+        if (data.image && data.image.data) {
+          // Convert base64 to blob URL
+          const imageUrl = `data:${data.image.mimeType};base64,${data.image.data}`
+          return { imageUrl }
+        } else {
+          return { error: data.message || "No image generated" }
+        }
+      } catch (error) {
+        console.error("Image generation error:", error)
+        return { error: "Failed to generate image" }
+      }
+    },
+    [apiKey, provider, geminiImageModel]
+  )
+
   const translateMessage = useCallback(
     async (text: string, targetLanguage: "es" | "en"): Promise<string | null> => {
       try {
@@ -751,6 +832,7 @@ ${contextualPrompt}`
   return {
     transcribeAudio,
     generateResponse,
+    generateImage,
     cancelGeneration,
     translateMessage,
     isTranscribing,

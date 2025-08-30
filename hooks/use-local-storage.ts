@@ -15,6 +15,7 @@ interface Message {
   promptTokens?: number
   images?: File[]
   files?: File[]
+  generatedImages?: Array<{url: string, mimeType: string}>
 }
 
 interface StoredApiKey {
@@ -37,12 +38,27 @@ const STORAGE_KEYS = {
 const API_KEY_EXPIRY_HOURS = 24
 
 export function useLocalStorage() {
+  // Clear localStorage if it's corrupted or too large
+  const clearCorruptedStorage = () => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEYS.CONVERSATION)
+      if (stored && stored.length > 5000000) { // If larger than 5MB
+        console.log('Clearing large localStorage data')
+        localStorage.removeItem(STORAGE_KEYS.CONVERSATION)
+      }
+    } catch (error) {
+      console.log('Clearing corrupted localStorage')
+      localStorage.clear()
+    }
+  }
+
   const [conversation, setConversation] = useState<Message[]>([])
   const [selectedVoice, setSelectedVoice] = useState<string>("alloy")
   const [apiKey, setApiKey] = useState<string>("")
 
   // Load data from localStorage on mount
   useEffect(() => {
+    clearCorruptedStorage() // Clean up first
     loadFromStorage()
   }, [])
 
@@ -51,7 +67,18 @@ export function useLocalStorage() {
     if (conversation.length > 0) {
       // Use requestIdleCallback or setTimeout to avoid blocking the UI
       const timeoutId = setTimeout(() => {
-        localStorage.setItem(STORAGE_KEYS.CONVERSATION, JSON.stringify(conversation))
+        try {
+          // Remove images and generated images before saving to avoid localStorage quota issues
+          const conversationToSave = conversation.map(msg => ({
+            ...msg,
+            images: undefined, // Don't save user images (File objects)
+            generatedImages: undefined, // Don't save generated images
+            audio: undefined // Don't save audio blobs either
+          }))
+          localStorage.setItem(STORAGE_KEYS.CONVERSATION, JSON.stringify(conversationToSave))
+        } catch (error) {
+          console.error("Error saving conversation:", error)
+        }
       }, 0)
       return () => clearTimeout(timeoutId)
     }
@@ -119,7 +146,7 @@ export function useLocalStorage() {
     setApiKey("")
   }, [])
 
-  const addMessage = useCallback((role: "user" | "assistant", content: string, timestamp?: Date, audio?: Blob, model?: string, provider?: AIProvider, responseTime?: number, tokensUsed?: number, promptTokens?: number, images?: File[], files?: File[]) => {
+  const addMessage = useCallback((role: "user" | "assistant", content: string, timestamp?: Date, audio?: Blob, model?: string, provider?: AIProvider, responseTime?: number, tokensUsed?: number, promptTokens?: number, images?: File[], files?: File[], generatedImages?: Array<{url: string, mimeType: string}>) => {
     const message: Message = {
       role,
       content,
@@ -132,6 +159,8 @@ export function useLocalStorage() {
       promptTokens,
       images,
       files,
+      // Don't save generated images to localStorage to avoid quota issues
+      generatedImages: role === 'assistant' ? generatedImages : undefined,
     }
     // Use startTransition to prioritize UI updates
     startTransition(() => {

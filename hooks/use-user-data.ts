@@ -33,6 +33,7 @@ interface AISettings {
   grokApiKey: string
   geminiApiKey: string
   geminiModel: string
+  geminiImageModel: string
   selectedAgent: string
   modelHistory: ModelHistoryEntry[]
   qwenBaseUrl: string
@@ -164,7 +165,8 @@ const DEFAULT_USER_DATA: UserData = {
     deepseekApiKey: "",
     grokApiKey: "",
     geminiApiKey: "",
-    geminiModel: "google/gemma-3-4b",
+    geminiModel: "gemini-2.5-flash",
+    geminiImageModel: "gemini-2.5-flash-image-preview",
     selectedAgent: "general",
     modelHistory: [],
     qwenBaseUrl: "http://25.35.17.85:1234",

@@ -44,6 +44,7 @@ interface AISettings {
   grokApiKey: string
   geminiApiKey: string
   geminiModel: string
+  geminiImageModel: string
   selectedAgent: string
   modelHistory: ModelHistoryEntry[]
   qwenBaseUrl: string
@@ -785,12 +786,37 @@ export default function AIProviderSelector({ settings, onSettingsChange, themeSe
                       <SelectValue placeholder="Selecciona un modelo" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="google/gemma-3-4b">Gemma 3 4B (Con procesamiento de imágenes)</SelectItem>
-                      <SelectItem value="gemini-1.5-pro">Gemini 1.5 Pro</SelectItem>
-                      <SelectItem value="gemini-1.5-flash">Gemini 1.5 Flash</SelectItem>
-                      <SelectItem value="gemini-pro">Gemini Pro</SelectItem>
-                      <SelectItem value="gemini-pro-vision">Gemini Pro Vision</SelectItem>
+                      <SelectItem value="gemini-2.5-pro">Gemini 2.5 Pro (gemini-2.5-pro)</SelectItem>
+                      <SelectItem value="gemini-2.5-flash">Gemini 2.5 Flash (gemini-2.5-flash)</SelectItem>
+                      <SelectItem value="gemini-2.5-flash-lite">Gemini 2.5 Flash-Lite (gemini-2.5-flash-lite)</SelectItem>
+                      <SelectItem value="gemini-live-2.5-flash-preview">Gemini 2.5 Flash Live (gemini-live-2.5-flash-preview)</SelectItem>
+                      <SelectItem value="gemini-2.5-flash-preview-native-audio-dialog">Audio nativo de Gemini 2.5 Flash (gemini-2.5-flash-preview-native-audio-dialog)</SelectItem>
+                      <SelectItem value="gemini-2.5-flash-exp-native-audio-thinking-dialog">Audio nativo de Gemini 2.5 Flash con pensamiento (gemini-2.5-flash-exp-native-audio-thinking-dialog)</SelectItem>
+                      <SelectItem value="gemini-2.5-flash-preview-tts">Gemini 2.5 Flash Preview TTS (gemini-2.5-flash-preview-tts)</SelectItem>
+                      <SelectItem value="gemini-2.5-pro-preview-tts">TTS de Gemini 2.5 Pro (gemini-2.5-pro-preview-tts)</SelectItem>
+                      <SelectItem value="gemini-2.0-flash">Gemini 2.0 Flash (gemini-2.0-flash)</SelectItem>
+                      <SelectItem value="gemini-2.0-flash-preview-image-generation">Generación de imágenes con Gemini 2.0 Flash (gemini-2.0-flash-preview-image-generation)</SelectItem>
+                      <SelectItem value="gemini-2.0-flash-lite">Gemini 2.0 Flash-Lite (gemini-2.0-flash-lite)</SelectItem>
+                      <SelectItem value="gemini-2.0-flash-live-001">Gemini 2.0 Flash Live (gemini-2.0-flash-live-001)</SelectItem>
                     </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="gemini-image-model">Modelo de Generación de Imágenes</Label>
+                  <Select
+                    value={tempSettings.geminiImageModel}
+                    onValueChange={(value) => 
+                      setTempSettings(prev => ({ ...prev, geminiImageModel: value }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecciona modelo para imágenes" />
+                    </SelectTrigger>
+                    <SelectContent>
+                       <SelectItem value="gemini-2.5-flash-image-preview">Nano Banana (gemini-2.5-flash-image-preview)</SelectItem>
+                       <SelectItem value="gemini-2.0-flash-preview-image-generation">Generación de imágenes con Gemini 2.0 Flash (gemini-2.0-flash-preview-image-generation)</SelectItem>
+                     </SelectContent>
                   </Select>
                 </div>
                 

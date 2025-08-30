@@ -140,10 +140,10 @@ function XCard({
 
                     <div className="mt-2 flex gap-3">
                         <div className="flex-1 min-w-0">
-                        {isProgrammerMode && Array.isArray(content) && content.length > 0 && typeof content[0] === 'object' && 'type' in content[0] ? (
-                            // Renderizado para modo programador con bloques de código
+                        {Array.isArray(content) && content.length > 0 && content[0] && typeof content[0] === 'object' && 'type' in content[0] ? (
+                            // Renderizado con objetos {type, content}
                             (content as Array<{type: 'text' | 'code', content: string, language?: string, filename?: string}>).map((block, index) => {
-                                if (block.type === 'code') {
+                                if (isProgrammerMode && block.type === 'code') {
                                     return (
                                         <div key={index} className="my-4 overflow-hidden border-2 border-blue-200 dark:border-blue-800 rounded-lg">
                                             <div className="flex items-center justify-between bg-muted/50 px-4 py-2 border-b">
@@ -197,18 +197,31 @@ function XCard({
                                         </div>
                                     )
                                 } else {
+                                    // Renderizar texto normal
+                                    const isThinking = block.content.includes('está pensando') || block.content.includes('thinking');
                                     return (
                                         <p
                                             key={index}
                                             className="text-black dark:text-white/90 text-base mb-2"
                                         >
-                                            {block.content}
+                                            {isThinking ? (
+                                                <span className="flex items-center gap-1">
+                                                    <span>La IA está pensando</span>
+                                                    <span className="inline-flex gap-0.5">
+                                                        <span className="typing-dot text-lg">•</span>
+                                                        <span className="typing-dot text-lg">•</span>
+                                                        <span className="typing-dot text-lg">•</span>
+                                                    </span>
+                                                </span>
+                                            ) : (
+                                                block.content
+                                            )}
                                         </p>
                                     )
                                 }
                             })
                         ) : (
-                            // Renderizado normal para texto simple
+                            // Fallback para arrays de strings (compatibilidad)
                             (content as string[]).map((item, index) => {
                                 const isThinking = item.includes('está pensando') || item.includes('thinking');
                                 return (
@@ -273,7 +286,7 @@ function XCard({
                         {images && images.length > 0 && (
                             <div className="flex-shrink-0 flex flex-col gap-1 max-w-[120px]">
                                 {images?.slice(0, 3).map((image, index) => (
-                                    image && <div key={index} className="relative group">
+                                    image && image instanceof File && <div key={index} className="relative group">
                                         <img
                                             src={URL.createObjectURL(image)}
                                             alt={`Imagen ${index + 1}`}
