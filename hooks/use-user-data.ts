@@ -40,6 +40,9 @@ interface AISettings {
   modelHistory: ModelHistoryEntry[]
   qwenBaseUrl: string
   qwenModel: string
+  qwenImageModel?: string
+  dashscopeApiKey?: string
+  qwenTtsModel?: string
   deepseekLmBaseUrl: string
   deepseekLmModel: string
   useSpecialPrompt: boolean

@@ -31,6 +31,7 @@ export type AIProvider = "openai" | "lmstudio" | "anthropic" | "deepseek" | "gro
 interface AIConfig {
   provider: AIProvider
   apiKey: string
+  openaiApiKey?: string
   baseUrl?: string
   model?: string
   openaiModel?: string
@@ -43,13 +44,15 @@ interface AIConfig {
   onModelUsed?: (modelName: string, provider: AIProvider) => void
   qwenBaseUrl?: string
   qwenModel?: string
+  qwenImageModel?: string
+  qwenTtsModel?: string
   deepseekLmBaseUrl?: string
   deepseekLmModel?: string
   useSpecialPrompt?: boolean
 }
 
 export function useOpenAI(config: AIConfig) {
-  const { provider, apiKey, baseUrl, model, openaiModel, anthropicModel, geminiModel, geminiImageModel, selectedAgent, onModelUsed, qwenBaseUrl, qwenModel, deepseekLmBaseUrl, deepseekLmModel, useSpecialPrompt } = config
+  const { provider, apiKey, openaiApiKey, baseUrl, model, openaiModel, anthropicModel, geminiModel, geminiImageModel, selectedAgent, onModelUsed, qwenBaseUrl, qwenModel, deepseekLmBaseUrl, deepseekLmModel, useSpecialPrompt } = config
   const [isTranscribing, setIsTranscribing] = useState(false)
   const [isGenerating, setIsGenerating] = useState(false)
   const [abortController, setAbortController] = useState<AbortController | null>(null)
@@ -87,7 +90,7 @@ export function useOpenAI(config: AIConfig) {
         const response = await fetch("https://api.openai.com/v1/audio/transcriptions", {
           method: "POST",
           headers: {
-            Authorization: `Bearer ${apiKey}`,
+            Authorization: `Bearer ${openaiApiKey || apiKey}`,
           },
           body: formData,
         })
@@ -166,9 +169,12 @@ export function useOpenAI(config: AIConfig) {
           timeoutMs = 300000 // 5 minutes
           break
         case "qwen":
-          apiUrl = `${qwenBaseUrl || "http://25.35.17.85:1234"}/v1/chat/completions`
-          selectedModel = qwenModel || "qwen2.5-72b-instruct"
-          timeoutMs = 300000 // 5 minutes
+          apiUrl = "/api/qwen"
+          // Si hay imágenes, usar un modelo VL por defecto
+          selectedModel = (images && images.length > 0)
+            ? (config.qwenImageModel || "qwen-vl-plus")
+            : (config.qwenModel || "qwen-plus")
+          timeoutMs = 90000
           break
         case "deepseek-lm":
           apiUrl = `${deepseekLmBaseUrl || "http://25.35.17.85:1234"}/v1/chat/completions`
@@ -367,24 +373,15 @@ ${contextualPrompt}`
             
           case "qwen":
             headers = {
-              Authorization: `Bearer ${apiKey || "not-needed"}`,
-              "Content-Type": "application/json",
-              "Accept": "application/json",
-              "Connection": "close",
-              "Cache-Control": "no-cache"
+              "x-api-key": apiKey,
+              "Content-Type": "application/json"
             }
             requestBody = {
               model: selectedModel,
               messages: baseMessages,
               max_tokens: 4096,
               temperature: 0.7,
-              top_p: 0.8,
-              top_k: 20,
-              stream: false,
-              stop: ["<think>", "</think>"],
-              chat_template_kwargs: {
-                enable_thinking: false
-              }
+              // DashScope en modo compatible soporta formato OpenAI; parámetros básicos son suficientes
             }
             break
             
@@ -678,6 +675,40 @@ ${contextualPrompt}`
               }
             } catch (audioError) {
               console.error("Audio generation error:", audioError)
+            }
+          }, 0)
+        }
+        else if (provider === "qwen" && config.qwenTtsModel) {
+          // Generación de audio con Qwen TTS (no bloquea la respuesta)
+          setTimeout(async () => {
+            try {
+              const ttsResponse = await fetch("/api/qwen/tts", {
+                method: "POST",
+                headers: {
+                  "x-api-key": apiKey,
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  text: responseText,
+                  model: config.qwenTtsModel || "qwen3-tts-flash",
+                  voice: "Cherry",
+                  language_type: "Spanish"
+                }),
+              })
+              if (ttsResponse.ok) {
+                const ttsData = await ttsResponse.json()
+                const audioUrl = ttsData?.audio?.url
+                if (audioUrl) {
+                  const wavResp = await fetch(audioUrl)
+                  const wavBuf = await wavResp.arrayBuffer()
+                  const blob = new Blob([wavBuf], { type: "audio/wav" })
+                  audioBlob = blob
+                }
+              } else {
+                console.warn("Qwen TTS response error:", await ttsResponse.text())
+              }
+            } catch (audioError) {
+              console.warn("Qwen TTS error:", audioError)
             }
           }, 0)
         }

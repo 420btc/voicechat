@@ -51,6 +51,9 @@ interface AISettings {
   modelHistory: ModelHistoryEntry[]
   qwenBaseUrl: string
   qwenModel: string
+  qwenImageModel?: string
+  dashscopeApiKey?: string
+  qwenTtsModel?: string
   deepseekLmBaseUrl: string
   deepseekLmModel: string
   useSpecialPrompt: boolean
@@ -280,7 +283,7 @@ export default function AIProviderSelector({ settings, onSettingsChange, themeSe
                   <SelectItem value="grok">Grok (X.AI)</SelectItem>
                   <SelectItem value="gemini">Google Gemini</SelectItem>
                   <SelectItem value="fal">Fal AI (Video)</SelectItem>
-                  <SelectItem value="qwen">Qwen (Local)</SelectItem>
+                  <SelectItem value="qwen">Qwen (DashScope)</SelectItem>
                   <SelectItem value="deepseek-lm">DeepSeek-LM (Local)</SelectItem>
                 </SelectContent>
               </Select>
@@ -881,6 +884,18 @@ export default function AIProviderSelector({ settings, onSettingsChange, themeSe
             {tempSettings.provider === "qwen" && (
               <div className="space-y-4">
                 <div className="space-y-2">
+                  <Label htmlFor="dashscope-key">API Key de DashScope</Label>
+                  <Input
+                    id="dashscope-key"
+                    type="password"
+                    placeholder="sk-..."
+                    value={tempSettings.dashscopeApiKey || ''}
+                    onChange={(e) => 
+                      setTempSettings(prev => ({ ...prev, dashscopeApiKey: e.target.value }))
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
                   <Label htmlFor="qwen-url">URL Base de Qwen</Label>
                   <Input
                     id="qwen-url"
@@ -893,15 +908,56 @@ export default function AIProviderSelector({ settings, onSettingsChange, themeSe
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="qwen-model">Modelo de Qwen</Label>
-                  <Input
-                    id="qwen-model"
-                    placeholder="qwen2.5-72b-instruct"
+                  <Label>Modelo de Qwen (Texto)</Label>
+                  <Select
                     value={tempSettings.qwenModel}
-                    onChange={(e) => 
-                      setTempSettings(prev => ({ ...prev, qwenModel: e.target.value }))
+                    onValueChange={(value) => 
+                      setTempSettings(prev => ({ ...prev, qwenModel: value }))
                     }
-                  />
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecciona modelo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="qwen-flash">qwen-flash</SelectItem>
+                      <SelectItem value="qwen-plus">qwen-plus</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Modelo de Qwen (Imágenes)</Label>
+                  <Select
+                    value={tempSettings.qwenImageModel || ''}
+                    onValueChange={(value) => 
+                      setTempSettings(prev => ({ ...prev, qwenImageModel: value }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecciona modelo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="qwen3-vl-plus">qwen3-vl-plus</SelectItem>
+                      <SelectItem value="qwen-vl-plus">qwen-vl-plus</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Modelo de Qwen (Voz / TTS)</Label>
+                  <Select
+                    value={tempSettings.qwenTtsModel || ''}
+                    onValueChange={(value) => 
+                      setTempSettings(prev => ({ ...prev, qwenTtsModel: value }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecciona modelo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="qwen3-tts-flash">qwen3-tts-flash</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 
                 <div className="rounded-lg border p-3 bg-orange-50 dark:bg-orange-950/20">

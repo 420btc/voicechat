@@ -104,6 +104,8 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
         return userData.aiSettings.geminiApiKey
       case "fal":
         return userData.aiSettings.falApiKey
+      case "qwen":
+        return userData.aiSettings.dashscopeApiKey || apiKey
       default:
         return apiKey
     }
@@ -127,6 +129,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
   } = useOpenAI({
     provider: userData.aiSettings.provider,
     apiKey: currentApiKey,
+    openaiApiKey: userData.aiSettings.openaiApiKey,
     baseUrl: userData.aiSettings.lmstudioBaseUrl,
     model: userData.aiSettings.lmstudioModel,
     openaiModel: userData.aiSettings.openaiModel,
@@ -139,6 +142,8 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
     onModelUsed: addModelToHistory,
     qwenBaseUrl: userData.aiSettings.qwenBaseUrl,
     qwenModel: userData.aiSettings.qwenModel,
+    qwenImageModel: userData.aiSettings.qwenImageModel,
+    qwenTtsModel: userData.aiSettings.qwenTtsModel,
     deepseekLmBaseUrl: userData.aiSettings.deepseekLmBaseUrl,
     deepseekLmModel: userData.aiSettings.deepseekLmModel,
     useSpecialPrompt: userData.aiSettings.useSpecialPrompt
@@ -245,6 +250,12 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
 
   // Handle provider warning modal actions
   const handleContinueWithLMStudio = () => {
+    setShowProviderWarning(false)
+    setChatMode('voice')
+  }
+
+  const handleContinueWithQwenVoice = () => {
+    // Mantener proveedor y API actuales (Qwen) y entrar en modo voz
     setShowProviderWarning(false)
     setChatMode('voice')
   }
@@ -1270,12 +1281,18 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
               Cambio de Modo Detectado
             </DialogTitle>
             <DialogDescription>
-              Estás usando {userData.aiSettings.provider === 'lmstudio' ? 'LM Studio' : userData.aiSettings.provider.charAt(0).toUpperCase() + userData.aiSettings.provider.slice(1)}, pero el modo de voz requiere OpenAI para la síntesis de voz. 
-              ¿Qué te gustaría hacer?
+              {userData.aiSettings.provider === 'qwen' 
+                ? (
+                  <>Estás usando Qwen (DashScope). El modo de voz es compatible con Qwen mediante su TTS. ¿Qué te gustaría hacer?</>
+                ) 
+                : (
+                  <>Estás usando {userData.aiSettings.provider === 'lmstudio' ? 'LM Studio' : userData.aiSettings.provider.charAt(0).toUpperCase() + userData.aiSettings.provider.slice(1)}, pero el modo de voz requiere OpenAI para la síntesis de voz. ¿Qué te gustaría hacer?</>
+                )}
             </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-4">
+            {/* Campo de API de OpenAI siempre visible si se quiere cambiar */}
             <div className="space-y-2">
               <Label htmlFor="openai-key">API Key de OpenAI (se guardará automáticamente)</Label>
               <Input
@@ -1289,20 +1306,41 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
             </div>
             
             <div className="flex flex-col gap-2">
-              <Button 
-                onClick={handleSwitchToOpenAI}
-                disabled={!tempOpenAIKey.trim()}
-                className="w-full"
-              >
-                Cambiar a OpenAI (Recomendado)
-              </Button>
-              <Button 
-                variant="outline" 
-                onClick={handleContinueWithLMStudio}
-                className="w-full"
-              >
-                Continuar con {userData.aiSettings.provider === 'lmstudio' ? 'LM Studio' : userData.aiSettings.provider.charAt(0).toUpperCase() + userData.aiSettings.provider.slice(1)} (Solo texto)
-              </Button>
+              {userData.aiSettings.provider === 'qwen' ? (
+                <>
+                  <Button 
+                    onClick={handleContinueWithQwenVoice}
+                    className="w-full"
+                  >
+                    Usar voz con Qwen (DashScope)
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={handleSwitchToOpenAI}
+                    disabled={!tempOpenAIKey.trim()}
+                    className="w-full"
+                  >
+                    Cambiar a OpenAI
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button 
+                    onClick={handleSwitchToOpenAI}
+                    disabled={!tempOpenAIKey.trim()}
+                    className="w-full"
+                  >
+                    Cambiar a OpenAI (Recomendado)
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={handleContinueWithLMStudio}
+                    className="w-full"
+                  >
+                    Continuar con {userData.aiSettings.provider === 'lmstudio' ? 'LM Studio' : userData.aiSettings.provider.charAt(0).toUpperCase() + userData.aiSettings.provider.slice(1)} (Solo texto)
+                  </Button>
+                </>
+              )}
               <Button 
                 variant="ghost" 
                 onClick={() => setShowProviderWarning(false)}
