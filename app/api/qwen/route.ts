@@ -41,26 +41,42 @@ export async function POST(request: NextRequest) {
       ...(typeof temperature === 'number' ? { temperature } : { temperature: 0.7 })
     }
 
-    const response = await fetch(DASHCOPE_COMPAT_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
-      },
-      body: JSON.stringify(payload)
-    })
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 60000) // 60 second timeout
 
-    if (!response.ok) {
-      const errorData = await response.text()
-      console.error('DashScope API error:', errorData)
-      return NextResponse.json(
-        { error: 'No se pudo generar respuesta desde Qwen/DashScope' },
-        { status: response.status }
-      )
+    try {
+      const response = await fetch(DASHCOPE_COMPAT_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify(payload),
+        signal: controller.signal
+      })
+      clearTimeout(timeoutId)
+
+      if (!response.ok) {
+        const errorData = await response.text()
+        console.error('DashScope API error:', errorData)
+        return NextResponse.json(
+          { error: 'No se pudo generar respuesta desde Qwen/DashScope' },
+          { status: response.status }
+        )
+      }
+
+      const data = await response.json()
+      return NextResponse.json(data)
+    } catch (error: any) {
+      clearTimeout(timeoutId)
+      if (error.name === 'AbortError') {
+        return NextResponse.json(
+          { error: 'La solicitud excedió el tiempo de espera (60s)' },
+          { status: 504 }
+        )
+      }
+      throw error
     }
-
-    const data = await response.json()
-    return NextResponse.json(data)
   } catch (error) {
     console.error('Qwen proxy error:', error)
     return NextResponse.json(

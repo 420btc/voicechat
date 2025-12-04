@@ -421,9 +421,19 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
         }
       } else {
         console.log("Audio discarded: transcription was empty or too short")
+        showNotification({
+          title: 'Audio descartado',
+          body: 'La transcripción estaba vacía o era demasiado corta. Intenta hablar más claro.',
+          soundType: 'error'
+        })
       }
     } catch (error) {
       console.error("Error processing audio:", error)
+      showNotification({
+        title: 'Error procesando audio',
+        body: error instanceof Error ? error.message : 'Ocurrió un error desconocido',
+        soundType: 'error'
+      })
     }
   }
 
@@ -461,7 +471,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
       const conversationMessages = [
         {
           role: "system",
-          content: "Eres un asistente de IA útil y amigable. Proporciona respuestas concisas y naturales en español, adecuadas para conversación por voz. Sé conversacional y cálido en tu tono. Carlos Freire es quien te hablará siempre y estaras a sus ordenes siendo profesional. Responde directamente sin mostrar tu proceso de razonamiento interno."
+          content: `Eres un asistente de IA útil y amigable. Proporciona respuestas concisas y naturales en español, adecuadas para conversación por voz. Sé conversacional y cálido en tu tono. ${userData.name ? userData.name + ' es quien te habla.' : ''} Responde directamente sin mostrar tu proceso de razonamiento interno.`
         },
         ...conversation.map((msg) => ({
           role: msg.role,
@@ -502,6 +512,11 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
       setSelectedFiles([])
     } catch (error) {
       console.error("Error processing text:", error)
+      showNotification({
+        title: 'Error enviando mensaje',
+        body: error instanceof Error ? error.message : 'Ocurrió un error desconocido',
+        soundType: 'error'
+      })
     }
   }
 
@@ -514,7 +529,10 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
 
   // Check if current model supports vision
   const supportsVision = () => {
-    // Always show image button for all providers and models
+    const { provider } = userData.aiSettings
+    // DeepSeek and DeepSeek LM are text-only for now via standard API endpoints in this app
+    if (provider === 'deepseek' || provider === 'deepseek-lm') return false
+    
     return true
   }
 

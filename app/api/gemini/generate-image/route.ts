@@ -6,8 +6,8 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { prompt, model } = body
     
-    // Get API key from headers
-    const apiKey = request.headers.get('x-api-key')
+    // Get API key from headers or environment
+    const apiKey = request.headers.get('x-api-key') || process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY
     
     if (!apiKey) {
       return NextResponse.json(

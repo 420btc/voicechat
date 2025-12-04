@@ -6,8 +6,8 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { messages, model, max_tokens, temperature, images } = body
     
-    // Get API key from headers
-    const apiKey = request.headers.get('x-api-key')
+    // Get API key from headers or environment
+    const apiKey = request.headers.get('x-api-key') || process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY
     
     if (!apiKey) {
       return NextResponse.json(
@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
           parts: [{ text: `System: ${msg.content}` }]
         })
       } else {
-        const parts = [{ text: msg.content }]
+        const parts: any[] = [{ text: msg.content }]
         
         // Add images to the last user message if provided
         if (msg.role === 'user' && i === messages.length - 1 && images && images.length > 0) {

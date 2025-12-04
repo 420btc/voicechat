@@ -96,7 +96,8 @@ export function useOpenAI(config: AIConfig) {
         })
 
         if (!response.ok) {
-          throw new Error("Transcription failed")
+          const errorText = await response.text().catch(() => 'No error details');
+          throw new Error(`Transcription failed: ${response.status} - ${errorText}`)
         }
 
         const data = await response.json()
@@ -164,7 +165,7 @@ export function useOpenAI(config: AIConfig) {
       
       switch (provider) {
         case "lmstudio":
-          apiUrl = `${baseUrl || "http://25.35.17.85:1234"}/v1/chat/completions`
+          apiUrl = `${baseUrl || "http://localhost:1234"}/v1/chat/completions`
           selectedModel = model || "local-model"
           timeoutMs = 300000 // 5 minutes
           break
@@ -177,7 +178,7 @@ export function useOpenAI(config: AIConfig) {
           timeoutMs = 90000
           break
         case "deepseek-lm":
-          apiUrl = `${deepseekLmBaseUrl || "http://25.35.17.85:1234"}/v1/chat/completions`
+          apiUrl = `${deepseekLmBaseUrl || "http://localhost:1234"}/v1/chat/completions`
           selectedModel = deepseekLmModel || "deepseek-v3"
           timeoutMs = 300000 // 5 minutes
           break
@@ -294,12 +295,12 @@ export function useOpenAI(config: AIConfig) {
 # Instrucciones adicionales para respuestas basadas en búsquedas:
 Si se proporcionan resultados de búsqueda en el formato [página web X inicio]...[página web X fin], por favor cítalos usando el formato [cita:X]. Hoy es ${currentDate}. Evalúa y filtra los resultados de búsqueda según su relevancia para la pregunta. Para preguntas de listado, limítate a 10 puntos clave. Para tareas creativas, cita las referencias dentro del cuerpo del texto. Estructura bien las respuestas largas y sintetiza información de múltiples fuentes.
 
-Carlos Freire es quien te hablará siempre y estarás a sus órdenes siendo profesional. Responde directamente sin mostrar tu proceso de razonamiento interno.
+Responde directamente sin mostrar tu proceso de razonamiento interno.
 
 ${contextualPrompt}`
         } else {
           // Regular agent-based prompt
-          systemPrompt = `${selectedAgentData.systemPrompt} Carlos Freire es quien te hablará siempre y estarás a sus órdenes siendo profesional. Responde directamente sin mostrar tu proceso de razonamiento interno.
+          systemPrompt = `${selectedAgentData.systemPrompt} Responde directamente sin mostrar tu proceso de razonamiento interno.
 
 ${contextualPrompt}`
         }
@@ -530,7 +531,7 @@ ${contextualPrompt}`
           // Return specific error message instead of throwing
           return {
             text: provider === 'lmstudio'
-              ? `Error ${textResponse.status}: No se pudo conectar con LM Studio. Verifica que esté ejecutándose en ${baseUrl || "http://25.35.17.85:1234"} y que tengas un modelo cargado.`
+              ? `Error ${textResponse.status}: No se pudo conectar con LM Studio. Verifica que esté ejecutándose en ${baseUrl || "http://localhost:1234"} y que tengas un modelo cargado.`
               : `Error ${textResponse.status}: ${errorText}`,
             model: selectedModel,
           }
@@ -776,7 +777,7 @@ ${contextualPrompt}`
         if (error instanceof Error && error.message?.includes('fetch')) {
           return {
             text: provider === 'lmstudio'
-              ? "Error de conexión: No se pudo conectar con LM Studio. Verifica que esté ejecutándose en http://25.35.17.85:1234."
+              ? `Error de conexión: No se pudo conectar con LM Studio. Verifica que esté ejecutándose en ${baseUrl || "http://localhost:1234"}.`
               : "Error de conexión. Verifica tu conexión a internet e inténtalo de nuevo.",
             model: selectedModel,
           }
@@ -865,7 +866,7 @@ ${contextualPrompt}`
       try {
         // Determine API endpoint and model based on provider
         const apiUrl = provider === "lmstudio" 
-          ? `${baseUrl || "http://25.35.17.85:1234"}/v1/chat/completions`
+          ? `${baseUrl || "http://localhost:1234"}/v1/chat/completions`
           : "https://api.openai.com/v1/chat/completions"
         
         const selectedModel = provider === "lmstudio" 

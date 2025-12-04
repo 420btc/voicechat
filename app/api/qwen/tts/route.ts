@@ -34,31 +34,47 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const response = await fetch(DASHCOPE_TTS_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
-      },
-      body: JSON.stringify(payload)
-    })
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 60000) // 60 second timeout
 
-    const textBody = await response.text()
-    if (!response.ok) {
-      console.error('DashScope TTS API error:', textBody)
-      return NextResponse.json(
-        { error: 'No se pudo sintetizar audio con Qwen TTS', details: textBody },
-        { status: response.status }
-      )
-    }
-
-    // La respuesta suele contener output.audio.url
     try {
-      const data = JSON.parse(textBody)
-      return NextResponse.json(data.output || data)
-    } catch {
-      // Si no es JSON válido, devolvemos el texto crudo
-      return NextResponse.json({ raw: textBody })
+      const response = await fetch(DASHCOPE_TTS_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify(payload),
+        signal: controller.signal
+      })
+      clearTimeout(timeoutId)
+
+      const textBody = await response.text()
+      if (!response.ok) {
+        console.error('DashScope TTS API error:', textBody)
+        return NextResponse.json(
+          { error: 'No se pudo sintetizar audio con Qwen TTS', details: textBody },
+          { status: response.status }
+        )
+      }
+
+      // La respuesta suele contener output.audio.url
+      try {
+        const data = JSON.parse(textBody)
+        return NextResponse.json(data.output || data)
+      } catch {
+        // Si no es JSON válido, devolvemos el texto crudo
+        return NextResponse.json({ raw: textBody })
+      }
+    } catch (error: any) {
+      clearTimeout(timeoutId)
+      if (error.name === 'AbortError') {
+        return NextResponse.json(
+          { error: 'La solicitud excedió el tiempo de espera (60s)' },
+          { status: 504 }
+        )
+      }
+      throw error
     }
   } catch (error) {
     console.error('Qwen TTS proxy error:', error)

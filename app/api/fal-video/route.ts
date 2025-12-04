@@ -63,35 +63,51 @@ export async function POST(request: NextRequest) {
     })
 
     // Make request to Fal AI using subscribe endpoint for immediate result
-    const response = await fetch(`https://fal.run/${modelEndpoint}`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Key ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload)
-    })
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 120000) // 120 second timeout
 
-    if (!response.ok) {
-      const errorData = await response.text()
-      console.error('Fal AI API error:', errorData)
-      return NextResponse.json(
-        { error: 'Failed to generate video', details: errorData },
-        { status: response.status }
-      )
+    try {
+      const response = await fetch(`https://fal.run/${modelEndpoint}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Key ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+        signal: controller.signal
+      })
+      clearTimeout(timeoutId)
+
+      if (!response.ok) {
+        const errorData = await response.text()
+        console.error('Fal AI API error:', errorData)
+        return NextResponse.json(
+          { error: 'Failed to generate video', details: errorData },
+          { status: response.status }
+        )
+      }
+
+      const result = await response.json()
+      console.log('Fal AI response:', result)
+
+      // Return the video URL and metadata
+      return NextResponse.json({
+        video_url: result.video?.url,
+        model: modelEndpoint,
+        duration,
+        prompt,
+        request_id: result.request_id
+      })
+    } catch (error: any) {
+      clearTimeout(timeoutId)
+      if (error.name === 'AbortError') {
+        return NextResponse.json(
+          { error: 'Request timed out (120s)' },
+          { status: 504 }
+        )
+      }
+      throw error
     }
-
-    const result = await response.json()
-    console.log('Fal AI response:', result)
-
-    // Return the video URL and metadata
-    return NextResponse.json({
-      video_url: result.video?.url,
-      model: modelEndpoint,
-      duration,
-      prompt,
-      request_id: result.request_id
-    })
     
   } catch (error) {
     console.error('Fal AI video generation error:', error)

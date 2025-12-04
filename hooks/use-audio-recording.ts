@@ -15,9 +15,10 @@ export function useAudioRecording() {
   const streamRef = useRef<MediaStream | null>(null)
 
   const isCancelledRef = useRef<boolean>(false)
+  const isRecordingRef = useRef<boolean>(false)
 
   const startRecording = useCallback(async () => {
-    if (isRecording) return
+    if (isRecordingRef.current) return
 
     // Clear previous audio blob and reset cancelled state
     setAudioBlob(null)
@@ -50,7 +51,7 @@ export function useAudioRecording() {
       const dataArray = new Uint8Array(analyser.frequencyBinCount)
       
       const updateLevel = () => {
-        if (analyserRef.current && isRecording) {
+        if (analyserRef.current && isRecordingRef.current) {
           analyserRef.current.getByteFrequencyData(dataArray)
           const average = dataArray.reduce((a, b) => a + b) / dataArray.length
           const normalizedLevel = average / 255
@@ -59,7 +60,6 @@ export function useAudioRecording() {
           requestAnimationFrame(updateLevel)
         }
       }
-      updateLevel()
 
       // Set up MediaRecorder
       const mediaRecorder = new MediaRecorder(stream, {
@@ -82,13 +82,19 @@ export function useAudioRecording() {
         setAudioLevel(0)
         setIsCancelled(false) // Reset for next recording
         isCancelledRef.current = false // Reset ref for next recording
+        isRecordingRef.current = false
       }
 
       mediaRecorderRef.current = mediaRecorder
       mediaRecorder.start()
       setIsRecording(true)
+      isRecordingRef.current = true
+      
+      // Start visualization loop after state is set
+      updateLevel()
     } catch (error) {
       console.error("Error starting recording:", error)
+      isRecordingRef.current = false
     }
   }, [isRecording])
 
@@ -96,6 +102,7 @@ export function useAudioRecording() {
     if (mediaRecorderRef.current && isRecording) {
       mediaRecorderRef.current.stop()
       setIsRecording(false)
+      isRecordingRef.current = false
 
       // Clean up media resources
       if (streamRef.current) {
