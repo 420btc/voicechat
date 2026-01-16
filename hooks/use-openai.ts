@@ -37,6 +37,7 @@ interface AIConfig {
   openaiModel?: string
   anthropicModel?: string
   geminiModel?: string
+  grokModel?: string
   geminiImageModel?: string
   falApiKey?: string
   falVideoModel?: string
@@ -52,7 +53,7 @@ interface AIConfig {
 }
 
 export function useOpenAI(config: AIConfig) {
-  const { provider, apiKey, openaiApiKey, baseUrl, model, openaiModel, anthropicModel, geminiModel, geminiImageModel, selectedAgent, onModelUsed, qwenBaseUrl, qwenModel, deepseekLmBaseUrl, deepseekLmModel, useSpecialPrompt } = config
+  const { provider, apiKey, openaiApiKey, baseUrl, model, openaiModel, anthropicModel, geminiModel, grokModel, geminiImageModel, selectedAgent, onModelUsed, qwenBaseUrl, qwenModel, deepseekLmBaseUrl, deepseekLmModel, useSpecialPrompt } = config
   const [isTranscribing, setIsTranscribing] = useState(false)
   const [isGenerating, setIsGenerating] = useState(false)
   const [abortController, setAbortController] = useState<AbortController | null>(null)
@@ -184,7 +185,7 @@ export function useOpenAI(config: AIConfig) {
           break
         case "anthropic":
           apiUrl = "/api/anthropic"
-          selectedModel = anthropicModel || "claude-sonnet-4-20250514"
+          selectedModel = anthropicModel || "claude-4-5-opus"
           timeoutMs = 90000
           break
         case "deepseek":
@@ -194,7 +195,7 @@ export function useOpenAI(config: AIConfig) {
           break
         case "grok":
           apiUrl = "/api/grok"
-          selectedModel = "grok-beta"
+          selectedModel = grokModel || "grok-beta"
           timeoutMs = 90000
           break
         case "gemini":
@@ -202,7 +203,7 @@ export function useOpenAI(config: AIConfig) {
           // Use image model if images are present, otherwise use regular model
           selectedModel = (images && images.length > 0) 
             ? (geminiImageModel || "gemini-2.5-flash-image-preview")
-            : (geminiModel || "gemini-2.5-flash")
+            : (geminiModel || "gemini-3-flash-preview")
           timeoutMs = 90000
           break
         case "fal":
@@ -212,7 +213,7 @@ export function useOpenAI(config: AIConfig) {
           break
         default: // openai
           apiUrl = "https://api.openai.com/v1/chat/completions"
-          selectedModel = openaiModel || "gpt-4o"
+          selectedModel = openaiModel || "gpt-5.2"
           timeoutMs = 90000
           break
       }

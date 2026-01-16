@@ -20,7 +20,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
-import { Settings, User, ExternalLink, Palette, Keyboard, Sun, Moon, Monitor, AlertTriangle, TrendingUp, RefreshCw } from "lucide-react"
+import { Settings, User, ExternalLink, Palette, Keyboard, Sun, Moon, Monitor, AlertTriangle, TrendingUp, RefreshCw, Eye, EyeOff } from "lucide-react"
 import { AIProvider } from "@/hooks/use-openai"
 import { useLocalStorage } from "@/hooks/use-local-storage"
 import { AI_AGENTS, AIAgent } from "@/hooks/use-user-data"
@@ -42,6 +42,7 @@ interface AISettings {
   anthropicModel: string
   deepseekApiKey: string
   grokApiKey: string
+  grokModel: string
   geminiApiKey: string
   geminiModel: string
   geminiImageModel: string
@@ -71,6 +72,46 @@ interface ModelHistoryEntry {
   provider: AIProvider
   lastUsed: Date
   usageCount: number
+}
+
+interface ApiKeyInputProps {
+  id: string
+  value: string
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void
+  placeholder?: string
+}
+
+function ApiKeyInput({ id, value, onChange, placeholder }: ApiKeyInputProps) {
+  const [showPassword, setShowPassword] = useState(false)
+
+  return (
+    <div className="relative">
+      <Input
+        id={id}
+        type={showPassword ? "text" : "password"}
+        placeholder={placeholder}
+        value={value}
+        onChange={onChange}
+        className="pr-10"
+      />
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+        onClick={() => setShowPassword(!showPassword)}
+      >
+        {showPassword ? (
+          <EyeOff className="h-4 w-4 text-muted-foreground" />
+        ) : (
+          <Eye className="h-4 w-4 text-muted-foreground" />
+        )}
+        <span className="sr-only">
+          {showPassword ? "Ocultar API Key" : "Mostrar API Key"}
+        </span>
+      </Button>
+    </div>
+  )
 }
 
 export default function AIProviderSelector({ settings, onSettingsChange, themeSettings, onThemeSettingsChange }: AIProviderSelectorProps) {
@@ -294,9 +335,8 @@ export default function AIProviderSelector({ settings, onSettingsChange, themeSe
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="openai-key">API Key de OpenAI</Label>
-                  <Input
+                  <ApiKeyInput
                     id="openai-key"
-                    type="password"
                     placeholder="sk-..."
                     value={tempSettings.openaiApiKey}
                     onChange={(e) => 
@@ -317,13 +357,13 @@ export default function AIProviderSelector({ settings, onSettingsChange, themeSe
                       <SelectValue placeholder="Selecciona un modelo" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="gpt-4o">GPT-4o (Más reciente)</SelectItem>
-                      <SelectItem value="gpt-4o-mini">GPT-4o Mini (Rápido y económico)</SelectItem>
+                      <SelectItem value="gpt-5.2">GPT-5.2 (Más reciente - Dic 2025)</SelectItem>
+                      <SelectItem value="gpt-5.2-codex">GPT-5.2 Codex (Programación - Ene 2026)</SelectItem>
+                      <SelectItem value="gpt-4o">GPT-4o</SelectItem>
+                      <SelectItem value="gpt-4o-mini">GPT-4o Mini</SelectItem>
                       <SelectItem value="gpt-4-turbo">GPT-4 Turbo</SelectItem>
-                      <SelectItem value="gpt-4">GPT-4 (Clásico)</SelectItem>
-                      <SelectItem value="gpt-3.5-turbo">GPT-3.5 Turbo (Económico)</SelectItem>
-                      <SelectItem value="o1-preview">o1-preview (Razonamiento avanzado)</SelectItem>
-                      <SelectItem value="o1-mini">o1-mini (Razonamiento rápido)</SelectItem>
+                      <SelectItem value="o1-preview">o1-preview</SelectItem>
+                      <SelectItem value="o1-mini">o1-mini</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -694,9 +734,8 @@ export default function AIProviderSelector({ settings, onSettingsChange, themeSe
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="anthropic-key">API Key de Anthropic</Label>
-                  <Input
+                  <ApiKeyInput
                     id="anthropic-key"
-                    type="password"
                     placeholder="sk-ant-..."
                     value={tempSettings.anthropicApiKey}
                     onChange={(e) => 
@@ -717,11 +756,11 @@ export default function AIProviderSelector({ settings, onSettingsChange, themeSe
                       <SelectValue placeholder="Selecciona un modelo" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="claude-sonnet-4-20250514">Claude Sonnet 4 (Más reciente)</SelectItem>
+                      <SelectItem value="claude-4-5-opus">Claude 4.5 Opus (Flagship - Nov 2025)</SelectItem>
+                      <SelectItem value="claude-sonnet-4-20250514">Claude Sonnet 4</SelectItem>
                       <SelectItem value="claude-3-7-sonnet-20250219">Claude 3.7 Sonnet</SelectItem>
                       <SelectItem value="claude-3-5-sonnet-20240620">Claude 3.5 Sonnet</SelectItem>
-                      <SelectItem value="claude-3-haiku-20240307">Claude 3 Haiku (Rápido)</SelectItem>
-                      <SelectItem value="claude-3-opus-20240229">Claude 3 Opus (Potente)</SelectItem>
+                      <SelectItem value="claude-3-haiku-20240307">Claude 3 Haiku</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -733,9 +772,8 @@ export default function AIProviderSelector({ settings, onSettingsChange, themeSe
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="deepseek-key">API Key de DeepSeek</Label>
-                  <Input
+                  <ApiKeyInput
                     id="deepseek-key"
-                    type="password"
                     placeholder="sk-..."
                     value={tempSettings.deepseekApiKey}
                     onChange={(e) => 
@@ -751,15 +789,35 @@ export default function AIProviderSelector({ settings, onSettingsChange, themeSe
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="grok-key">API Key de Grok (X.AI)</Label>
-                  <Input
+                  <ApiKeyInput
                     id="grok-key"
-                    type="password"
                     placeholder="xai-..."
                     value={tempSettings.grokApiKey}
                     onChange={(e) => 
                       setTempSettings(prev => ({ ...prev, grokApiKey: e.target.value }))
                     }
                   />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="grok-model">Modelo de Grok</Label>
+                  <Select
+                    value={tempSettings.grokModel || "grok-4-1-fast-reasoning"}
+                    onValueChange={(value) => 
+                      setTempSettings(prev => ({ ...prev, grokModel: value }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecciona un modelo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="grok-4-1-fast-reasoning">Grok 4.1 Fast Reasoning (grok-4-1-fast-reasoning)</SelectItem>
+                      <SelectItem value="grok-2-1212">Grok 2 (grok-2-1212)</SelectItem>
+                      <SelectItem value="grok-2-vision-1212">Grok 2 Vision (grok-2-vision-1212)</SelectItem>
+                      <SelectItem value="grok-beta">Grok Beta (grok-beta)</SelectItem>
+                      <SelectItem value="grok-vision-beta">Grok Vision Beta (grok-vision-beta)</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             )}
@@ -769,9 +827,8 @@ export default function AIProviderSelector({ settings, onSettingsChange, themeSe
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="gemini-key">API Key de Google Gemini</Label>
-                  <Input
+                  <ApiKeyInput
                     id="gemini-key"
-                    type="password"
                     placeholder="AIza..."
                     value={tempSettings.geminiApiKey}
                     onChange={(e) => 
@@ -792,18 +849,20 @@ export default function AIProviderSelector({ settings, onSettingsChange, themeSe
                       <SelectValue placeholder="Selecciona un modelo" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="gemini-2.5-pro">Gemini 2.5 Pro (gemini-2.5-pro)</SelectItem>
-                      <SelectItem value="gemini-2.5-flash">Gemini 2.5 Flash (gemini-2.5-flash)</SelectItem>
-                      <SelectItem value="gemini-2.5-flash-lite">Gemini 2.5 Flash-Lite (gemini-2.5-flash-lite)</SelectItem>
-                      <SelectItem value="gemini-live-2.5-flash-preview">Gemini 2.5 Flash Live (gemini-live-2.5-flash-preview)</SelectItem>
-                      <SelectItem value="gemini-2.5-flash-preview-native-audio-dialog">Audio nativo de Gemini 2.5 Flash (gemini-2.5-flash-preview-native-audio-dialog)</SelectItem>
-                      <SelectItem value="gemini-2.5-flash-exp-native-audio-thinking-dialog">Audio nativo de Gemini 2.5 Flash con pensamiento (gemini-2.5-flash-exp-native-audio-thinking-dialog)</SelectItem>
-                      <SelectItem value="gemini-2.5-flash-preview-tts">Gemini 2.5 Flash Preview TTS (gemini-2.5-flash-preview-tts)</SelectItem>
-                      <SelectItem value="gemini-2.5-pro-preview-tts">TTS de Gemini 2.5 Pro (gemini-2.5-pro-preview-tts)</SelectItem>
-                      <SelectItem value="gemini-2.0-flash">Gemini 2.0 Flash (gemini-2.0-flash)</SelectItem>
-                      <SelectItem value="gemini-2.0-flash-preview-image-generation">Generación de imágenes con Gemini 2.0 Flash (gemini-2.0-flash-preview-image-generation)</SelectItem>
-                      <SelectItem value="gemini-2.0-flash-lite">Gemini 2.0 Flash-Lite (gemini-2.0-flash-lite)</SelectItem>
-                      <SelectItem value="gemini-2.0-flash-live-001">Gemini 2.0 Flash Live (gemini-2.0-flash-live-001)</SelectItem>
+                      <SelectItem value="gemini-3-flash-preview">Gemini 3 Flash Preview (Dic 2025)</SelectItem>
+                      <SelectItem value="gemini-3-pro-preview">Gemini 3 Pro Preview (Nov 2025)</SelectItem>
+                      <SelectItem value="gemini-2.5-flash">Gemini 2.5 Flash</SelectItem>
+                      <SelectItem value="gemini-2.5-pro">Gemini 2.5 Pro</SelectItem>
+                      <SelectItem value="gemini-2.5-flash-lite">Gemini 2.5 Flash-Lite</SelectItem>
+                      <SelectItem value="gemini-live-2.5-flash-preview">Gemini 2.5 Flash Live</SelectItem>
+                      <SelectItem value="gemini-2.5-flash-preview-native-audio-dialog">Audio nativo de Gemini 2.5 Flash</SelectItem>
+                      <SelectItem value="gemini-2.5-flash-exp-native-audio-thinking-dialog">Audio nativo de Gemini 2.5 Flash con pensamiento</SelectItem>
+                      <SelectItem value="gemini-2.5-flash-preview-tts">Gemini 2.5 Flash Preview TTS</SelectItem>
+                      <SelectItem value="gemini-2.5-pro-preview-tts">TTS de Gemini 2.5 Pro</SelectItem>
+                      <SelectItem value="gemini-2.0-flash">Gemini 2.0 Flash</SelectItem>
+                      <SelectItem value="gemini-2.0-flash-preview-image-generation">Generación de imágenes con Gemini 2.0 Flash</SelectItem>
+                      <SelectItem value="gemini-2.0-flash-lite">Gemini 2.0 Flash-Lite</SelectItem>
+                      <SelectItem value="gemini-2.0-flash-live-001">Gemini 2.0 Flash Live</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -842,9 +901,8 @@ export default function AIProviderSelector({ settings, onSettingsChange, themeSe
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="fal-key">API Key de Fal AI</Label>
-                  <Input
+                  <ApiKeyInput
                     id="fal-key"
-                    type="password"
                     placeholder="fal_..."
                     value={tempSettings.falApiKey}
                     onChange={(e) => 
@@ -885,9 +943,8 @@ export default function AIProviderSelector({ settings, onSettingsChange, themeSe
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="dashscope-key">API Key de DashScope</Label>
-                  <Input
+                  <ApiKeyInput
                     id="dashscope-key"
-                    type="password"
                     placeholder="sk-..."
                     value={tempSettings.dashscopeApiKey || ''}
                     onChange={(e) => 

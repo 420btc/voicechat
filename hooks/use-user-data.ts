@@ -31,6 +31,7 @@ interface AISettings {
   anthropicModel: string
   deepseekApiKey: string
   grokApiKey: string
+  grokModel: string
   geminiApiKey: string
   geminiModel: string
   geminiImageModel: string
@@ -161,16 +162,17 @@ const DEFAULT_USER_DATA: UserData = {
   aiSettings: {
     provider: "openai",
     openaiApiKey: "",
-    openaiModel: "gpt-4o",
+    openaiModel: "gpt-5.2",
     lmstudioApiKey: "lm-studio",
     lmstudioBaseUrl: "http://localhost:1234",
     lmstudioModel: "local-model",
     anthropicApiKey: "",
-    anthropicModel: "claude-sonnet-4-20250514",
+    anthropicModel: "claude-4-5-opus",
     deepseekApiKey: "",
     grokApiKey: "",
+    grokModel: "grok-4-1-fast-reasoning",
     geminiApiKey: "",
-    geminiModel: "gemini-2.5-flash",
+    geminiModel: "gemini-3-flash-preview",
     geminiImageModel: "gemini-2.5-flash-image-preview",
     falApiKey: "",
     falVideoModel: "fal-ai/kling-video/v2.1/pro/image-to-video",

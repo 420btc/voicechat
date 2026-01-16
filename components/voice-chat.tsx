@@ -135,6 +135,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
     openaiModel: userData.aiSettings.openaiModel,
     anthropicModel: userData.aiSettings.anthropicModel,
     geminiModel: userData.aiSettings.geminiModel,
+    grokModel: userData.aiSettings.grokModel,
     geminiImageModel: userData.aiSettings.geminiImageModel,
     falApiKey: userData.aiSettings.falApiKey,
     falVideoModel: userData.aiSettings.falVideoModel,
