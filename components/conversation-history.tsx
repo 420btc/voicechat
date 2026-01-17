@@ -679,7 +679,17 @@ export function ConversationHistory({
                   size="sm"
                   onClick={() => {
                     if (selectedGeneratedImage) {
-                      window.open(selectedGeneratedImage.url, '_blank')
+                      // Check if it's a data URL
+                      if (selectedGeneratedImage.url.startsWith('data:')) {
+                        // Open data URL in new tab
+                        const newTab = window.open();
+                        if (newTab) {
+                          newTab.document.body.innerHTML = `<img src="${selectedGeneratedImage.url}" style="max-width: 100%; height: auto;">`;
+                        }
+                      } else {
+                        // Regular URL
+                        window.open(selectedGeneratedImage.url, '_blank')
+                      }
                     }
                   }}
                 >
