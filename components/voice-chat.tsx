@@ -1222,7 +1222,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
                 title="Modo programador"
               >
                 <Code className="w-4 h-4" />
-                <span className="hidden lg:inline ml-2">Código</span>
+                <span className="hidden lg:inline ml-2">Builder</span>
               </Button>
             </div>
             
