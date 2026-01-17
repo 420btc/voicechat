@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Settings, Volume2, VolumeX, Trash2, Plus, Mic, MessageSquare, Send, AlertTriangle, ImagePlus, X, Code, FileText, File as FileIcon } from "lucide-react"
+import { Settings, Volume2, VolumeX, Trash2, Plus, Mic, MessageSquare, Send, AlertTriangle, ImagePlus, X, Code, FileText, File as FileIcon, Palette } from "lucide-react"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import {
   Dialog,
   DialogContent,
@@ -49,6 +50,8 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
   const [volume, setVolume] = useState(0.7) // Volume state (0.0 to 1.0)
   const [isMuted, setIsMuted] = useState(false)
   const [autoPlayAudioInText, setAutoPlayAudioInText] = useState(false) // Control audio playback in text mode
+  const [imageAspectRatio, setImageAspectRatio] = useState("1:1")
+  const [imageResolution, setImageResolution] = useState("1k")
   const audioRef = useRef<HTMLAudioElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const documentInputRef = useRef<HTMLInputElement>(null)
@@ -402,7 +405,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
         addMessage("user", transcription, undefined, blob)
 
         // Generate AI response
-        const response = await generateResponse(transcription)
+        const response = await generateResponse(transcription, undefined, { aspectRatio: imageAspectRatio, resolution: imageResolution })
         if (response) {
           // Add message with generated images if available
           console.log('Voice mode - Response with generated images:', response.generatedImages)
@@ -490,7 +493,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
       addMessage("user", displayMessage, undefined, undefined, undefined, undefined, undefined, undefined, promptTokens, selectedImages.length > 0 ? selectedImages : undefined, selectedFiles.length > 0 ? selectedFiles : undefined)
       
       // Generate AI response (pass images if available)
-      const response = await generateResponse(messageToAI, selectedImages)
+      const response = await generateResponse(messageToAI, selectedImages, { aspectRatio: imageAspectRatio, resolution: imageResolution })
       if (response) {
           console.log('Text mode - Response with generated images:', response.generatedImages)
           console.log('Text mode - Response with generated videos:', response.generatedVideos)
@@ -1090,6 +1093,60 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
                   onChange={handleFileSelect}
                   className="hidden"
                 />
+
+                {/* Image Generation Settings */}
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="px-4 h-10 border-primary/20 hover:bg-primary/10 hover:border-primary/40"
+                      title="Configuración de generación de imagen"
+                    >
+                      <Palette className="w-4 h-4 text-primary" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-80">
+                    <div className="grid gap-4">
+                      <div className="space-y-2">
+                        <h4 className="font-medium leading-none">Configuración de Imagen</h4>
+                        <p className="text-sm text-muted-foreground">
+                          Ajusta los parámetros para la generación de imágenes con Nano Banana Pro.
+                        </p>
+                      </div>
+                      <div className="grid gap-2">
+                        <div className="grid grid-cols-3 items-center gap-4">
+                          <Label htmlFor="aspect-ratio">Formato</Label>
+                          <Select value={imageAspectRatio} onValueChange={setImageAspectRatio}>
+                            <SelectTrigger id="aspect-ratio" className="col-span-2 h-8">
+                              <SelectValue placeholder="Seleccionar formato" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="1:1">1:1 (Cuadrado)</SelectItem>
+                              <SelectItem value="16:9">16:9 (Panorámico)</SelectItem>
+                              <SelectItem value="9:16">9:16 (Vertical)</SelectItem>
+                              <SelectItem value="4:3">4:3 (Estándar)</SelectItem>
+                              <SelectItem value="3:4">3:4 (Retrato)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="grid grid-cols-3 items-center gap-4">
+                          <Label htmlFor="resolution">Resolución</Label>
+                          <Select value={imageResolution} onValueChange={setImageResolution}>
+                            <SelectTrigger id="resolution" className="col-span-2 h-8">
+                              <SelectValue placeholder="Seleccionar resolución" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="1k">1K (Estándar)</SelectItem>
+                              <SelectItem value="2k">2K (Alta)</SelectItem>
+                              <SelectItem value="4k">4K (Ultra)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
                 
                 {/* Real-time transcription button */}
                 {isTranscriptionSupported && (
@@ -1220,6 +1277,60 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
                   onChange={handleFileSelect}
                   className="hidden"
                 />
+
+                {/* Image Generation Settings */}
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="px-4 h-10 border-primary/20 hover:bg-primary/10 hover:border-primary/40"
+                      title="Configuración de generación de imagen"
+                    >
+                      <Palette className="w-4 h-4 text-primary" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-80">
+                    <div className="grid gap-4">
+                      <div className="space-y-2">
+                        <h4 className="font-medium leading-none">Configuración de Imagen</h4>
+                        <p className="text-sm text-muted-foreground">
+                          Ajusta los parámetros para la generación de imágenes con Nano Banana Pro.
+                        </p>
+                      </div>
+                      <div className="grid gap-2">
+                        <div className="grid grid-cols-3 items-center gap-4">
+                          <Label htmlFor="aspect-ratio">Formato</Label>
+                          <Select value={imageAspectRatio} onValueChange={setImageAspectRatio}>
+                            <SelectTrigger id="aspect-ratio" className="col-span-2 h-8">
+                              <SelectValue placeholder="Seleccionar formato" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="1:1">1:1 (Cuadrado)</SelectItem>
+                              <SelectItem value="16:9">16:9 (Panorámico)</SelectItem>
+                              <SelectItem value="9:16">9:16 (Vertical)</SelectItem>
+                              <SelectItem value="4:3">4:3 (Estándar)</SelectItem>
+                              <SelectItem value="3:4">3:4 (Retrato)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="grid grid-cols-3 items-center gap-4">
+                          <Label htmlFor="resolution">Resolución</Label>
+                          <Select value={imageResolution} onValueChange={setImageResolution}>
+                            <SelectTrigger id="resolution" className="col-span-2 h-8">
+                              <SelectValue placeholder="Seleccionar resolución" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="1k">1K (Estándar)</SelectItem>
+                              <SelectItem value="2k">2K (Alta)</SelectItem>
+                              <SelectItem value="4k">4K (Ultra)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
                 
                 {/* Real-time transcription button */}
                 {isTranscriptionSupported && (

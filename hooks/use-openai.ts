@@ -145,7 +145,7 @@ export function useOpenAI(config: AIConfig) {
   }, [abortController])
 
   const generateResponse = useCallback(
-    async (userMessage: string, images?: File[]): Promise<AIResponse | null> => {
+    async (userMessage: string, images?: File[], imageSettings?: { aspectRatio?: string, resolution?: string }): Promise<AIResponse | null> => {
       // Cancel any existing generation
       if (abortController) {
         abortController.abort()
@@ -875,7 +875,7 @@ ${contextualPrompt}`
   )
 
   const generateImage = useCallback(
-    async (prompt: string): Promise<{ imageUrl?: string; error?: string }> => {
+    async (prompt: string, settings?: { aspectRatio?: string, resolution?: string }): Promise<{ imageUrl?: string; error?: string }> => {
       if (provider !== "gemini") {
         return { error: "Image generation is only available with Gemini provider" }
       }
@@ -893,7 +893,9 @@ ${contextualPrompt}`
           },
           body: JSON.stringify({
             prompt,
-            model: geminiImageModel || "gemini-3-pro-image-preview"
+            model: geminiImageModel || "gemini-3-pro-image-preview",
+            aspectRatio: settings?.aspectRatio || "1:1",
+            resolution: settings?.resolution || "1k",
           })
         })
 

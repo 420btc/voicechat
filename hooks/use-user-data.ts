@@ -240,6 +240,9 @@ export function useUserData() {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(userData))
       } catch (error) {
         console.error("Error saving user data:", error)
+        if (error instanceof Error && (error.name === 'QuotaExceededError' || error.name === 'NS_ERROR_DOM_QUOTA_REACHED')) {
+          alert("¡El almacenamiento local está lleno! No se pueden guardar más datos. Por favor, elimina conversaciones antiguas o exporta tus datos y limpia el historial.")
+        }
       }
     }
   }, [userData, isLoaded])

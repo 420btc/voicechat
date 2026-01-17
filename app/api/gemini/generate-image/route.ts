@@ -4,7 +4,7 @@ import { GoogleGenAI } from '@google/genai'
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { prompt, model } = body
+    const { prompt, model, aspectRatio, resolution } = body
     
     // Get API key from headers or environment
     const apiKey = request.headers.get('x-api-key') || process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY
@@ -29,7 +29,15 @@ export async function POST(request: NextRequest) {
     // Initialize Google GenAI client
     const ai = new GoogleGenAI({ apiKey })
 
-    console.log(`Generating image with model: ${imageModel}, prompt: ${prompt}`)
+    // Enhance prompt with resolution if specified
+    let finalPrompt = prompt
+    if (resolution) {
+      if (resolution === '4k') finalPrompt += ", 4k resolution, ultra detailed, high quality"
+      else if (resolution === '2k') finalPrompt += ", 2k resolution, high quality"
+      else if (resolution === '1k') finalPrompt += ", high quality"
+    }
+
+    console.log(`Generating image with model: ${imageModel}, prompt: ${finalPrompt}, aspect: ${aspectRatio || 'default'}`)
 
     // Create a client for image generation specifically if using a model that requires different parameters
     // or use the standard generateContent if that's what the model supports
@@ -39,12 +47,13 @@ export async function POST(request: NextRequest) {
         {
           role: 'user',
           parts: [
-            { text: prompt }
+            { text: finalPrompt }
           ]
         }
       ],
       config: {
-        responseModalities: ["IMAGE"]
+        responseModalities: ["IMAGE"],
+        ...(aspectRatio && { aspectRatio: aspectRatio })
       }
     })
 
