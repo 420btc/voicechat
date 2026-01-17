@@ -173,7 +173,7 @@ const DEFAULT_USER_DATA: UserData = {
     grokModel: "grok-4-1-fast-reasoning",
     geminiApiKey: "",
     geminiModel: "gemini-3-flash-preview",
-    geminiImageModel: "gemini-2.5-flash-image-preview",
+    geminiImageModel: "gemini-3-pro-image-preview",
     falApiKey: "",
     falVideoModel: "fal-ai/kling-video/v2.1/pro/image-to-video",
     selectedAgent: "general",

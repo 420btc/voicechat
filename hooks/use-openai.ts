@@ -202,7 +202,7 @@ export function useOpenAI(config: AIConfig) {
           apiUrl = "/api/gemini"
           // Use image model if images are present, otherwise use regular model
           selectedModel = (images && images.length > 0) 
-            ? (geminiImageModel || "gemini-2.5-flash-image-preview")
+            ? (geminiImageModel || "gemini-3-pro-image-preview")
             : (geminiModel || "gemini-3-flash-preview")
           timeoutMs = 90000
           break
@@ -719,6 +719,64 @@ ${contextualPrompt}`
         setIsGenerating(false)
         setAbortController(null)
 
+        let generatedImages: Array<{url: string, mimeType: string}> | undefined
+
+        // Detectar si la respuesta es una llamada a herramienta de imagen
+        if (provider === 'gemini' && responseText.includes('"action": "dalle.text2im"')) {
+          try {
+            console.log('Detectada llamada a herramienta de imagen, procesando...')
+            // Intentar parsear el JSON
+            const jsonMatch = responseText.match(/\{[\s\S]*"action":\s*"dalle\.text2im"[\s\S]*\}/)
+            if (jsonMatch) {
+              const jsonStr = jsonMatch[0]
+              const toolCall = JSON.parse(jsonStr)
+              
+              if (toolCall.action_input) {
+                // El input puede ser un string JSON o un objeto directo
+                let prompt = ''
+                if (typeof toolCall.action_input === 'string') {
+                  try {
+                    const inputObj = JSON.parse(toolCall.action_input)
+                    prompt = inputObj.prompt
+                  } catch (e) {
+                    // Si falla el parseo, tal vez sea el prompt directo?
+                    prompt = toolCall.action_input
+                  }
+                } else if (typeof toolCall.action_input === 'object') {
+                  prompt = toolCall.action_input.prompt
+                }
+                
+                if (prompt) {
+                  console.log(`Prompt extraído para generación de imagen: ${prompt}`)
+                  // Mantener el estado de generación activo
+                  setIsGenerating(true)
+                  
+                  // Llamar a la generación de imagen real
+                  const imageResult = await generateImage(prompt)
+                  
+                  if (imageResult.imageUrl) {
+                    console.log('Imagen generada exitosamente:', imageResult.imageUrl)
+                    // Adjuntar la imagen generada a la respuesta
+                    const mimeType = imageResult.imageUrl.split(';')[0].split(':')[1] || 'image/png'
+                    generatedImages = [{
+                      url: imageResult.imageUrl,
+                      mimeType: mimeType
+                    }]
+                    
+                    // Actualizar el texto de respuesta para indicar éxito
+                    responseText += "\n\n[Imagen generada automáticamente basada en tu solicitud]"
+                  } else {
+                    console.error('Error generando imagen:', imageResult.error)
+                    responseText += `\n\n(Hubo un error al intentar generar la imagen: ${imageResult.error})`
+                  }
+                }
+              }
+            }
+          } catch (e) {
+            console.error('Error procesando tool call de imagen:', e)
+          }
+        }
+
         // Save to long-term memory after successful response (non-blocking)
         setTimeout(() => {
           try {
@@ -730,7 +788,6 @@ ${contextualPrompt}`
         }, 0)
 
         // Extract generated images for Gemini
-        let generatedImages: Array<{url: string, mimeType: string}> | undefined
         if (provider === 'gemini' && textData.images && textData.images.length > 0) {
           console.log('Extracting generated images from Gemini response:', textData.images)
           generatedImages = textData.images
@@ -836,7 +893,7 @@ ${contextualPrompt}`
           },
           body: JSON.stringify({
             prompt,
-            model: geminiImageModel || "gemini-2.5-flash-image-preview"
+            model: geminiImageModel || "gemini-3-pro-image-preview"
           })
         })
 

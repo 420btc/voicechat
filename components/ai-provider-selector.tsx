@@ -360,10 +360,7 @@ export default function AIProviderSelector({ settings, onSettingsChange, themeSe
                       <SelectItem value="gpt-5.2">GPT-5.2 (Más reciente - Dic 2025)</SelectItem>
                       <SelectItem value="gpt-5.2-codex">GPT-5.2 Codex (Programación - Ene 2026)</SelectItem>
                       <SelectItem value="gpt-4o">GPT-4o</SelectItem>
-                      <SelectItem value="gpt-4o-mini">GPT-4o Mini</SelectItem>
-                      <SelectItem value="gpt-4-turbo">GPT-4 Turbo</SelectItem>
                       <SelectItem value="o1-preview">o1-preview</SelectItem>
-                      <SelectItem value="o1-mini">o1-mini</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -757,10 +754,9 @@ export default function AIProviderSelector({ settings, onSettingsChange, themeSe
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="claude-4-5-opus">Claude 4.5 Opus (Flagship - Nov 2025)</SelectItem>
+                      <SelectItem value="claude-4-5-sonnet">Claude 4.5 Sonnet (Ene 2026)</SelectItem>
                       <SelectItem value="claude-sonnet-4-20250514">Claude Sonnet 4</SelectItem>
                       <SelectItem value="claude-3-7-sonnet-20250219">Claude 3.7 Sonnet</SelectItem>
-                      <SelectItem value="claude-3-5-sonnet-20240620">Claude 3.5 Sonnet</SelectItem>
-                      <SelectItem value="claude-3-haiku-20240307">Claude 3 Haiku</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -814,8 +810,6 @@ export default function AIProviderSelector({ settings, onSettingsChange, themeSe
                       <SelectItem value="grok-4-1-fast-reasoning">Grok 4.1 Fast Reasoning (grok-4-1-fast-reasoning)</SelectItem>
                       <SelectItem value="grok-2-1212">Grok 2 (grok-2-1212)</SelectItem>
                       <SelectItem value="grok-2-vision-1212">Grok 2 Vision (grok-2-vision-1212)</SelectItem>
-                      <SelectItem value="grok-beta">Grok Beta (grok-beta)</SelectItem>
-                      <SelectItem value="grok-vision-beta">Grok Vision Beta (grok-vision-beta)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -855,14 +849,6 @@ export default function AIProviderSelector({ settings, onSettingsChange, themeSe
                       <SelectItem value="gemini-2.5-pro">Gemini 2.5 Pro</SelectItem>
                       <SelectItem value="gemini-2.5-flash-lite">Gemini 2.5 Flash-Lite</SelectItem>
                       <SelectItem value="gemini-live-2.5-flash-preview">Gemini 2.5 Flash Live</SelectItem>
-                      <SelectItem value="gemini-2.5-flash-preview-native-audio-dialog">Audio nativo de Gemini 2.5 Flash</SelectItem>
-                      <SelectItem value="gemini-2.5-flash-exp-native-audio-thinking-dialog">Audio nativo de Gemini 2.5 Flash con pensamiento</SelectItem>
-                      <SelectItem value="gemini-2.5-flash-preview-tts">Gemini 2.5 Flash Preview TTS</SelectItem>
-                      <SelectItem value="gemini-2.5-pro-preview-tts">TTS de Gemini 2.5 Pro</SelectItem>
-                      <SelectItem value="gemini-2.0-flash">Gemini 2.0 Flash</SelectItem>
-                      <SelectItem value="gemini-2.0-flash-preview-image-generation">Generación de imágenes con Gemini 2.0 Flash</SelectItem>
-                      <SelectItem value="gemini-2.0-flash-lite">Gemini 2.0 Flash-Lite</SelectItem>
-                      <SelectItem value="gemini-2.0-flash-live-001">Gemini 2.0 Flash Live</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -879,8 +865,8 @@ export default function AIProviderSelector({ settings, onSettingsChange, themeSe
                       <SelectValue placeholder="Selecciona modelo para imágenes" />
                     </SelectTrigger>
                     <SelectContent>
+                       <SelectItem value="gemini-3-pro-image-preview">Nano Banana Pro (gemini-3-pro-image-preview)</SelectItem>
                        <SelectItem value="gemini-2.5-flash-image-preview">Nano Banana (gemini-2.5-flash-image-preview)</SelectItem>
-                       <SelectItem value="gemini-2.0-flash-preview-image-generation">Generación de imágenes con Gemini 2.0 Flash (gemini-2.0-flash-preview-image-generation)</SelectItem>
                      </SelectContent>
                   </Select>
                 </div>

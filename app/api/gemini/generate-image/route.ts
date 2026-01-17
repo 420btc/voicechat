@@ -29,10 +29,26 @@ export async function POST(request: NextRequest) {
     // Initialize Google GenAI client
     const ai = new GoogleGenAI({ apiKey })
 
+    console.log(`Generating image with model: ${imageModel}, prompt: ${prompt}`)
+
+    // Create a client for image generation specifically if using a model that requires different parameters
+    // or use the standard generateContent if that's what the model supports
     const response = await ai.models.generateContent({
       model: imageModel,
-      contents: prompt,
+      contents: [
+        {
+          role: 'user',
+          parts: [
+            { text: prompt }
+          ]
+        }
+      ],
+      config: {
+        responseModalities: ["IMAGE"]
+      }
     })
+
+    console.log('Gemini image generation raw response:', JSON.stringify(response, null, 2))
 
     // Extract image data from response
     if (!response.candidates || response.candidates.length === 0) {
