@@ -219,6 +219,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
       clearConversation()
       setSelectedImages([])
       setSelectedFiles([])
+      setCode({ html: '', css: '', js: '' })
       setTextInput('')
       showNotification({ title: 'Nueva conversación iniciada', soundType: 'success' })
     },
@@ -1274,6 +1275,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
                     saveConversation(autoTitle, conversation)
                   }
                   clearConversation()
+                  setCode({ html: '', css: '', js: '' })
                 }} 
                 className="text-muted-foreground hover:text-foreground h-8 px-1 sm:px-2 lg:px-3"
                 title="Nueva conversación"
@@ -1300,6 +1302,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
                       saveConversation(autoTitle, conversation)
                     }
                     clearConversation()
+                    setCode({ html: '', css: '', js: '' })
                   }}
                 />
               )}
