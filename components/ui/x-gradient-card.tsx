@@ -14,6 +14,7 @@ export interface XCardProps {
     content: string[] | Array<{type: 'text' | 'code', content: string, language?: string, filename?: string}>
     timestamp?: string
     isVerified?: boolean
+    isError?: boolean
     className?: string;
     isProgrammerMode?: boolean
     model?: string
@@ -30,12 +31,13 @@ function XCard({
     authorHandle = "dorian_baffier",
     authorImage = "https://pbs.twimg.com/profile_images/1854916060807675904/KtBJsyWr_400x400.jpg",
     content = [
-        "All components from KokonutUI can now be open in @v0 🎉",
+        "All components from KokonutUI can now be open in @v0 ",
         "1. Click on 'Open in V0'",
         "2. Customize with prompts",
         "3. Deploy to your app",
     ],
     isVerified = true,
+    isError = false,
     timestamp = "Jan 18, 2025",
     className,
     isProgrammerMode = false,
@@ -109,6 +111,9 @@ function XCard({
                                         </span>
                                         {isVerified && (
                                             <VerifiedIcon className="h-4 w-4 text-blue-400" />
+                                        )}
+                                        {isError && (
+                                            <Badge variant="destructive" className="ml-2">Error</Badge>
                                         )}
                                     </div>
                                     <span className="text-black dark:text-white/60 text-sm">

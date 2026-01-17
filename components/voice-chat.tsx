@@ -54,6 +54,9 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
   const [imageAspectRatio, setImageAspectRatio] = useState("1:1")
   const [imageResolution, setImageResolution] = useState("1k")
   const [code, setCode] = useState({ html: '', css: '', js: '' })
+  const [activeCodeTab, setActiveCodeTab] = useState<'html' | 'css' | 'js'>('html')
+  const [isCodePanelOpen, setIsCodePanelOpen] = useState(true)
+  const [isCodeManual, setIsCodeManual] = useState(false)
   const audioRef = useRef<HTMLAudioElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const documentInputRef = useRef<HTMLInputElement>(null)
@@ -134,6 +137,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
   } = useOpenAI({
     provider: userData.aiSettings.provider,
     apiKey: currentApiKey,
+    chatMode,
     openaiApiKey: userData.aiSettings.openaiApiKey,
     baseUrl: userData.aiSettings.lmstudioBaseUrl,
     model: userData.aiSettings.lmstudioModel,
@@ -154,6 +158,45 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
     deepseekLmModel: userData.aiSettings.deepseekLmModel,
     useSpecialPrompt: userData.aiSettings.useSpecialPrompt
   })
+
+  const isAssistantError = (content: string) => {
+    const text = (content || '').trim()
+    return (
+      /(^|\n)\s*(error)(\b|\s*[:\-])/i.test(text) ||
+      /ocurri[óo]\s+un\s+error/i.test(text) ||
+      /error\s+enviando\s+mensaje/i.test(text) ||
+      /error\s+procesando/i.test(text)
+    )
+  }
+
+  const lastAssistantMessage = [...conversation].reverse().find((m) => m.role === 'assistant')
+  const lastAssistantIsError = lastAssistantMessage ? isAssistantError(lastAssistantMessage.content) : false
+
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem('builder_code_v1')
+      if (raw) {
+        const parsed = JSON.parse(raw)
+        if (parsed && typeof parsed === 'object') {
+          setCode({
+            html: typeof parsed.html === 'string' ? parsed.html : '',
+            css: typeof parsed.css === 'string' ? parsed.css : '',
+            js: typeof parsed.js === 'string' ? parsed.js : ''
+          })
+          setIsCodeManual(true)
+        }
+      }
+    } catch {
+    }
+  }, [])
+
+  useEffect(() => {
+    if (chatMode !== 'programmer') return
+    try {
+      window.localStorage.setItem('builder_code_v1', JSON.stringify(code))
+    } catch {
+    }
+  }, [code, chatMode])
 
   // Initialize temp OpenAI key with saved key
   useEffect(() => {
@@ -296,7 +339,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
 
   // Extract code from conversation for Preview Mode
   useEffect(() => {
-    if (chatMode === 'programmer' && conversation.length > 0) {
+    if (chatMode === 'programmer' && conversation.length > 0 && !isCodeManual) {
       // Find the last assistant message
       const lastAssistantMessage = [...conversation].reverse().find(msg => msg.role === 'assistant')
       
@@ -315,12 +358,10 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
         }
       }
     }
-  }, [conversation, chatMode])
+  }, [chatMode, conversation, isCodeManual]) // Add chatMode to dependency array
 
-  // Apply dynamic theme settings
   useEffect(() => {
     if (!isLoaded) return
-
     const root = document.documentElement
     const { themeSettings } = userData
 
@@ -770,219 +811,219 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
             </div>
           )}
 
-          {/* Status */}
-          <div className="text-xs sm:text-sm text-muted-foreground">
-            {isTranscribing && "Transcribiendo..."}
-            {isGenerating && "La IA está pensando..."}
-            {!isRecording && !isTranscribing && !isGenerating && ""}
-          </div>
+        {/* Status */}
+        <div className="text-xs sm:text-sm text-muted-foreground">
+          {isTranscribing && "Transcribiendo..."}
+          {isGenerating && !lastAssistantIsError && "La IA está pensando..."}
+          {!isRecording && !isTranscribing && !isGenerating && ""}
         </div>
-      ) : chatMode === 'text' ? (
-        /* Text Input Interface */
-        <div className="space-y-3">
-          {/* Image Preview */}
-          {selectedImages.length > 0 && (
-            <div className="flex flex-wrap gap-2 p-2 bg-muted/30 rounded-lg">
-              {selectedImages.map((image, index) => (
-                <div key={index} className="relative group">
-                  {image instanceof window.File && (
-                    <img
-                      src={URL.createObjectURL(image)}
-                      alt={`Imagen ${index + 1}`}
-                      className="w-16 h-16 object-cover rounded border"
-                    />
-                  )}
+      </div>
+    ) : chatMode === 'text' ? (
+      /* Text Input Interface */
+      <div className="space-y-3">
+        {/* Image Preview */}
+        {selectedImages.length > 0 && (
+          <div className="flex flex-wrap gap-2 p-2 bg-muted/30 rounded-lg">
+            {selectedImages.map((image, index) => (
+              <div key={index} className="relative group">
+                {image instanceof window.File && (
+                  <img
+                    src={URL.createObjectURL(image)}
+                    alt={`Imagen ${index + 1}`}
+                    className="w-16 h-16 object-cover rounded border"
+                  />
+                )}
+                <button
+                  onClick={() => removeImage(index)}
+                  className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* File Preview */}
+        {selectedFiles.length > 0 && (
+          <div className="flex flex-wrap gap-2 p-2 bg-muted/30 rounded-lg">
+            {selectedFiles.filter(file => file && file.name).map((file, index) => {
+              const { icon: IconComponent, color } = getFileIcon(file)
+              return (
+                <div key={index} className="relative group flex items-center gap-2 bg-background/50 rounded border p-2">
+                  <IconComponent className={`w-4 h-4 ${color}`} />
+                  <span className="text-xs truncate max-w-[100px]">{file.name}</span>
                   <button
-                    onClick={() => removeImage(index)}
-                    className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={() => removeFile(index)}
+                    className="bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
                   >
-                    <X className="w-3 h-3" />
+                    <X className="w-2 h-2" />
                   </button>
                 </div>
-              ))}
-            </div>
-          )}
-          
-          {/* File Preview */}
-          {selectedFiles.length > 0 && (
-            <div className="flex flex-wrap gap-2 p-2 bg-muted/30 rounded-lg">
-              {selectedFiles.filter(file => file && file.name).map((file, index) => {
-                const { icon: IconComponent, color } = getFileIcon(file)
-                return (
-                  <div key={index} className="relative group flex items-center gap-2 bg-background/50 rounded border p-2">
-                    <IconComponent className={`w-4 h-4 ${color}`} />
-                    <span className="text-xs truncate max-w-[100px]">{file.name}</span>
-                    <button
-                      onClick={() => removeFile(index)}
-                      className="bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      <X className="w-2 h-2" />
-                    </button>
-                  </div>
-                )
-              })}
-            </div>
-          )}
-          
-          <div className="flex gap-1 sm:gap-2">
-            {/* Image Upload Button - Only show for LM Studio with vision models */}
-            {supportsVision() && (
-              <>
-                <Button
-                  type="button"
-                  variant="default"
-                  size="sm"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={isGenerating || selectedImages.length >= 3}
-                  className="px-4 h-10 bg-primary hover:bg-primary/90 text-primary-foreground"
-                  title="Agregar imagen (máximo 3)"
-                >
-                  <ImagePlus className="w-4 h-4" />
-                </Button>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={handleImageSelect}
-                  className="hidden"
-                />
-              </>
-            )}
-            
-            {/* File Upload Button */}
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => documentInputRef.current?.click()}
-              disabled={isGenerating || selectedFiles.length >= 2}
-              className="px-4 h-10 border-primary/20 hover:bg-primary/10 hover:border-primary/40"
-              title="Agregar archivo (PDF, TXT, DOC - máximo 2)"
-            >
-              <FileText className="w-4 h-4 text-primary" />
-            </Button>
-            <input
-              ref={documentInputRef}
-              type="file"
-              accept=".pdf,.txt,.doc,.docx"
-              multiple
-              onChange={handleFileSelect}
-              className="hidden"
-            />
-
-            {/* Image Generation Settings */}
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="px-4 h-10 border-primary/20 hover:bg-primary/10 hover:border-primary/40"
-                  title="Configuración de generación de imagen"
-                >
-                  <Palette className="w-4 h-4 text-primary" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-80">
-                <div className="grid gap-4">
-                  <div className="space-y-2">
-                    <h4 className="font-medium leading-none">Configuración de Imagen</h4>
-                    <p className="text-sm text-muted-foreground">
-                      Ajusta los parámetros para la generación de imágenes con Nano Banana Pro.
-                    </p>
-                  </div>
-                  <div className="grid gap-2">
-                    <div className="grid grid-cols-3 items-center gap-4">
-                      <Label htmlFor="aspect-ratio">Formato</Label>
-                      <Select value={imageAspectRatio} onValueChange={setImageAspectRatio}>
-                        <SelectTrigger id="aspect-ratio" className="col-span-2 h-8">
-                          <SelectValue placeholder="Seleccionar formato" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="1:1">1:1 (Cuadrado)</SelectItem>
-                          <SelectItem value="16:9">16:9 (Panorámico)</SelectItem>
-                          <SelectItem value="9:16">9:16 (Vertical)</SelectItem>
-                          <SelectItem value="4:3">4:3 (Estándar)</SelectItem>
-                          <SelectItem value="3:4">3:4 (Retrato)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="grid grid-cols-3 items-center gap-4">
-                      <Label htmlFor="resolution">Resolución</Label>
-                      <Select value={imageResolution} onValueChange={setImageResolution}>
-                        <SelectTrigger id="resolution" className="col-span-2 h-8">
-                          <SelectValue placeholder="Seleccionar resolución" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="1k">1K (Estándar)</SelectItem>
-                          <SelectItem value="2k">2K (Alta)</SelectItem>
-                          <SelectItem value="4k">4K (Ultra)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                </div>
-              </PopoverContent>
-            </Popover>
-            
-            {/* Real-time transcription button */}
-            {isTranscriptionSupported && (
+              )
+            })}
+          </div>
+        )}
+        
+        <div className="flex gap-2">
+          {/* Image Upload Button - Only show for LM Studio with vision models */}
+          {supportsVision() && (
+            <>
               <Button
                 type="button"
-                variant={isListening ? "default" : "outline"}
+                variant="default"
                 size="sm"
-                onClick={() => {
-                  if (isListening) {
-                    stopTranscription()
-                  } else {
-                    startTranscription()
-                  }
-                }}
-                className={`px-4 h-10 ${isListening ? 'bg-red-500 hover:bg-red-600 text-white' : 'border-primary/20 hover:bg-primary/10'}`}
-                title={isListening ? "Detener transcripción" : "Iniciar transcripción en tiempo real"}
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isGenerating || selectedImages.length >= 3}
+                className="px-4 h-10 bg-primary hover:bg-primary/90 text-primary-foreground"
+                title="Agregar imagen (máximo 3)"
               >
-                <Mic className={`w-4 h-4 ${isListening ? 'animate-pulse' : ''}`} />
+                <ImagePlus className="w-4 h-4" />
               </Button>
-            )}
-            
-            <div className="flex-1 relative">
-              <Input
-                value={textInput}
-                onChange={(e) => setTextInput(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder={supportsVision() ? "Escribe tu mensaje, sube imágenes o archivos..." : "Escribe tu mensaje o sube archivos..."}
-                disabled={isGenerating}
-                className="w-full"
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={handleImageSelect}
+                className="hidden"
               />
-              {/* Real-time transcription preview */}
-              {isListening && transcript && (
-                <div className="absolute top-full left-0 right-0 mt-1 p-2 bg-muted/90 backdrop-blur-sm border rounded-md text-sm z-10">
-                  <div className="flex items-center gap-2 mb-1">
-                    <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                    <span className="text-xs text-muted-foreground">Transcribiendo... (Confianza: {Math.round(confidence * 100)}%)</span>
-                  </div>
-                  <p className="text-foreground">{transcript}</p>
-                </div>
-              )}
-            </div>
-            <Button
-              onClick={handleTextSubmit}
-              disabled={!textInput.trim() || isGenerating}
-              size="sm"
-              className="px-4 h-10"
-            >
-              <Send className="w-4 h-4" />
-            </Button>
-          </div>
+            </>
+          )}
+
+          {/* File Upload Button */}
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => documentInputRef.current?.click()}
+            disabled={isGenerating || selectedFiles.length >= 2}
+            className="px-4 h-10 border-primary/20 hover:bg-primary/10 hover:border-primary/40"
+            title="Agregar archivo (PDF, TXT, DOC - máximo 2)"
+          >
+            <FileText className="w-4 h-4 text-primary" />
+          </Button>
+          <input
+            ref={documentInputRef}
+            type="file"
+            accept=".pdf,.txt,.doc,.docx"
+            multiple
+            onChange={handleFileSelect}
+            className="hidden"
+          />
           
-          {/* Status */}
-          <div className="text-xs sm:text-sm text-muted-foreground text-center">
-            {isGenerating && "La IA está pensando..."}
-            {!isGenerating && supportsVision() && "Presiona Enter para enviar • Soporta imágenes y archivos"}
-            {!isGenerating && !supportsVision() && "Presiona Enter para enviar • Soporta archivos"}
+          {/* Image Generation Settings */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className="px-4 h-10 border-primary/20 hover:bg-primary/10 hover:border-primary/40"
+                title="Configuración de generación de imagen"
+              >
+                <Palette className="w-4 h-4 text-primary" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-80">
+              <div className="grid gap-4">
+                <div className="space-y-2">
+                  <h4 className="font-medium leading-none">Configuración de Imagen</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Ajusta los parámetros para la generación de imágenes con Nano Banana Pro.
+                  </p>
+                </div>
+                <div className="grid gap-2">
+                  <div className="grid grid-cols-3 items-center gap-4">
+                    <Label htmlFor="aspect-ratio">Formato</Label>
+                    <Select value={imageAspectRatio} onValueChange={setImageAspectRatio}>
+                      <SelectTrigger id="aspect-ratio" className="col-span-2 h-8">
+                        <SelectValue placeholder="Seleccionar formato" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1:1">1:1 (Cuadrado)</SelectItem>
+                        <SelectItem value="16:9">16:9 (Panorámico)</SelectItem>
+                        <SelectItem value="9:16">9:16 (Vertical)</SelectItem>
+                        <SelectItem value="4:3">4:3 (Estándar)</SelectItem>
+                        <SelectItem value="3:4">3:4 (Retrato)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="grid grid-cols-3 items-center gap-4">
+                    <Label htmlFor="resolution">Resolución</Label>
+                    <Select value={imageResolution} onValueChange={setImageResolution}>
+                      <SelectTrigger id="resolution" className="col-span-2 h-8">
+                        <SelectValue placeholder="Seleccionar resolución" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1k">1K (Estándar)</SelectItem>
+                        <SelectItem value="2k">2K (Alta)</SelectItem>
+                        <SelectItem value="4k">4K (Ultra)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
+          
+          {/* Real-time transcription button */}
+          {isTranscriptionSupported && (
+            <Button
+              type="button"
+              variant={isListening ? "default" : "outline"}
+              size="sm"
+              onClick={() => {
+                if (isListening) {
+                  stopTranscription()
+                } else {
+                  startTranscription()
+                }
+              }}
+              className={`px-4 h-10 ${isListening ? 'bg-red-500 hover:bg-red-600 text-white' : 'border-primary/20 hover:bg-primary/10'}`}
+              title={isListening ? "Detener transcripción" : "Iniciar transcripción en tiempo real"}
+            >
+              <Mic className={`w-4 h-4 ${isListening ? 'animate-pulse' : ''}`} />
+            </Button>
+          )}
+          
+          <div className="flex-1 relative">
+            <Input
+              value={textInput}
+              onChange={(e) => setTextInput(e.target.value)}
+              onKeyPress={handleKeyPress}
+              placeholder={supportsVision() ? "Escribe tu mensaje, sube imágenes o archivos..." : "Escribe tu mensaje o sube archivos..."}
+              disabled={isGenerating}
+              className="w-full"
+            />
+            {/* Real-time transcription preview */}
+            {isListening && transcript && (
+              <div className="absolute top-full left-0 right-0 mt-1 p-2 bg-muted/90 backdrop-blur-sm border rounded-md text-sm z-10">
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                  <span className="text-xs text-muted-foreground">Transcribiendo... (Confianza: {Math.round(confidence * 100)}%)</span>
+                </div>
+                <p className="text-foreground">{transcript}</p>
+              </div>
+            )}
           </div>
+          <Button
+            onClick={handleTextSubmit}
+            disabled={!textInput.trim() || isGenerating}
+            size="sm"
+            className="px-4 h-10"
+          >
+            <Send className="w-4 h-4" />
+          </Button>
         </div>
-      ) : (
+        
+        {/* Status */}
+        <div className="text-xs sm:text-sm text-muted-foreground text-center">
+          {isGenerating && !lastAssistantIsError && "La IA está pensando..."}
+          {!isGenerating && supportsVision() && "Presiona Enter para enviar • Soporta imágenes y archivos"}
+          {!isGenerating && !supportsVision() && "Presiona Enter para enviar • Soporta archivos"}
+        </div>
+      </div>
+    ) : (
         /* Programmer Input Interface */
         <div className="space-y-3">
           {/* Image Preview */}
@@ -1107,7 +1148,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
           
           {/* Status */}
           <div className="text-xs sm:text-sm text-muted-foreground text-center">
-            {isGenerating && "La IA está pensando..."}
+            {isGenerating && !lastAssistantIsError && "La IA está pensando..."}
             {!isGenerating && "Presiona Enter para enviar • Modo programador activo"}
           </div>
         </div>
@@ -1387,9 +1428,81 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
                     </div>
                 </div>
 
-                {/* Right Panel: Code Preview */}
-                <div className="flex-1 h-full bg-card rounded-lg border shadow-sm overflow-hidden p-0">
+                {/* Right Panel: Builder Files + Preview */}
+                <div className="flex-1 h-full bg-card rounded-lg border shadow-sm overflow-hidden p-0 flex">
+                  <div className={`border-r bg-muted/20 transition-all ${isCodePanelOpen ? 'w-[360px]' : 'w-10'} flex-shrink-0`}>
+                    <div className="h-full flex flex-col">
+                      <button
+                        type="button"
+                        onClick={() => setIsCodePanelOpen(!isCodePanelOpen)}
+                        className="h-10 px-2 flex items-center justify-between border-b text-xs font-semibold text-muted-foreground"
+                      >
+                        <span className={isCodePanelOpen ? '' : 'hidden'}>Archivos</span>
+                        <span className="text-muted-foreground">{isCodePanelOpen ? '⟨' : '⟩'}</span>
+                      </button>
+
+                      {isCodePanelOpen && (
+                        <div className="flex-1 min-h-0 flex flex-col">
+                          <div className="flex border-b">
+                            <button
+                              type="button"
+                              onClick={() => setActiveCodeTab('html')}
+                              className={`px-3 py-2 text-xs font-medium ${activeCodeTab === 'html' ? 'bg-background' : 'bg-transparent text-muted-foreground'}`}
+                            >
+                              index.html
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setActiveCodeTab('css')}
+                              className={`px-3 py-2 text-xs font-medium ${activeCodeTab === 'css' ? 'bg-background' : 'bg-transparent text-muted-foreground'}`}
+                            >
+                              styles.css
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setActiveCodeTab('js')}
+                              className={`px-3 py-2 text-xs font-medium ${activeCodeTab === 'js' ? 'bg-background' : 'bg-transparent text-muted-foreground'}`}
+                            >
+                              app.js
+                            </button>
+                          </div>
+
+                          <textarea
+                            value={activeCodeTab === 'html' ? code.html : activeCodeTab === 'css' ? code.css : code.js}
+                            onChange={(e) => {
+                              const value = e.target.value
+                              setIsCodeManual(true)
+                              setCode(prev => (
+                                activeCodeTab === 'html'
+                                  ? { ...prev, html: value }
+                                  : activeCodeTab === 'css'
+                                  ? { ...prev, css: value }
+                                  : { ...prev, js: value }
+                              ))
+                            }}
+                            className="flex-1 w-full resize-none bg-background p-3 font-mono text-xs outline-none"
+                            spellCheck={false}
+                          />
+
+                          <div className="border-t p-2 flex justify-between items-center">
+                            <button
+                              type="button"
+                              onClick={() => setIsCodeManual(false)}
+                              className="text-xs text-muted-foreground hover:text-foreground"
+                              title="Volver a sincronizar desde la última respuesta del asistente"
+                            >
+                              Sincronizar con IA
+                            </button>
+                            <span className="text-[10px] text-muted-foreground">{isCodeManual ? 'Editando manual' : 'Auto'}</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex-1 min-w-0">
                     <CodePreview html={code.html} css={code.css} js={code.js} />
+                  </div>
                 </div>
              </div>
         ) : (

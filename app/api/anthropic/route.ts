@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
     const requestBody: any = {
       model,
       messages: conversationMessages,
-      max_tokens: max_tokens || 1024,
+      max_tokens: max_tokens || 4096,
       temperature: temperature || 1
     }
     
@@ -56,7 +56,8 @@ export async function POST(request: NextRequest) {
     console.log('Anthropic request body:', { ...requestBody, messages: requestBody.messages.length })
 
     const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 60000) // 60 second timeout
+    const timeoutMs = typeof max_tokens === 'number' && max_tokens > 4096 ? 180000 : 60000
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
 
     try {
       const response = await fetch('https://api.anthropic.com/v1/messages', {

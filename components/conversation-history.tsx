@@ -55,6 +55,18 @@ export function ConversationHistory({
 }: ConversationHistoryProps) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const audioRef = useRef<HTMLAudioElement>(null)
+  const isAssistantError = (content: string) => {
+    const text = (content || '').trim()
+    return (
+      /(^|\n)\s*(error)(\b|\s*[:\-])/i.test(text) ||
+      /ocurri[óo]\s+un\s+error/i.test(text) ||
+      /error\s+enviando\s+mensaje/i.test(text) ||
+      /error\s+procesando/i.test(text)
+    )
+  }
+
+  const lastAssistantMessage = [...conversation].reverse().find((m) => m.role === 'assistant')
+  const lastAssistantIsError = lastAssistantMessage ? isAssistantError(lastAssistantMessage.content) : false
   const [playingIndex, setPlayingIndex] = useState<number | null>(null)
   const [isPlaying, setIsPlaying] = useState(false)
   const [translatingIndex, setTranslatingIndex] = useState<number | null>(null)
@@ -325,6 +337,7 @@ export function ConversationHistory({
               authorName={message.role === "user" ? userName : "Asistente IA"}
               authorHandle={message.role === "user" ? userName.toLowerCase().replace(/\s+/g, '') : "ai"}
               authorImage={message.role === "user" ? (userAvatar || "/userr.png") : "/fondo.png"}
+              isError={message.role === 'assistant' && isAssistantError(message.content || '')}
               content={chatMode === 'programmer' && message.role === 'assistant' ? 
                 detectCodeBlocks(message.content || '') : 
                 [{ type: 'text' as const, content: message.content || '' }]
@@ -588,7 +601,7 @@ export function ConversationHistory({
         </div>
       )}
 
-      {isGenerating && (
+      {isGenerating && !lastAssistantIsError && (
         <div className="flex gap-3 justify-start">
           <div className="w-8 h-8 bg-gradient-to-br from-muted to-muted/80 rounded-full flex items-center justify-center flex-shrink-0 mt-1 shadow-lg border border-border">
             <Bot className="w-4 h-4 text-muted-foreground" />
@@ -599,6 +612,7 @@ export function ConversationHistory({
               authorName="Asistente IA"
               authorHandle="ai"
               authorImage="/placeholder-logo.png"
+              isError={false}
               content={["La IA está pensando..."]}
               isVerified={true}
               timestamp="Generando"

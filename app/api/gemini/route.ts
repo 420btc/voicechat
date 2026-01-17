@@ -59,20 +59,26 @@ export async function POST(request: NextRequest) {
       hasImages: images && images.length > 0
     })
 
-    const response = await ai.models.generateContent({
-      model: model || 'gemini-2.5-flash',
-      contents: geminiContents,
-      generationConfig: {
-        maxOutputTokens: max_tokens || 4096,
-        temperature: temperature || 0.7
-      },
-      // Enable image generation when images are present
-      ...(images && images.length > 0 && {
-        config: {
-          responseModalities: [Modality.IMAGE, Modality.TEXT]
-        }
-      })
-    })
+    const timeoutMs = typeof max_tokens === 'number' && max_tokens > 4096 ? 180000 : 60000
+    const response = await Promise.race([
+      ai.models.generateContent({
+        model: model || 'gemini-2.5-flash',
+        contents: geminiContents,
+        generationConfig: {
+          maxOutputTokens: max_tokens || 4096,
+          temperature: temperature || 0.7
+        },
+        // Enable image generation when images are present
+        ...(images && images.length > 0 && {
+          config: {
+            responseModalities: [Modality.IMAGE, Modality.TEXT]
+          }
+        })
+      }),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Request timed out')), timeoutMs)
+      )
+    ])
 
     console.log('Gemini raw response:', JSON.stringify(response, null, 2))
 

@@ -31,6 +31,7 @@ export type AIProvider = "openai" | "lmstudio" | "anthropic" | "deepseek" | "gro
 interface AIConfig {
   provider: AIProvider
   apiKey: string
+  chatMode?: 'voice' | 'text' | 'programmer'
   openaiApiKey?: string
   baseUrl?: string
   model?: string
@@ -53,10 +54,25 @@ interface AIConfig {
 }
 
 export function useOpenAI(config: AIConfig) {
-  const { provider, apiKey, openaiApiKey, baseUrl, model, openaiModel, anthropicModel, geminiModel, grokModel, geminiImageModel, selectedAgent, onModelUsed, qwenBaseUrl, qwenModel, deepseekLmBaseUrl, deepseekLmModel, useSpecialPrompt } = config
+  const { provider, apiKey, chatMode, openaiApiKey, baseUrl, model, openaiModel, anthropicModel, geminiModel, grokModel, geminiImageModel, selectedAgent, onModelUsed, qwenBaseUrl, qwenModel, deepseekLmBaseUrl, deepseekLmModel, useSpecialPrompt } = config
   const [isTranscribing, setIsTranscribing] = useState(false)
   const [isGenerating, setIsGenerating] = useState(false)
   const [abortController, setAbortController] = useState<AbortController | null>(null)
+
+  const isBuilderMode = chatMode === 'programmer'
+  const maxOutputTokens = isBuilderMode ? 8192 : 4096
+
+  const shouldRetryWithLowerTokens = (errorText: string) => {
+    const t = (errorText || '').toLowerCase()
+    return (
+      t.includes('max_tokens') ||
+      t.includes('max output') ||
+      t.includes('maxoutputtokens') ||
+      t.includes('context length') ||
+      t.includes('token limit') ||
+      t.includes('exceeds')
+    )
+  }
   
   const {
     conversation,
@@ -168,7 +184,7 @@ export function useOpenAI(config: AIConfig) {
         case "lmstudio":
           apiUrl = `${baseUrl || "http://localhost:1234"}/v1/chat/completions`
           selectedModel = model || "local-model"
-          timeoutMs = 300000 // 5 minutes
+          timeoutMs = isBuilderMode ? 420000 : 300000 // 7 min builder, 5 min normal
           break
         case "qwen":
           apiUrl = "/api/qwen"
@@ -181,7 +197,7 @@ export function useOpenAI(config: AIConfig) {
         case "deepseek-lm":
           apiUrl = `${deepseekLmBaseUrl || "http://localhost:1234"}/v1/chat/completions`
           selectedModel = deepseekLmModel || "deepseek-v3"
-          timeoutMs = 300000 // 5 minutes
+          timeoutMs = isBuilderMode ? 420000 : 300000 // 7 min builder, 5 min normal
           break
         case "anthropic":
           apiUrl = "/api/anthropic"
@@ -214,7 +230,7 @@ export function useOpenAI(config: AIConfig) {
         default: // openai
           apiUrl = "https://api.openai.com/v1/chat/completions"
           selectedModel = openaiModel || "gpt-5.2"
-          timeoutMs = 90000
+          timeoutMs = isBuilderMode ? 180000 : 90000
           break
       }
       
@@ -324,7 +340,7 @@ ${contextualPrompt}`
               content: userContent,
             },
           ],
-          max_tokens: 4096,
+          max_tokens: maxOutputTokens,
           temperature: 0.7,
           ...(provider === "lmstudio" && { 
             stream: false,
@@ -366,7 +382,7 @@ ${contextualPrompt}`
             requestBody = {
               model: selectedModel,
               messages: baseMessages,
-              max_tokens: 4096,
+              max_tokens: maxOutputTokens,
               temperature: 0.7,
               stream: false,
               stop: ["<think>", "</think>"]
@@ -381,7 +397,7 @@ ${contextualPrompt}`
             requestBody = {
               model: selectedModel,
               messages: baseMessages,
-              max_tokens: 4096,
+              max_tokens: maxOutputTokens,
               temperature: 0.7,
               // DashScope en modo compatible soporta formato OpenAI; parámetros básicos son suficientes
             }
@@ -398,7 +414,7 @@ ${contextualPrompt}`
             requestBody = {
               model: selectedModel,
               messages: baseMessages,
-              max_tokens: 4096,
+              max_tokens: maxOutputTokens,
               temperature: 0.7,
               top_p: 0.8,
               top_k: 20,
@@ -417,7 +433,7 @@ ${contextualPrompt}`
             }
             requestBody = {
               model: selectedModel,
-              max_tokens: 4096,
+              max_tokens: maxOutputTokens,
               temperature: 0.7,
               messages: baseMessages
             }
@@ -431,7 +447,7 @@ ${contextualPrompt}`
             requestBody = {
               model: selectedModel,
               messages: baseMessages,
-              max_tokens: 4096,
+              max_tokens: maxOutputTokens,
               temperature: 0.7
             }
             break
@@ -444,7 +460,7 @@ ${contextualPrompt}`
             requestBody = {
               model: selectedModel,
               messages: baseMessages,
-              max_tokens: 4096,
+              max_tokens: maxOutputTokens,
               temperature: 0.7
             }
             break
@@ -457,7 +473,7 @@ ${contextualPrompt}`
             requestBody = {
               model: selectedModel,
               messages: baseMessages,
-              max_tokens: 4096,
+              max_tokens: maxOutputTokens,
               temperature: 0.7,
               ...(imageContents.length > 0 && {
                 images: imageContents // For Gemini, imageContents already has the correct format {data, mimeType}
@@ -500,20 +516,24 @@ ${contextualPrompt}`
             requestBody = {
               model: selectedModel,
               messages: baseMessages,
-              max_tokens: 4096,
+              max_tokens: maxOutputTokens,
               temperature: 0.7
             }
             break
         }
         
         // Make the API request
-        const textResponse = await fetch(apiUrl, {
-          method: "POST",
-          headers,
-          signal: newAbortController.signal,
-          ...(provider === "lmstudio" && { keepalive: false }),
-          body: JSON.stringify(requestBody),
-        })
+        const doFetch = async (bodyToSend: any) => {
+          return fetch(apiUrl, {
+            method: "POST",
+            headers,
+            signal: newAbortController.signal,
+            ...(provider === "lmstudio" && { keepalive: false }),
+            body: JSON.stringify(bodyToSend),
+          })
+        }
+
+        let textResponse = await doFetch(requestBody)
         
         console.log(`Fetch completed at:`, new Date().toISOString())
         console.log(`Response received, status:`, textResponse.status)
@@ -528,13 +548,30 @@ ${contextualPrompt}`
           console.log(`Response not OK, reading error text...`)
           const errorText = await textResponse.text().catch(() => 'Unknown error')
           console.error(`${provider} API error:`, textResponse.status, errorText)
-          
-          // Return specific error message instead of throwing
-          return {
-            text: provider === 'lmstudio'
-              ? `Error ${textResponse.status}: No se pudo conectar con LM Studio. Verifica que esté ejecutándose en ${baseUrl || "http://localhost:1234"} y que tengas un modelo cargado.`
-              : `Error ${textResponse.status}: ${errorText}`,
-            model: selectedModel,
+
+          if (isBuilderMode && maxOutputTokens > 4096 && shouldRetryWithLowerTokens(errorText)) {
+            const retryBody = { ...requestBody, max_tokens: 4096 }
+            console.warn(`Retrying ${provider} with lower max_tokens=4096 due to token limit error...`)
+            const retryResp = await doFetch(retryBody)
+            if (retryResp.ok) {
+              textResponse = retryResp
+            } else {
+              const retryText = await retryResp.text().catch(() => 'Unknown error')
+              return {
+                text: provider === 'lmstudio'
+                  ? `Error ${retryResp.status}: No se pudo conectar con LM Studio. Verifica que esté ejecutándose en ${baseUrl || "http://localhost:1234"} y que tengas un modelo cargado.`
+                  : `Error ${retryResp.status}: ${retryText}`,
+                model: selectedModel,
+              }
+            }
+          } else {
+            // Return specific error message instead of throwing
+            return {
+              text: provider === 'lmstudio'
+                ? `Error ${textResponse.status}: No se pudo conectar con LM Studio. Verifica que esté ejecutándose en ${baseUrl || "http://localhost:1234"} y que tengas un modelo cargado.`
+                : `Error ${textResponse.status}: ${errorText}`,
+              model: selectedModel,
+            }
           }
         }
 
