@@ -330,6 +330,95 @@ export default function AIProviderSelector({ settings, onSettingsChange, themeSe
               </Select>
             </div>
 
+            {/* Agent Selection - Available for all providers */}
+            <div className="space-y-2">
+              <Label htmlFor="agent-select">Seleccionar Agente Especializado</Label>
+              <Select
+                value={tempSettings.selectedAgent}
+                onValueChange={(value: string) => 
+                  setTempSettings(prev => ({ ...prev, selectedAgent: value }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="max-h-80">
+                  {AI_AGENTS.map((agent) => (
+                    <SelectItem key={agent.id} value={agent.id}>
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">{agent.icon}</span>
+                        <div className="flex flex-col">
+                          <span className="font-medium">{agent.name}</span>
+                          <span className="text-xs text-muted-foreground">{agent.description}</span>
+                        </div>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              
+              {/* Agent Description */}
+              {(() => {
+                const selectedAgent = AI_AGENTS.find(agent => agent.id === tempSettings.selectedAgent)
+                return selectedAgent ? (
+                  <div className="rounded-lg border p-3 bg-muted/30">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-lg">{selectedAgent.icon}</span>
+                      <span className="font-medium">{selectedAgent.name}</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground mb-2">{selectedAgent.description}</p>
+                    <details className="text-xs">
+                      <summary className="cursor-pointer text-muted-foreground hover:text-foreground">Ver prompt del sistema</summary>
+                      <p className="mt-2 p-2 bg-muted/50 rounded text-muted-foreground">{selectedAgent.systemPrompt}</p>
+                    </details>
+                  </div>
+                ) : null
+              })()}
+              
+              {/* Model Speed Ranking */}
+              {(() => {
+                const speedRanking = getModelSpeedRanking()
+                return speedRanking.length > 0 ? (
+                  <div className="rounded-lg border p-4 bg-muted/50 h-[260px] flex flex-col">
+                      <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
+                        <span>⚡</span>
+                        Modelos Más Rápidos
+                      </h4>
+                      <div className="space-y-2 flex-1 overflow-y-auto">
+                        {speedRanking.slice(0, 10).map((item, index) => (
+                          <div key={item.model} className="flex items-center justify-between text-xs">
+                            <div className="flex items-center gap-2">
+                              <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                                index === 0 ? 'bg-yellow-400 text-yellow-900' :
+                                index === 1 ? 'bg-gray-300 text-gray-700' :
+                                index === 2 ? 'bg-orange-400 text-orange-900' :
+                                'bg-muted text-muted-foreground'
+                              }`}>
+                                {index + 1}
+                              </span>
+                              <span className="font-medium">
+                                {item.model}
+                              </span>
+                            </div>
+                            <div className="text-right">
+                              <div className="font-medium">
+                                {formatTime(item.avgTime)}
+                              </div>
+                              <div className="text-muted-foreground">
+                                {item.messageCount} msg{item.messageCount !== 1 ? 's' : ''}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-2">
+                        Tiempo promedio de respuesta en esta computadora
+                      </p>
+                    </div>
+                ) : null
+              })()}
+            </div>
+
             {/* OpenAI Settings */}
             {tempSettings.provider === "openai" && (
               <div className="space-y-4">
@@ -634,94 +723,7 @@ export default function AIProviderSelector({ settings, onSettingsChange, themeSe
                   />
                 </div>
                 
-                {/* Agent Selection */}
-                <div className="space-y-2">
-                  <Label htmlFor="agent-select">Seleccionar Agente Especializado</Label>
-                  <Select
-                    value={tempSettings.selectedAgent}
-                    onValueChange={(value: string) => 
-                      setTempSettings(prev => ({ ...prev, selectedAgent: value }))
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="max-h-80">
-                      {AI_AGENTS.map((agent) => (
-                        <SelectItem key={agent.id} value={agent.id}>
-                          <div className="flex items-center gap-2">
-                            <span className="text-lg">{agent.icon}</span>
-                            <div className="flex flex-col">
-                              <span className="font-medium">{agent.name}</span>
-                              <span className="text-xs text-muted-foreground">{agent.description}</span>
-                            </div>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  
-                  {/* Agent Description */}
-                  {(() => {
-                    const selectedAgent = AI_AGENTS.find(agent => agent.id === tempSettings.selectedAgent)
-                    return selectedAgent ? (
-                      <div className="rounded-lg border p-3 bg-muted/30">
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="text-lg">{selectedAgent.icon}</span>
-                          <span className="font-medium">{selectedAgent.name}</span>
-                        </div>
-                        <p className="text-sm text-muted-foreground mb-2">{selectedAgent.description}</p>
-                        <details className="text-xs">
-                          <summary className="cursor-pointer text-muted-foreground hover:text-foreground">Ver prompt del sistema</summary>
-                          <p className="mt-2 p-2 bg-muted/50 rounded text-muted-foreground">{selectedAgent.systemPrompt}</p>
-                        </details>
-                      </div>
-                    ) : null
-                  })()}
-                  
-                  {/* Model Speed Ranking */}
-                  {(() => {
-                    const speedRanking = getModelSpeedRanking()
-                    return speedRanking.length > 0 ? (
-                      <div className="rounded-lg border p-4 bg-muted/50 h-[260px] flex flex-col">
-                         <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
-                           <span>⚡</span>
-                           Modelos Más Rápidos
-                         </h4>
-                         <div className="space-y-2 flex-1 overflow-y-auto">
-                           {speedRanking.slice(0, 10).map((item, index) => (
-                             <div key={item.model} className="flex items-center justify-between text-xs">
-                               <div className="flex items-center gap-2">
-                                 <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold ${
-                                   index === 0 ? 'bg-yellow-400 text-yellow-900' :
-                                   index === 1 ? 'bg-gray-300 text-gray-700' :
-                                   index === 2 ? 'bg-orange-400 text-orange-900' :
-                                   'bg-muted text-muted-foreground'
-                                 }`}>
-                                   {index + 1}
-                                 </span>
-                                 <span className="font-medium">
-                                    {item.model}
-                                  </span>
-                               </div>
-                               <div className="text-right">
-                                 <div className="font-medium">
-                                   {formatTime(item.avgTime)}
-                                 </div>
-                                 <div className="text-muted-foreground">
-                                   {item.messageCount} msg{item.messageCount !== 1 ? 's' : ''}
-                                 </div>
-                               </div>
-                             </div>
-                           ))}
-                         </div>
-                         <p className="text-xs text-muted-foreground mt-2">
-                           Tiempo promedio de respuesta en esta computadora
-                         </p>
-                       </div>
-                    ) : null
-                  })()}
-                </div>
+
               </div>
             )}
 
@@ -808,6 +810,7 @@ export default function AIProviderSelector({ settings, onSettingsChange, themeSe
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="grok-4-1-fast-reasoning">Grok 4.1 Fast Reasoning (grok-4-1-fast-reasoning)</SelectItem>
+                      <SelectItem value="grok-code-fast-1">Grok Code Fast 1</SelectItem>
                       <SelectItem value="grok-2-1212">Grok 2 (grok-2-1212)</SelectItem>
                       <SelectItem value="grok-2-vision-1212">Grok 2 Vision (grok-2-vision-1212)</SelectItem>
                     </SelectContent>

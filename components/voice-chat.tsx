@@ -31,6 +31,7 @@ import { useDragAndDrop } from "@/hooks/use-drag-and-drop"
 import { calculateConversationTokens } from "@/lib/token-counter"
 
 import { AutoSaveIndicator } from "@/components/auto-save-indicator"
+import { CodePreview } from "@/components/code-preview"
 
 interface VoiceChatProps {
   apiKey: string
@@ -52,6 +53,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
   const [autoPlayAudioInText, setAutoPlayAudioInText] = useState(false) // Control audio playback in text mode
   const [imageAspectRatio, setImageAspectRatio] = useState("1:1")
   const [imageResolution, setImageResolution] = useState("1k")
+  const [code, setCode] = useState({ html: '', css: '', js: '' })
   const audioRef = useRef<HTMLAudioElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const documentInputRef = useRef<HTMLInputElement>(null)
@@ -291,6 +293,29 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
     }
   }, [audioBlob, isCancelled])
 
+  // Extract code from conversation for Preview Mode
+  useEffect(() => {
+    if (chatMode === 'programmer' && conversation.length > 0) {
+      // Find the last assistant message
+      const lastAssistantMessage = [...conversation].reverse().find(msg => msg.role === 'assistant')
+      
+      if (lastAssistantMessage) {
+        const content = lastAssistantMessage.content
+        const htmlMatch = content.match(/```html\n([\s\S]*?)```/)
+        const cssMatch = content.match(/```css\n([\s\S]*?)```/)
+        const jsMatch = content.match(/```(?:javascript|js)\n([\s\S]*?)```/)
+        
+        if (htmlMatch || cssMatch || jsMatch) {
+            setCode(prev => ({
+                html: htmlMatch ? htmlMatch[1] : prev.html,
+                css: cssMatch ? cssMatch[1] : prev.css,
+                js: jsMatch ? jsMatch[1] : prev.js
+            }))
+        }
+      }
+    }
+  }, [conversation, chatMode])
+
   // Apply dynamic theme settings
   useEffect(() => {
     if (!isLoaded) return
@@ -475,7 +500,23 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
       const conversationMessages = [
         {
           role: "system",
-          content: `Eres un asistente de IA útil y amigable. Proporciona respuestas concisas y naturales en español, adecuadas para conversación por voz. Sé conversacional y cálido en tu tono. ${userData.name ? userData.name + ' es quien te habla.' : ''} Responde directamente sin mostrar tu proceso de razonamiento interno.`
+          content: chatMode === 'programmer' 
+            ? `Eres un experto desarrollador web full-stack y asistente de programación. ${userData.name ? userData.name + ' es quien te habla.' : ''}
+               Tu objetivo es ayudar a construir aplicaciones web completas.
+               Cuando se te pida crear una interfaz o aplicación, DEBES generar el código completo en bloques separados para HTML, CSS y JavaScript.
+               Usa el formato:
+               \`\`\`html
+               <!-- código html aquí -->
+               \`\`\`
+               \`\`\`css
+               /* código css aquí */
+               \`\`\`
+               \`\`\`javascript
+               // código js aquí
+               \`\`\`
+               Asegúrate de que el código sea funcional, moderno y visualmente atractivo.
+               Responde en español de manera técnica pero clara.`
+            : `Eres un asistente de IA útil y amigable. Proporciona respuestas concisas y naturales en español, adecuadas para conversación por voz. Sé conversacional y cálido en tu tono. ${userData.name ? userData.name + ' es quien te habla.' : ''} Responde directamente sin mostrar tu proceso de razonamiento interno.`
         },
         ...conversation.map((msg) => ({
           role: msg.role,
@@ -639,6 +680,439 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
   }
 
 
+
+  const renderInputInterface = () => (
+    <div className={chatMode === 'programmer' ? "flex-shrink-0 bg-card p-2 border-t" : "flex-shrink-0 bg-card p-1.5 sm:p-3 md:p-6 lg:pt-2 lg:px-2 lg:pb-1"}>
+      {chatMode === 'voice' ? (
+        /* Voice Input Interface */
+        <div className="text-center space-y-0.5 sm:space-y-4 lg:space-y-0.5">
+          <div className="text-muted-foreground text-xs sm:text-lg">{isRecording ? "Escuchando..." : ""}</div>
+
+          {/* Voice Input with Volume Control */}
+          <div className="flex items-center justify-center gap-1 sm:gap-3 lg:gap-0.5">
+            {/* Vertical Volume Control */}
+            <div className="flex flex-col items-center gap-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsMuted(!isMuted)}
+                className="text-muted-foreground hover:text-foreground h-6 w-6 p-0"
+                title={isMuted ? "Activar sonido" : "Silenciar"}
+              >
+                {isMuted ? <VolumeX className="w-3 h-3" /> : <Volume2 className="w-3 h-3" />}
+              </Button>
+              <div className="flex flex-col items-center gap-0.5 sm:gap-1">
+                <span className="text-xs text-muted-foreground text-center" style={{fontSize: '10px'}}>10</span>
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.1"
+                  value={isMuted ? 0 : volume}
+                  onChange={(e) => {
+                    const newVolume = parseFloat(e.target.value)
+                    setVolume(newVolume)
+                    if (newVolume > 0 && isMuted) {
+                      setIsMuted(false)
+                    }
+                    if (audioRef.current) {
+                      audioRef.current.volume = newVolume
+                    }
+                  }}
+                  className="w-2 h-10 sm:h-16 bg-muted rounded-lg appearance-none cursor-pointer"
+                  style={{
+                    writingMode: 'vertical-lr' as const,
+                    WebkitAppearance: 'slider-vertical',
+                    background: `linear-gradient(to top, #3b82f6 0%, #3b82f6 ${(isMuted ? 0 : volume) * 100}%, #374151 ${(isMuted ? 0 : volume) * 100}%, #374151 100%)`
+                  }}
+                  disabled={isMuted}
+                />
+                <span className="text-xs text-muted-foreground text-center" style={{fontSize: '10px'}}>0</span>
+              </div>
+              <span className="text-xs text-muted-foreground text-center" style={{fontSize: '9px'}}>
+                {isMuted ? "0%" : `${Math.round(volume * 100)}%`}
+              </span>
+            </div>
+            
+            {/* Voice Input with Visualizer */}
+             <AIVoiceInput
+               onStart={() => {
+                 if (!isRecording) {
+                   startRecording()
+                 }
+               }}
+               onStop={() => {
+                 if (isRecording) {
+                   stopRecording()
+                 }
+               }}
+               visualizerBars={48}
+               demoMode={false}
+               className="flex-1"
+               isRecording={isRecording}
+               isDisabled={isTranscribing || isGenerating}
+             />
+           </div>
+
+          {/* Cancel Button - Only show when recording */}
+          {isRecording && (
+            <div className="flex justify-center">
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={cancelRecording}
+                className="bg-red-600 hover:bg-red-700 text-white h-8 sm:h-auto text-xs sm:text-sm"
+              >
+                <span className="hidden sm:inline">Cancelar grabación</span>
+                <span className="sm:hidden">Cancelar</span>
+              </Button>
+            </div>
+          )}
+
+          {/* Status */}
+          <div className="text-xs sm:text-sm text-muted-foreground">
+            {isTranscribing && "Transcribiendo..."}
+            {isGenerating && "La IA está pensando..."}
+            {!isRecording && !isTranscribing && !isGenerating && ""}
+          </div>
+        </div>
+      ) : chatMode === 'text' ? (
+        /* Text Input Interface */
+        <div className="space-y-3">
+          {/* Image Preview */}
+          {selectedImages.length > 0 && (
+            <div className="flex flex-wrap gap-2 p-2 bg-muted/30 rounded-lg">
+              {selectedImages.map((image, index) => (
+                <div key={index} className="relative group">
+                  {image instanceof window.File && (
+                    <img
+                      src={URL.createObjectURL(image)}
+                      alt={`Imagen ${index + 1}`}
+                      className="w-16 h-16 object-cover rounded border"
+                    />
+                  )}
+                  <button
+                    onClick={() => removeImage(index)}
+                    className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+          
+          {/* File Preview */}
+          {selectedFiles.length > 0 && (
+            <div className="flex flex-wrap gap-2 p-2 bg-muted/30 rounded-lg">
+              {selectedFiles.filter(file => file && file.name).map((file, index) => {
+                const { icon: IconComponent, color } = getFileIcon(file)
+                return (
+                  <div key={index} className="relative group flex items-center gap-2 bg-background/50 rounded border p-2">
+                    <IconComponent className={`w-4 h-4 ${color}`} />
+                    <span className="text-xs truncate max-w-[100px]">{file.name}</span>
+                    <button
+                      onClick={() => removeFile(index)}
+                      className="bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <X className="w-2 h-2" />
+                    </button>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+          
+          <div className="flex gap-1 sm:gap-2">
+            {/* Image Upload Button - Only show for LM Studio with vision models */}
+            {supportsVision() && (
+              <>
+                <Button
+                  type="button"
+                  variant="default"
+                  size="sm"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isGenerating || selectedImages.length >= 3}
+                  className="px-4 h-10 bg-primary hover:bg-primary/90 text-primary-foreground"
+                  title="Agregar imagen (máximo 3)"
+                >
+                  <ImagePlus className="w-4 h-4" />
+                </Button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleImageSelect}
+                  className="hidden"
+                />
+              </>
+            )}
+            
+            {/* File Upload Button */}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => documentInputRef.current?.click()}
+              disabled={isGenerating || selectedFiles.length >= 2}
+              className="px-4 h-10 border-primary/20 hover:bg-primary/10 hover:border-primary/40"
+              title="Agregar archivo (PDF, TXT, DOC - máximo 2)"
+            >
+              <FileText className="w-4 h-4 text-primary" />
+            </Button>
+            <input
+              ref={documentInputRef}
+              type="file"
+              accept=".pdf,.txt,.doc,.docx"
+              multiple
+              onChange={handleFileSelect}
+              className="hidden"
+            />
+
+            {/* Image Generation Settings */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="px-4 h-10 border-primary/20 hover:bg-primary/10 hover:border-primary/40"
+                  title="Configuración de generación de imagen"
+                >
+                  <Palette className="w-4 h-4 text-primary" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-80">
+                <div className="grid gap-4">
+                  <div className="space-y-2">
+                    <h4 className="font-medium leading-none">Configuración de Imagen</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Ajusta los parámetros para la generación de imágenes con Nano Banana Pro.
+                    </p>
+                  </div>
+                  <div className="grid gap-2">
+                    <div className="grid grid-cols-3 items-center gap-4">
+                      <Label htmlFor="aspect-ratio">Formato</Label>
+                      <Select value={imageAspectRatio} onValueChange={setImageAspectRatio}>
+                        <SelectTrigger id="aspect-ratio" className="col-span-2 h-8">
+                          <SelectValue placeholder="Seleccionar formato" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="1:1">1:1 (Cuadrado)</SelectItem>
+                          <SelectItem value="16:9">16:9 (Panorámico)</SelectItem>
+                          <SelectItem value="9:16">9:16 (Vertical)</SelectItem>
+                          <SelectItem value="4:3">4:3 (Estándar)</SelectItem>
+                          <SelectItem value="3:4">3:4 (Retrato)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="grid grid-cols-3 items-center gap-4">
+                      <Label htmlFor="resolution">Resolución</Label>
+                      <Select value={imageResolution} onValueChange={setImageResolution}>
+                        <SelectTrigger id="resolution" className="col-span-2 h-8">
+                          <SelectValue placeholder="Seleccionar resolución" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="1k">1K (Estándar)</SelectItem>
+                          <SelectItem value="2k">2K (Alta)</SelectItem>
+                          <SelectItem value="4k">4K (Ultra)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
+            
+            {/* Real-time transcription button */}
+            {isTranscriptionSupported && (
+              <Button
+                type="button"
+                variant={isListening ? "default" : "outline"}
+                size="sm"
+                onClick={() => {
+                  if (isListening) {
+                    stopTranscription()
+                  } else {
+                    startTranscription()
+                  }
+                }}
+                className={`px-4 h-10 ${isListening ? 'bg-red-500 hover:bg-red-600 text-white' : 'border-primary/20 hover:bg-primary/10'}`}
+                title={isListening ? "Detener transcripción" : "Iniciar transcripción en tiempo real"}
+              >
+                <Mic className={`w-4 h-4 ${isListening ? 'animate-pulse' : ''}`} />
+              </Button>
+            )}
+            
+            <div className="flex-1 relative">
+              <Input
+                value={textInput}
+                onChange={(e) => setTextInput(e.target.value)}
+                onKeyPress={handleKeyPress}
+                placeholder={supportsVision() ? "Escribe tu mensaje, sube imágenes o archivos..." : "Escribe tu mensaje o sube archivos..."}
+                disabled={isGenerating}
+                className="w-full"
+              />
+              {/* Real-time transcription preview */}
+              {isListening && transcript && (
+                <div className="absolute top-full left-0 right-0 mt-1 p-2 bg-muted/90 backdrop-blur-sm border rounded-md text-sm z-10">
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                    <span className="text-xs text-muted-foreground">Transcribiendo... (Confianza: {Math.round(confidence * 100)}%)</span>
+                  </div>
+                  <p className="text-foreground">{transcript}</p>
+                </div>
+              )}
+            </div>
+            <Button
+              onClick={handleTextSubmit}
+              disabled={!textInput.trim() || isGenerating}
+              size="sm"
+              className="px-4 h-10"
+            >
+              <Send className="w-4 h-4" />
+            </Button>
+          </div>
+          
+          {/* Status */}
+          <div className="text-xs sm:text-sm text-muted-foreground text-center">
+            {isGenerating && "La IA está pensando..."}
+            {!isGenerating && supportsVision() && "Presiona Enter para enviar • Soporta imágenes y archivos"}
+            {!isGenerating && !supportsVision() && "Presiona Enter para enviar • Soporta archivos"}
+          </div>
+        </div>
+      ) : (
+        /* Programmer Input Interface */
+        <div className="space-y-3">
+          {/* Image Preview */}
+          {selectedImages.length > 0 && (
+            <div className="flex flex-wrap gap-2 p-2 bg-muted/30 rounded-lg">
+              {selectedImages.map((image, index) => (
+                <div key={index} className="relative group">
+                  {image instanceof window.File && (
+                    <img
+                      src={URL.createObjectURL(image)}
+                      alt={`Imagen ${index + 1}`}
+                      className="w-16 h-16 object-cover rounded border"
+                    />
+                  )}
+                  <button
+                    onClick={() => removeImage(index)}
+                    className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+          
+          <div className="flex gap-2">
+            {/* Image Upload Button - Only show for LM Studio with vision models */}
+            {supportsVision() && (
+              <>
+                <Button
+                  type="button"
+                  variant="default"
+                  size="sm"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isGenerating || selectedImages.length >= 3}
+                  className="px-4 h-10 bg-primary hover:bg-primary/90 text-primary-foreground"
+                  title="Agregar imagen (máximo 3)"
+                >
+                  <ImagePlus className="w-4 h-4" />
+                </Button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleImageSelect}
+                  className="hidden"
+                />
+              </>
+            )}
+            
+            {/* File Upload Button */}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => documentInputRef.current?.click()}
+              disabled={isGenerating || selectedFiles.length >= 2}
+              className="px-4 h-10 border-primary/20 hover:bg-primary/10 hover:border-primary/40"
+              title="Agregar archivo (PDF, TXT, DOC - máximo 2)"
+            >
+              <FileText className="w-4 h-4 text-primary" />
+            </Button>
+            <input
+              ref={documentInputRef}
+              type="file"
+              accept=".pdf,.txt,.doc,.docx"
+              multiple
+              onChange={handleFileSelect}
+              className="hidden"
+            />
+            
+            {/* Real-time transcription button */}
+            {isTranscriptionSupported && (
+              <Button
+                type="button"
+                variant={isListening ? "default" : "outline"}
+                size="sm"
+                onClick={() => {
+                  if (isListening) {
+                    stopTranscription()
+                  } else {
+                    startTranscription()
+                  }
+                }}
+                className={`px-4 h-10 ${isListening ? 'bg-red-500 hover:bg-red-600 text-white' : 'border-primary/20 hover:bg-primary/10'}`}
+                title={isListening ? "Detener transcripción" : "Iniciar transcripción en tiempo real"}
+              >
+                <Mic className={`w-4 h-4 ${isListening ? 'animate-pulse' : ''}`} />
+              </Button>
+            )}
+            
+            <div className="flex-1 relative">
+              <Input
+                value={textInput}
+                onChange={(e) => setTextInput(e.target.value)}
+                onKeyPress={handleKeyPress}
+                placeholder="Describe tu problema de programación, sube archivos de código o pide ayuda..."
+                disabled={isGenerating}
+                className="w-full"
+              />
+              {/* Real-time transcription preview */}
+              {isListening && transcript && (
+                <div className="absolute top-full left-0 right-0 mt-1 p-2 bg-muted/90 backdrop-blur-sm border rounded-md text-sm z-10">
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                    <span className="text-xs text-muted-foreground">Transcribiendo... (Confianza: {Math.round(confidence * 100)}%)</span>
+                  </div>
+                  <p className="text-foreground">{transcript}</p>
+                </div>
+              )}
+            </div>
+            <Button
+              onClick={handleTextSubmit}
+              disabled={!textInput.trim() || isGenerating}
+              size="sm"
+              className="px-4 h-10"
+            >
+              <Send className="w-4 h-4" />
+            </Button>
+          </div>
+          
+          {/* Status */}
+          <div className="text-xs sm:text-sm text-muted-foreground text-center">
+            {isGenerating && "La IA está pensando..."}
+            {!isGenerating && "Presiona Enter para enviar • Modo programador activo"}
+          </div>
+        </div>
+      )}
+    </div>
+  )
 
   return (
     <div 
@@ -884,512 +1358,63 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
       </header>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col max-w-4xl mx-auto w-full px-2 sm:px-4 py-4 min-h-0">
-        {/* Conversation History */}
-        <div className="flex-1 mb-6 min-h-0">
-          <ConversationHistory
-            conversation={conversation}
-            isTranscribing={isTranscribing}
-            isGenerating={isGenerating}
-            onTranslate={translateMessage}
-            onUpdateConversation={setConversation}
-            onCancelGeneration={cancelGeneration}
-            chatMode={chatMode}
-            userName={userData.name}
-            userAvatar={userData.avatar}
-            savedConversations={userData.savedConversations}
-            onLoadConversation={(conv) => loadConversation(conv.messages)}
-          />
-        </div>
-
-        {/* Divider - Only visible on mobile */}
-        <div className="border-t border-white/30 sm:hidden" style={{marginTop: '-22px'}}></div>
-        
-        {/* Input Interface */}
-        <div className="flex-shrink-0 bg-card p-1.5 sm:p-3 md:p-6 lg:pt-2 lg:px-2 lg:pb-1">
-          {chatMode === 'voice' ? (
-            /* Voice Input Interface */
-            <div className="text-center space-y-0.5 sm:space-y-4 lg:space-y-0.5">
-              <div className="text-muted-foreground text-xs sm:text-lg">{isRecording ? "Escuchando..." : ""}</div>
-
-              {/* Voice Input with Volume Control */}
-              <div className="flex items-center justify-center gap-1 sm:gap-3 lg:gap-0.5">
-                {/* Vertical Volume Control */}
-                <div className="flex flex-col items-center gap-1">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setIsMuted(!isMuted)}
-                    className="text-muted-foreground hover:text-foreground h-6 w-6 p-0"
-                    title={isMuted ? "Activar sonido" : "Silenciar"}
-                  >
-                    {isMuted ? <VolumeX className="w-3 h-3" /> : <Volume2 className="w-3 h-3" />}
-                  </Button>
-                  <div className="flex flex-col items-center gap-0.5 sm:gap-1">
-                    <span className="text-xs text-muted-foreground text-center" style={{fontSize: '10px'}}>10</span>
-                    <input
-                      type="range"
-                      min="0"
-                      max="1"
-                      step="0.1"
-                      value={isMuted ? 0 : volume}
-                      onChange={(e) => {
-                        const newVolume = parseFloat(e.target.value)
-                        setVolume(newVolume)
-                        if (newVolume > 0 && isMuted) {
-                          setIsMuted(false)
-                        }
-                        if (audioRef.current) {
-                          audioRef.current.volume = newVolume
-                        }
-                      }}
-                      className="w-2 h-10 sm:h-16 bg-muted rounded-lg appearance-none cursor-pointer"
-                      style={{
-                        writingMode: 'vertical-lr' as const,
-                        WebkitAppearance: 'slider-vertical',
-                        background: `linear-gradient(to top, #3b82f6 0%, #3b82f6 ${(isMuted ? 0 : volume) * 100}%, #374151 ${(isMuted ? 0 : volume) * 100}%, #374151 100%)`
-                      }}
-                      disabled={isMuted}
-                    />
-                    <span className="text-xs text-muted-foreground text-center" style={{fontSize: '10px'}}>0</span>
-                  </div>
-                  <span className="text-xs text-muted-foreground text-center" style={{fontSize: '9px'}}>
-                    {isMuted ? "0%" : `${Math.round(volume * 100)}%`}
-                  </span>
-                </div>
-                
-                {/* Voice Input with Visualizer */}
-                 <AIVoiceInput
-                   onStart={() => {
-                     if (!isRecording) {
-                       startRecording()
-                     }
-                   }}
-                   onStop={() => {
-                     if (isRecording) {
-                       stopRecording()
-                     }
-                   }}
-                   visualizerBars={48}
-                   demoMode={false}
-                   className="flex-1"
-                   isRecording={isRecording}
-                   isDisabled={isTranscribing || isGenerating}
-                 />
-               </div>
-
-              {/* Cancel Button - Only show when recording */}
-              {isRecording && (
-                <div className="flex justify-center">
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={cancelRecording}
-                    className="bg-red-600 hover:bg-red-700 text-white h-8 sm:h-auto text-xs sm:text-sm"
-                  >
-                    <span className="hidden sm:inline">Cancelar grabación</span>
-                    <span className="sm:hidden">Cancelar</span>
-                  </Button>
-                </div>
-              )}
-
-              {/* Status */}
-              <div className="text-xs sm:text-sm text-muted-foreground">
-                {isTranscribing && "Transcribiendo..."}
-                {isGenerating && "La IA está pensando..."}
-                {!isRecording && !isTranscribing && !isGenerating && ""}
-              </div>
-            </div>
-          ) : chatMode === 'text' ? (
-            /* Text Input Interface */
-            <div className="space-y-3">
-              {/* Image Preview */}
-              {selectedImages.length > 0 && (
-                <div className="flex flex-wrap gap-2 p-2 bg-muted/30 rounded-lg">
-                  {selectedImages.map((image, index) => (
-                    <div key={index} className="relative group">
-                      {image instanceof window.File && (
-                        <img
-                          src={URL.createObjectURL(image)}
-                          alt={`Imagen ${index + 1}`}
-                          className="w-16 h-16 object-cover rounded border"
+      <div className={`flex-1 flex flex-col w-full px-2 sm:px-4 py-4 min-h-0 ${chatMode === 'programmer' ? 'max-w-[1920px] overflow-hidden' : 'max-w-4xl mx-auto'}`}>
+        {chatMode === 'programmer' ? (
+             <div className="flex flex-col lg:flex-row flex-1 gap-4 h-full overflow-hidden">
+                {/* Left Panel: Chat & Input */}
+                <div className="w-full lg:w-1/3 lg:min-w-[400px] flex flex-col h-full bg-card rounded-lg border shadow-sm overflow-hidden">
+                    <div className="flex-1 overflow-hidden p-2">
+                        <ConversationHistory
+                            conversation={conversation}
+                            isTranscribing={isTranscribing}
+                            isGenerating={isGenerating}
+                            onTranslate={translateMessage}
+                            onUpdateConversation={setConversation}
+                            onCancelGeneration={cancelGeneration}
+                            chatMode={chatMode}
+                            userName={userData.name}
+                            userAvatar={userData.avatar}
+                            savedConversations={userData.savedConversations}
+                            onLoadConversation={(conv) => loadConversation(conv.messages)}
                         />
-                      )}
-                      <button
-                        onClick={() => removeImage(index)}
-                        className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
                     </div>
-                  ))}
+                     {/* Input Interface Wrapper */}
+                    <div className="border-t bg-card">
+                         {renderInputInterface()}
+                    </div>
                 </div>
-              )}
-              
-              {/* File Preview */}
-              {selectedFiles.length > 0 && (
-                <div className="flex flex-wrap gap-2 p-2 bg-muted/30 rounded-lg">
-                  {selectedFiles.filter(file => file && file.name).map((file, index) => {
-                    const { icon: IconComponent, color } = getFileIcon(file)
-                    return (
-                      <div key={index} className="relative group flex items-center gap-2 bg-background/50 rounded border p-2">
-                        <IconComponent className={`w-4 h-4 ${color}`} />
-                        <span className="text-xs truncate max-w-[100px]">{file.name}</span>
-                        <button
-                          onClick={() => removeFile(index)}
-                          className="bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          <X className="w-2 h-2" />
-                        </button>
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
-              
-              <div className="flex gap-1 sm:gap-2">
-                {/* Image Upload Button - Only show for LM Studio with vision models */}
-                {supportsVision() && (
-                  <>
-                    <Button
-                      type="button"
-                      variant="default"
-                      size="sm"
-                      onClick={() => fileInputRef.current?.click()}
-                      disabled={isGenerating || selectedImages.length >= 3}
-                      className="px-4 h-10 bg-primary hover:bg-primary/90 text-primary-foreground"
-                      title="Agregar imagen (máximo 3)"
-                    >
-                      <ImagePlus className="w-4 h-4" />
-                    </Button>
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      onChange={handleImageSelect}
-                      className="hidden"
-                    />
-                  </>
-                )}
-                
-                {/* File Upload Button */}
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => documentInputRef.current?.click()}
-                  disabled={isGenerating || selectedFiles.length >= 2}
-                  className="px-4 h-10 border-primary/20 hover:bg-primary/10 hover:border-primary/40"
-                  title="Agregar archivo (PDF, TXT, DOC - máximo 2)"
-                >
-                  <FileText className="w-4 h-4 text-primary" />
-                </Button>
-                <input
-                  ref={documentInputRef}
-                  type="file"
-                  accept=".pdf,.txt,.doc,.docx"
-                  multiple
-                  onChange={handleFileSelect}
-                  className="hidden"
-                />
 
-                {/* Image Generation Settings */}
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="px-4 h-10 border-primary/20 hover:bg-primary/10 hover:border-primary/40"
-                      title="Configuración de generación de imagen"
-                    >
-                      <Palette className="w-4 h-4 text-primary" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-80">
-                    <div className="grid gap-4">
-                      <div className="space-y-2">
-                        <h4 className="font-medium leading-none">Configuración de Imagen</h4>
-                        <p className="text-sm text-muted-foreground">
-                          Ajusta los parámetros para la generación de imágenes con Nano Banana Pro.
-                        </p>
-                      </div>
-                      <div className="grid gap-2">
-                        <div className="grid grid-cols-3 items-center gap-4">
-                          <Label htmlFor="aspect-ratio">Formato</Label>
-                          <Select value={imageAspectRatio} onValueChange={setImageAspectRatio}>
-                            <SelectTrigger id="aspect-ratio" className="col-span-2 h-8">
-                              <SelectValue placeholder="Seleccionar formato" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="1:1">1:1 (Cuadrado)</SelectItem>
-                              <SelectItem value="16:9">16:9 (Panorámico)</SelectItem>
-                              <SelectItem value="9:16">9:16 (Vertical)</SelectItem>
-                              <SelectItem value="4:3">4:3 (Estándar)</SelectItem>
-                              <SelectItem value="3:4">3:4 (Retrato)</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="grid grid-cols-3 items-center gap-4">
-                          <Label htmlFor="resolution">Resolución</Label>
-                          <Select value={imageResolution} onValueChange={setImageResolution}>
-                            <SelectTrigger id="resolution" className="col-span-2 h-8">
-                              <SelectValue placeholder="Seleccionar resolución" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="1k">1K (Estándar)</SelectItem>
-                              <SelectItem value="2k">2K (Alta)</SelectItem>
-                              <SelectItem value="4k">4K (Ultra)</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                    </div>
-                  </PopoverContent>
-                </Popover>
-                
-                {/* Real-time transcription button */}
-                {isTranscriptionSupported && (
-                  <Button
-                    type="button"
-                    variant={isListening ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => {
-                      if (isListening) {
-                        stopTranscription()
-                      } else {
-                        startTranscription()
-                      }
-                    }}
-                    className={`px-4 h-10 ${isListening ? 'bg-red-500 hover:bg-red-600 text-white' : 'border-primary/20 hover:bg-primary/10'}`}
-                    title={isListening ? "Detener transcripción" : "Iniciar transcripción en tiempo real"}
-                  >
-                    <Mic className={`w-4 h-4 ${isListening ? 'animate-pulse' : ''}`} />
-                  </Button>
-                )}
-                
-                <div className="flex-1 relative">
-                  <Input
-                    value={textInput}
-                    onChange={(e) => setTextInput(e.target.value)}
-                    onKeyPress={handleKeyPress}
-                    placeholder={supportsVision() ? "Escribe tu mensaje, sube imágenes o archivos..." : "Escribe tu mensaje o sube archivos..."}
-                    disabled={isGenerating}
-                    className="w-full"
+                {/* Right Panel: Code Preview */}
+                <div className="flex-1 h-full bg-card rounded-lg border shadow-sm overflow-hidden p-0">
+                    <CodePreview html={code.html} css={code.css} js={code.js} />
+                </div>
+             </div>
+        ) : (
+            <>
+                {/* Conversation History */}
+                <div className="flex-1 mb-6 min-h-0">
+                  <ConversationHistory
+                    conversation={conversation}
+                    isTranscribing={isTranscribing}
+                    isGenerating={isGenerating}
+                    onTranslate={translateMessage}
+                    onUpdateConversation={setConversation}
+                    onCancelGeneration={cancelGeneration}
+                    chatMode={chatMode}
+                    userName={userData.name}
+                    userAvatar={userData.avatar}
+                    savedConversations={userData.savedConversations}
+                    onLoadConversation={(conv) => loadConversation(conv.messages)}
                   />
-                  {/* Real-time transcription preview */}
-                  {isListening && transcript && (
-                    <div className="absolute top-full left-0 right-0 mt-1 p-2 bg-muted/90 backdrop-blur-sm border rounded-md text-sm z-10">
-                      <div className="flex items-center gap-2 mb-1">
-                        <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                        <span className="text-xs text-muted-foreground">Transcribiendo... (Confianza: {Math.round(confidence * 100)}%)</span>
-                      </div>
-                      <p className="text-foreground">{transcript}</p>
-                    </div>
-                  )}
                 </div>
-                <Button
-                  onClick={handleTextSubmit}
-                  disabled={!textInput.trim() || isGenerating}
-                  size="sm"
-                  className="px-4 h-10"
-                >
-                  <Send className="w-4 h-4" />
-                </Button>
-              </div>
-              
-              {/* Status */}
-              <div className="text-xs sm:text-sm text-muted-foreground text-center">
-                {isGenerating && "La IA está pensando..."}
-                {!isGenerating && supportsVision() && "Presiona Enter para enviar • Soporta imágenes y archivos"}
-                {!isGenerating && !supportsVision() && "Presiona Enter para enviar • Soporta archivos"}
-              </div>
-            </div>
-          ) : (
-            /* Programmer Input Interface */
-            <div className="space-y-3">
-              {/* Image Preview */}
-              {selectedImages.length > 0 && (
-                <div className="flex flex-wrap gap-2 p-2 bg-muted/30 rounded-lg">
-                  {selectedImages.map((image, index) => (
-                    <div key={index} className="relative group">
-                      {image instanceof window.File && (
-                        <img
-                          src={URL.createObjectURL(image)}
-                          alt={`Imagen ${index + 1}`}
-                          className="w-16 h-16 object-cover rounded border"
-                        />
-                      )}
-                      <button
-                        onClick={() => removeImage(index)}
-                        className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-              
-              <div className="flex gap-2">
-                {/* Image Upload Button - Only show for LM Studio with vision models */}
-                {supportsVision() && (
-                  <>
-                    <Button
-                      type="button"
-                      variant="default"
-                      size="sm"
-                      onClick={() => fileInputRef.current?.click()}
-                      disabled={isGenerating || selectedImages.length >= 3}
-                      className="px-4 h-10 bg-primary hover:bg-primary/90 text-primary-foreground"
-                      title="Agregar imagen (máximo 3)"
-                    >
-                      <ImagePlus className="w-4 h-4" />
-                    </Button>
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      onChange={handleImageSelect}
-                      className="hidden"
-                    />
-                  </>
-                )}
-                
-                {/* File Upload Button */}
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => documentInputRef.current?.click()}
-                  disabled={isGenerating || selectedFiles.length >= 2}
-                  className="px-4 h-10 border-primary/20 hover:bg-primary/10 hover:border-primary/40"
-                  title="Agregar archivo (PDF, TXT, DOC - máximo 2)"
-                >
-                  <FileText className="w-4 h-4 text-primary" />
-                </Button>
-                <input
-                  ref={documentInputRef}
-                  type="file"
-                  accept=".pdf,.txt,.doc,.docx"
-                  multiple
-                  onChange={handleFileSelect}
-                  className="hidden"
-                />
 
-                {/* Image Generation Settings */}
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="px-4 h-10 border-primary/20 hover:bg-primary/10 hover:border-primary/40"
-                      title="Configuración de generación de imagen"
-                    >
-                      <Palette className="w-4 h-4 text-primary" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-80">
-                    <div className="grid gap-4">
-                      <div className="space-y-2">
-                        <h4 className="font-medium leading-none">Configuración de Imagen</h4>
-                        <p className="text-sm text-muted-foreground">
-                          Ajusta los parámetros para la generación de imágenes con Nano Banana Pro.
-                        </p>
-                      </div>
-                      <div className="grid gap-2">
-                        <div className="grid grid-cols-3 items-center gap-4">
-                          <Label htmlFor="aspect-ratio">Formato</Label>
-                          <Select value={imageAspectRatio} onValueChange={setImageAspectRatio}>
-                            <SelectTrigger id="aspect-ratio" className="col-span-2 h-8">
-                              <SelectValue placeholder="Seleccionar formato" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="1:1">1:1 (Cuadrado)</SelectItem>
-                              <SelectItem value="16:9">16:9 (Panorámico)</SelectItem>
-                              <SelectItem value="9:16">9:16 (Vertical)</SelectItem>
-                              <SelectItem value="4:3">4:3 (Estándar)</SelectItem>
-                              <SelectItem value="3:4">3:4 (Retrato)</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="grid grid-cols-3 items-center gap-4">
-                          <Label htmlFor="resolution">Resolución</Label>
-                          <Select value={imageResolution} onValueChange={setImageResolution}>
-                            <SelectTrigger id="resolution" className="col-span-2 h-8">
-                              <SelectValue placeholder="Seleccionar resolución" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="1k">1K (Estándar)</SelectItem>
-                              <SelectItem value="2k">2K (Alta)</SelectItem>
-                              <SelectItem value="4k">4K (Ultra)</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                    </div>
-                  </PopoverContent>
-                </Popover>
+                {/* Divider - Only visible on mobile */}
+                <div className="border-t border-white/30 sm:hidden" style={{marginTop: '-22px'}}></div>
                 
-                {/* Real-time transcription button */}
-                {isTranscriptionSupported && (
-                  <Button
-                    type="button"
-                    variant={isListening ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => {
-                      if (isListening) {
-                        stopTranscription()
-                      } else {
-                        startTranscription()
-                      }
-                    }}
-                    className={`px-4 h-10 ${isListening ? 'bg-red-500 hover:bg-red-600 text-white' : 'border-primary/20 hover:bg-primary/10'}`}
-                    title={isListening ? "Detener transcripción" : "Iniciar transcripción en tiempo real"}
-                  >
-                    <Mic className={`w-4 h-4 ${isListening ? 'animate-pulse' : ''}`} />
-                  </Button>
-                )}
-                
-                <div className="flex-1 relative">
-                  <Input
-                    value={textInput}
-                    onChange={(e) => setTextInput(e.target.value)}
-                    onKeyPress={handleKeyPress}
-                    placeholder="Describe tu problema de programación, sube archivos de código o pide ayuda..."
-                    disabled={isGenerating}
-                    className="w-full"
-                  />
-                  {/* Real-time transcription preview */}
-                  {isListening && transcript && (
-                    <div className="absolute top-full left-0 right-0 mt-1 p-2 bg-muted/90 backdrop-blur-sm border rounded-md text-sm z-10">
-                      <div className="flex items-center gap-2 mb-1">
-                        <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                        <span className="text-xs text-muted-foreground">Transcribiendo... (Confianza: {Math.round(confidence * 100)}%)</span>
-                      </div>
-                      <p className="text-foreground">{transcript}</p>
-                    </div>
-                  )}
-                </div>
-                <Button
-                  onClick={handleTextSubmit}
-                  disabled={!textInput.trim() || isGenerating}
-                  size="sm"
-                  className="px-4 h-10"
-                >
-                  <Send className="w-4 h-4" />
-                </Button>
-              </div>
-              
-              {/* Status */}
-              <div className="text-xs sm:text-sm text-muted-foreground text-center">
-                {isGenerating && "La IA está pensando..."}
-                {!isGenerating && "Presiona Enter para enviar • Modo programador activo"}
-              </div>
-            </div>
-          )}
-        </div>
+                {/* Input Interface */}
+                {renderInputInterface()}
+            </>
+        )}
       </div>
 
       {/* Hidden audio element for AI responses */}
