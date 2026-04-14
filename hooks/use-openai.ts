@@ -307,7 +307,7 @@ export function useOpenAI(config: AIConfig) {
           userContent = userMessage
         }
         // Get system prompt from selected agent or use special prompt for Qwen/DeepSeek-LM
-        let systemPrompt: string
+        let systemPrompt: string;
         const selectedAgentData = AI_AGENTS.find(agent => agent.id === selectedAgent) || AI_AGENTS[0]
         
         // Generate contextual prompt with long-term memory

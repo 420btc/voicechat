@@ -32,6 +32,7 @@ import { calculateConversationTokens } from "@/lib/token-counter"
 
 import { AutoSaveIndicator } from "@/components/auto-save-indicator"
 import { CodePreview } from "@/components/code-preview"
+import { BuilderPanel, ProjectFile } from "@/components/builder-panel"
 
 interface VoiceChatProps {
   apiKey: string
@@ -53,8 +54,8 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
   const [autoPlayAudioInText, setAutoPlayAudioInText] = useState(false) // Control audio playback in text mode
   const [imageAspectRatio, setImageAspectRatio] = useState("1:1")
   const [imageResolution, setImageResolution] = useState("1k")
-  const [code, setCode] = useState({ html: '', css: '', js: '' })
-  const [activeCodeTab, setActiveCodeTab] = useState<'html' | 'css' | 'js'>('html')
+  const [files, setFiles] = useState<ProjectFile[]>([])
+  const [projectSteps, setProjectSteps] = useState<{id: string, name: string, files: ProjectFile[], timestamp: Date}[]>([])
   const [isCodePanelOpen, setIsCodePanelOpen] = useState(true)
   const [isCodeManual, setIsCodeManual] = useState(false)
   const audioRef = useRef<HTMLAudioElement>(null)
@@ -236,15 +237,11 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
 
   useEffect(() => {
     try {
-      const raw = window.localStorage.getItem('builder_code_v1')
+      const raw = window.localStorage.getItem('builder_files_v1')
       if (raw) {
         const parsed = JSON.parse(raw)
-        if (parsed && typeof parsed === 'object') {
-          setCode({
-            html: typeof parsed.html === 'string' ? parsed.html : '',
-            css: typeof parsed.css === 'string' ? parsed.css : '',
-            js: typeof parsed.js === 'string' ? parsed.js : ''
-          })
+        if (Array.isArray(parsed)) {
+          setFiles(parsed)
           setIsCodeManual(true)
         }
       }
@@ -255,10 +252,10 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
   useEffect(() => {
     if (chatMode !== 'programmer') return
     try {
-      window.localStorage.setItem('builder_code_v1', JSON.stringify(code))
+      window.localStorage.setItem('builder_files_v1', JSON.stringify(files))
     } catch {
     }
-  }, [code, chatMode])
+  }, [files, chatMode])
 
   // Initialize temp OpenAI key with saved key
   useEffect(() => {
@@ -324,7 +321,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
       clearConversation()
       setSelectedImages([])
       setSelectedFiles([])
-      setCode({ html: '', css: '', js: '' })
+      setFiles([])
       setTextInput('')
       showNotification({ title: 'Nueva conversación iniciada', soundType: 'success' })
     },
@@ -407,16 +404,54 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
       
       if (lastAssistantMessage) {
         const content = lastAssistantMessage.content
-        const htmlMatch = content.match(/```html\n([\s\S]*?)```/)
-        const cssMatch = content.match(/```css\n([\s\S]*?)```/)
-        const jsMatch = content.match(/```(?:javascript|js)\n([\s\S]*?)```/)
-        
-        if (htmlMatch || cssMatch || jsMatch) {
-            setCode(prev => ({
-                html: htmlMatch ? htmlMatch[1] : prev.html,
-                css: cssMatch ? cssMatch[1] : prev.css,
-                js: jsMatch ? jsMatch[1] : prev.js
-            }))
+        const newFiles: ProjectFile[] = []
+
+        // Extract code blocks with filenames: ```html:index.html ... ```
+        const regexWithFilename = /```(?:html|css|javascript|js|json|ts|tsx|jsx)\s*:\s*([a-zA-Z0-9_.-]+)\n([\s\S]*?)```/g
+        let match
+        let foundAny = false
+
+        while ((match = regexWithFilename.exec(content)) !== null) {
+          foundAny = true
+          const [, name, fileContent] = match
+          const ext = name.split('.').pop() || 'txt'
+          newFiles.push({ name, content: fileContent.trim(), type: ext, status: 'saved' })
+        }
+
+        // Fallback for old format without filenames
+        if (!foundAny) {
+          const htmlMatch = content.match(/```html\n([\s\S]*?)```/)
+          const cssMatch = content.match(/```css\n([\s\S]*?)```/)
+          const jsMatch = content.match(/```(?:javascript|js)\n([\s\S]*?)```/)
+          
+          if (htmlMatch) newFiles.push({ name: 'index.html', content: htmlMatch[1].trim(), type: 'html', status: 'saved' })
+          if (cssMatch) newFiles.push({ name: 'styles.css', content: cssMatch[1].trim(), type: 'css', status: 'saved' })
+          if (jsMatch) newFiles.push({ name: 'app.js', content: jsMatch[1].trim(), type: 'js', status: 'saved' })
+        }
+
+        if (newFiles.length > 0) {
+            setFiles(prev => {
+                const merged = [...prev]
+                newFiles.forEach(nf => {
+                    const existing = merged.findIndex(f => f.name === nf.name)
+                    if (existing !== -1) merged[existing] = nf
+                    else merged.push(nf)
+                })
+                
+                // Add new step
+                const stepCount = projectSteps.length + 1
+                setProjectSteps(steps => [
+                  {
+                    id: `step-${stepCount}`,
+                    name: `Paso ${stepCount}`,
+                    files: merged,
+                    timestamp: new Date()
+                  },
+                  ...steps
+                ])
+                
+                return merged
+            })
         }
       }
     }
@@ -607,16 +642,12 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
           content: chatMode === 'programmer' 
             ? `Eres un experto desarrollador web full-stack y asistente de programación. ${userData.name ? userData.name + ' es quien te habla.' : ''}
                Tu objetivo es ayudar a construir aplicaciones web completas.
-               Cuando se te pida crear una interfaz o aplicación, DEBES generar el código completo en bloques separados para HTML, CSS y JavaScript.
-               Usa el formato:
-               \`\`\`html
+               El entorno actual soporta archivos dinámicos. Cuando crees o edites código, DEBES usar bloques markdown con el nombre del archivo:
+               \`\`\`html:index.html
                <!-- código html aquí -->
                \`\`\`
-               \`\`\`css
+               \`\`\`css:styles.css
                /* código css aquí */
-               \`\`\`
-               \`\`\`javascript
-               // código js aquí
                \`\`\`
                Asegúrate de que el código sea funcional, moderno y visualmente atractivo.
                Responde en español de manera técnica pero clara.`
@@ -1386,7 +1417,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
                     saveConversation(autoTitle, conversation)
                   }
                   clearConversation()
-                  setCode({ html: '', css: '', js: '' })
+                  setFiles([])
                 }} 
                 className="text-muted-foreground hover:text-foreground h-8 px-1 sm:px-2 lg:px-3"
                 title="Nueva conversación"
@@ -1413,7 +1444,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
                       saveConversation(autoTitle, conversation)
                     }
                     clearConversation()
-                    setCode({ html: '', css: '', js: '' })
+                    setFiles([])
                   }}
                 />
               )}
@@ -1500,79 +1531,31 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
 
                 {/* Right Panel: Builder Files + Preview */}
                 <div className="flex-1 h-full bg-card rounded-lg border shadow-sm overflow-hidden p-0 flex">
-                  <div className={`border-r bg-muted/20 transition-all ${isCodePanelOpen ? 'w-[360px]' : 'w-10'} flex-shrink-0`}>
-                    <div className="h-full flex flex-col">
-                      <button
-                        type="button"
-                        onClick={() => setIsCodePanelOpen(!isCodePanelOpen)}
-                        className="h-10 px-2 flex items-center justify-between border-b text-xs font-semibold text-muted-foreground"
-                      >
-                        <span className={isCodePanelOpen ? '' : 'hidden'}>Archivos</span>
-                        <span className="text-muted-foreground">{isCodePanelOpen ? '⟨' : '⟩'}</span>
-                      </button>
-
-                      {isCodePanelOpen && (
-                        <div className="flex-1 min-h-0 flex flex-col">
-                          <div className="flex border-b">
-                            <button
-                              type="button"
-                              onClick={() => setActiveCodeTab('html')}
-                              className={`px-3 py-2 text-xs font-medium ${activeCodeTab === 'html' ? 'bg-background' : 'bg-transparent text-muted-foreground'}`}
-                            >
-                              index.html
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setActiveCodeTab('css')}
-                              className={`px-3 py-2 text-xs font-medium ${activeCodeTab === 'css' ? 'bg-background' : 'bg-transparent text-muted-foreground'}`}
-                            >
-                              styles.css
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setActiveCodeTab('js')}
-                              className={`px-3 py-2 text-xs font-medium ${activeCodeTab === 'js' ? 'bg-background' : 'bg-transparent text-muted-foreground'}`}
-                            >
-                              app.js
-                            </button>
-                          </div>
-
-                          <textarea
-                            value={activeCodeTab === 'html' ? code.html : activeCodeTab === 'css' ? code.css : code.js}
-                            onChange={(e) => {
-                              const value = e.target.value
-                              setIsCodeManual(true)
-                              setCode(prev => (
-                                activeCodeTab === 'html'
-                                  ? { ...prev, html: value }
-                                  : activeCodeTab === 'css'
-                                  ? { ...prev, css: value }
-                                  : { ...prev, js: value }
-                              ))
-                            }}
-                            className="flex-1 w-full resize-none bg-background p-3 font-mono text-xs outline-none"
-                            spellCheck={false}
-                          />
-
-                          <div className="border-t p-2 flex justify-between items-center">
-                            <button
-                              type="button"
-                              onClick={() => setIsCodeManual(false)}
-                              className="text-xs text-muted-foreground hover:text-foreground"
-                              title="Volver a sincronizar desde la última respuesta del asistente"
-                            >
-                              Sincronizar con IA
-                            </button>
-                            <span className="text-[10px] text-muted-foreground">{isCodeManual ? 'Editando manual' : 'Auto'}</span>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="flex-1 min-w-0">
-                    <CodePreview html={code.html} css={code.css} js={code.js} />
-                  </div>
+                  <BuilderPanel 
+                    files={files} 
+                    onUpdateFile={(name, content) => {
+                      setIsCodeManual(true)
+                      setFiles(prev => prev.map(f => f.name === name ? { ...f, content, status: 'modified' } : f))
+                    }} 
+                    onCreateFile={(name) => {
+                      setIsCodeManual(true)
+                      const ext = name.split('.').pop() || 'txt'
+                      setFiles(prev => [...prev, { name, content: '', type: ext, status: 'saved' }])
+                    }}
+                    onDeleteFile={(name) => {
+                      setIsCodeManual(true)
+                      setFiles(prev => prev.filter(f => f.name !== name))
+                    }}
+                    isGenerating={isGenerating}
+                    projectSteps={projectSteps}
+                    onRestoreStep={(stepId) => {
+                      const step = projectSteps.find(s => s.id === stepId)
+                      if (step) {
+                        setFiles(step.files)
+                        setIsCodeManual(true)
+                      }
+                    }}
+                  />
                 </div>
              </div>
         ) : (
