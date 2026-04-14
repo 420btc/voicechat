@@ -119,6 +119,67 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
     }
   })()
 
+  const currentModelDisplay = (() => {
+    const settings = userData.aiSettings
+    const provider = settings.provider
+
+    const providerLabel = (() => {
+      switch (provider) {
+        case "openai":
+          return "OpenAI"
+        case "lmstudio":
+          return "LM Studio"
+        case "anthropic":
+          return "Anthropic"
+        case "deepseek":
+          return "DeepSeek"
+        case "grok":
+          return "Grok"
+        case "gemini":
+          return "Gemini"
+        case "fal":
+          return "Fal"
+        case "qwen":
+          return "Qwen"
+        case "deepseek-lm":
+          return "DeepSeek-LM"
+        default:
+          return "Modelo"
+      }
+    })()
+
+    const modelId = (() => {
+      switch (provider) {
+        case "openai":
+          return settings.openaiModel || "gpt-5.4"
+        case "lmstudio":
+          return settings.lmstudioModel || "modelo-local"
+        case "anthropic":
+          return settings.anthropicModel || "claude-opus-4-6"
+        case "deepseek":
+          return "deepseek-chat"
+        case "grok":
+          return settings.grokModel || "grok-4-1-fast-reasoning"
+        case "gemini":
+          return selectedImages.length > 0
+            ? (settings.geminiImageModel || "gemini-3-pro-image-preview")
+            : (settings.geminiModel || "gemini-3-flash-preview")
+        case "fal":
+          return settings.falVideoModel || "fal-ai/kling-video/v2.1/pro/image-to-video"
+        case "qwen":
+          return chatMode === "voice"
+            ? (settings.qwenTtsModel || "qwen3-tts-flash")
+            : (settings.qwenModel || "qwen-flash")
+        case "deepseek-lm":
+          return settings.deepseekLmModel || "deepseek-v3"
+        default:
+          return "desconocido"
+      }
+    })()
+
+    return `${providerLabel}: ${modelId}`
+  })()
+
   const {
     transcribeAudio,
     generateResponse,
@@ -146,6 +207,7 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
     geminiModel: userData.aiSettings.geminiModel,
     grokModel: userData.aiSettings.grokModel,
     geminiImageModel: userData.aiSettings.geminiImageModel,
+    geminiLongContext: userData.aiSettings.geminiLongContext,
     falApiKey: userData.aiSettings.falApiKey,
     falVideoModel: userData.aiSettings.falVideoModel,
     selectedAgent: userData.aiSettings.selectedAgent,
@@ -1015,6 +1077,10 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
             <Send className="w-4 h-4" />
           </Button>
         </div>
+
+        <div className="pl-1 text-[11px] text-muted-foreground">
+          {currentModelDisplay}
+        </div>
         
         {/* Status */}
         <div className="text-xs sm:text-sm text-muted-foreground text-center">
@@ -1144,6 +1210,10 @@ export function VoiceChat({ apiKey, onApiKeyReset, onApiKeySubmit, onShowApiKeyS
             >
               <Send className="w-4 h-4" />
             </Button>
+          </div>
+
+          <div className="pl-1 text-[11px] text-muted-foreground">
+            {currentModelDisplay}
           </div>
           
           {/* Status */}

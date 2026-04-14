@@ -5,6 +5,8 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const { messages, model, max_tokens, temperature, images } = body
+    const requestedMaxTokens = Number.isFinite(Number(max_tokens)) ? Number(max_tokens) : 4096
+    const safeMaxOutputTokens = Math.max(256, Math.min(requestedMaxTokens, 65535))
     
     // Get API key from headers or environment
     const apiKey = request.headers.get('x-api-key') || process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY
@@ -59,13 +61,16 @@ export async function POST(request: NextRequest) {
       hasImages: images && images.length > 0
     })
 
-    const timeoutMs = typeof max_tokens === 'number' && max_tokens > 4096 ? 180000 : 60000
+    const timeoutMs =
+      safeMaxOutputTokens > 32768 ? 600000 :
+      safeMaxOutputTokens > 8192 ? 300000 :
+      120000
     const response = await Promise.race([
       ai.models.generateContent({
         model: model || 'gemini-2.5-flash',
         contents: geminiContents,
         generationConfig: {
-          maxOutputTokens: max_tokens || 4096,
+          maxOutputTokens: safeMaxOutputTokens,
           temperature: temperature || 0.7
         },
         // Enable image generation when images are present

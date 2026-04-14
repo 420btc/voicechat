@@ -40,6 +40,7 @@ interface AIConfig {
   geminiModel?: string
   grokModel?: string
   geminiImageModel?: string
+  geminiLongContext?: boolean
   falApiKey?: string
   falVideoModel?: string
   selectedAgent?: string
@@ -54,13 +55,13 @@ interface AIConfig {
 }
 
 export function useOpenAI(config: AIConfig) {
-  const { provider, apiKey, chatMode, openaiApiKey, baseUrl, model, openaiModel, anthropicModel, geminiModel, grokModel, geminiImageModel, selectedAgent, onModelUsed, qwenBaseUrl, qwenModel, deepseekLmBaseUrl, deepseekLmModel, useSpecialPrompt } = config
+  const { provider, apiKey, chatMode, openaiApiKey, baseUrl, model, openaiModel, anthropicModel, geminiModel, grokModel, geminiImageModel, geminiLongContext, selectedAgent, onModelUsed, qwenBaseUrl, qwenModel, deepseekLmBaseUrl, deepseekLmModel, useSpecialPrompt } = config
   const [isTranscribing, setIsTranscribing] = useState(false)
   const [isGenerating, setIsGenerating] = useState(false)
   const [abortController, setAbortController] = useState<AbortController | null>(null)
 
   const isBuilderMode = chatMode === 'programmer'
-  const maxOutputTokens = isBuilderMode ? 8192 : 4096
+  const defaultMaxOutputTokens = isBuilderMode ? 8192 : 4096
 
   const shouldRetryWithLowerTokens = (errorText: string) => {
     const t = (errorText || '').toLowerCase()
@@ -220,7 +221,9 @@ export function useOpenAI(config: AIConfig) {
           selectedModel = (images && images.length > 0) 
             ? (geminiImageModel || "gemini-3-pro-image-preview")
             : (geminiModel || "gemini-3-flash-preview")
-          timeoutMs = 90000
+          timeoutMs = geminiLongContext
+            ? (isBuilderMode ? 600000 : 300000)
+            : 90000
           break
         case "fal":
           apiUrl = "/api/fal-video"
@@ -233,6 +236,20 @@ export function useOpenAI(config: AIConfig) {
           timeoutMs = isBuilderMode ? 180000 : 90000
           break
       }
+
+      const maxOutputTokens = (() => {
+        if (provider !== "gemini") return defaultMaxOutputTokens
+        if (!geminiLongContext) return isBuilderMode ? 8192 : 4096
+
+        // Gemini: maximize long-form generation while respecting common model caps.
+        // 2.5 Pro and 3.1 Pro support up to ~65k output tokens in official docs.
+        const m = (selectedModel || "").toLowerCase()
+        const isProFamily = m.includes("2.5-pro") || m.includes("3.1-pro")
+        if (isProFamily) return 65535
+
+        // Flash / Live / Lite / image families generally need lower ceilings.
+        return isBuilderMode ? 32768 : 16384
+      })()
       
       // Create AbortController for timeout
       const controller = new AbortController()

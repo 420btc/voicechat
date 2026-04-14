@@ -46,6 +46,7 @@ interface AISettings {
   geminiApiKey: string
   geminiModel: string
   geminiImageModel: string
+  geminiLongContext?: boolean
   falApiKey: string
   falVideoModel: string
   selectedAgent: string
@@ -446,9 +447,16 @@ export default function AIProviderSelector({ settings, onSettingsChange, themeSe
                       <SelectValue placeholder="Selecciona un modelo" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="gpt-5.2">GPT-5.2 (Más reciente - Dic 2025)</SelectItem>
-                      <SelectItem value="gpt-5.2-codex">GPT-5.2 Codex (Programación - Ene 2026)</SelectItem>
+                      <SelectItem value="gpt-5.4">GPT-5.4 (Flagship actual)</SelectItem>
+                      <SelectItem value="gpt-5.4-mini">GPT-5.4 Mini</SelectItem>
+                      <SelectItem value="gpt-5.4-nano">GPT-5.4 Nano</SelectItem>
+                      <SelectItem value="gpt-4.1">GPT-4.1</SelectItem>
+                      <SelectItem value="gpt-4.1-mini">GPT-4.1 Mini</SelectItem>
+                      <SelectItem value="gpt-4.1-nano">GPT-4.1 Nano</SelectItem>
+                      <SelectItem value="gpt-5.2">GPT-5.2</SelectItem>
+                      <SelectItem value="gpt-5.2-codex">GPT-5.2 Codex</SelectItem>
                       <SelectItem value="gpt-4o">GPT-4o</SelectItem>
+                      <SelectItem value="gpt-4o-mini">GPT-4o Mini</SelectItem>
                       <SelectItem value="o1-preview">o1-preview</SelectItem>
                     </SelectContent>
                   </Select>
@@ -755,6 +763,10 @@ export default function AIProviderSelector({ settings, onSettingsChange, themeSe
                       <SelectValue placeholder="Selecciona un modelo" />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="claude-opus-4-6">Claude Opus 4.6</SelectItem>
+                      <SelectItem value="claude-sonnet-4-6">Claude Sonnet 4.6</SelectItem>
+                      <SelectItem value="claude-haiku-4-5">Claude Haiku 4.5</SelectItem>
+                      <SelectItem value="claude-haiku-4-5-20251001">Claude Haiku 4.5 (Snapshot)</SelectItem>
                       <SelectItem value="claude-4-5-opus">Claude 4.5 Opus (Flagship - Nov 2025)</SelectItem>
                       <SelectItem value="claude-4-5-sonnet">Claude 4.5 Sonnet (Ene 2026)</SelectItem>
                       <SelectItem value="claude-sonnet-4-20250514">Claude Sonnet 4</SelectItem>
@@ -846,6 +858,10 @@ export default function AIProviderSelector({ settings, onSettingsChange, themeSe
                       <SelectValue placeholder="Selecciona un modelo" />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="gemini-3.1-pro-preview">Gemini 3.1 Pro Preview</SelectItem>
+                      <SelectItem value="gemini-3.1-flash-lite-preview">Gemini 3.1 Flash-Lite Preview</SelectItem>
+                      <SelectItem value="gemini-3.1-flash-live-preview">Gemini 3.1 Flash Live Preview</SelectItem>
+                      <SelectItem value="gemini-3.1-flash-image-preview">Gemini 3.1 Flash Image Preview</SelectItem>
                       <SelectItem value="gemini-3-flash-preview">Gemini 3 Flash Preview (Dic 2025)</SelectItem>
                       <SelectItem value="gemini-3-pro-preview">Gemini 3 Pro Preview (Nov 2025)</SelectItem>
                       <SelectItem value="gemini-2.5-flash">Gemini 2.5 Flash</SelectItem>
@@ -854,6 +870,24 @@ export default function AIProviderSelector({ settings, onSettingsChange, themeSe
                       <SelectItem value="gemini-live-2.5-flash-preview">Gemini 2.5 Flash Live</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+
+                <div className="rounded-lg border p-3 bg-muted/30 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="gemini-long-context" className="text-sm font-medium">
+                      Conversación Larga
+                    </Label>
+                    <Switch
+                      id="gemini-long-context"
+                      checked={tempSettings.geminiLongContext === true}
+                      onCheckedChange={(checked) =>
+                        setTempSettings(prev => ({ ...prev, geminiLongContext: checked }))
+                      }
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    ON: prioriza máximo contexto y salida larga. OFF: perfil económico y más rápido.
+                  </p>
                 </div>
                 
                 <div className="space-y-2">
@@ -868,6 +902,7 @@ export default function AIProviderSelector({ settings, onSettingsChange, themeSe
                       <SelectValue placeholder="Selecciona modelo para imágenes" />
                     </SelectTrigger>
                     <SelectContent>
+                       <SelectItem value="gemini-3.1-flash-image-preview">Gemini 3.1 Flash Image Preview (gemini-3.1-flash-image-preview)</SelectItem>
                        <SelectItem value="gemini-3-pro-image-preview">Nano Banana Pro (gemini-3-pro-image-preview)</SelectItem>
                        <SelectItem value="gemini-2.5-flash-image-preview">Nano Banana (gemini-2.5-flash-image-preview)</SelectItem>
                      </SelectContent>

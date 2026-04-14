@@ -35,6 +35,7 @@ interface AISettings {
   geminiApiKey: string
   geminiModel: string
   geminiImageModel: string
+  geminiLongContext?: boolean
   falApiKey: string
   falVideoModel: string
   selectedAgent: string
@@ -174,6 +175,7 @@ const DEFAULT_USER_DATA: UserData = {
     geminiApiKey: "",
     geminiModel: "gemini-3-flash-preview",
     geminiImageModel: "gemini-3-pro-image-preview",
+    geminiLongContext: false,
     falApiKey: "",
     falVideoModel: "fal-ai/kling-video/v2.1/pro/image-to-video",
     selectedAgent: "general",
